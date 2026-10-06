@@ -1,0 +1,12 @@
+// ProductRadar database schema.
+// Add models one vertical slice at a time, then run `npm run db:migrate`.
+// Payment (x402) tables must NOT live here alongside core models — see CLAUDE.md Rule 2.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
