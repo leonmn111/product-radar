@@ -51,11 +51,25 @@ The page is marked `noindex` (it's an app dashboard, not a marketing page).
 
 ## Deploying (Railway)
 
-`railway.json` configures the service: build with `npm run build`, run `prisma migrate deploy` before each
-release, start with `npm run start` (Next.js reads Railway's `PORT`), and only switch traffic once
-`/api/health` reports healthy. `.railwayignore` keeps `.env` and local data out of uploads. Required service
-variables: `DATABASE_URL` (reference the Railway Postgres service), `AUTH_SECRET`, `AUTH_TRUST_HOST=true`,
-`AUTH_RESEND_KEY`, `EMAIL_FROM`, `APP_URL`, and the Stripe keys. Leave `X402_MODE` unset in production.
+Live at https://web-production-4e971.up.railway.app (project `product-radar`: services `web` + `Postgres`).
+
+Deploy settings are stored on the Railway `web` service (not in a repo file — Railway retired
+`railway.json` on 2026-12-01 and ignored it for CLI uploads):
+
+| Setting | Value |
+| --- | --- |
+| Build command | `npm run build` |
+| Pre-deploy command | `npx prisma migrate deploy` |
+| Start command | `npm run start` (Next.js reads Railway's `PORT`) |
+| Health check | `/api/health` (120 s) — a release only goes live once the database is reachable |
+| Restart policy | on failure, 5 retries |
+
+Deploy from this folder with `railway up --service web --detach` (needs a project token in `RAILWAY_TOKEN`).
+`.railwayignore` keeps `.env` and local data out of uploads.
+
+Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SECRET`, `AUTH_TRUST_HOST=true`,
+`AUTH_RESEND_KEY`, `EMAIL_FROM`, `APP_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`. Leave `X402_MODE`
+unset in production.
 
 ## Accounts & plans
 
