@@ -12,7 +12,7 @@ import {
   type Dimension,
 } from "./format";
 import { IngestForm } from "./ingest-form";
-import { ProductDetail } from "./product-detail";
+import { OpportunityDossier, type DossierViewer } from "./opportunity-dossier";
 import { ScoreCell } from "./score";
 import { UpgradeCard } from "./upgrade-card";
 
@@ -119,6 +119,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
 
   const products = useMemo(() => (data ? sortProducts(data.data, sortKey) : []), [data, sortKey]);
   const hasSample = products.some((p) => p.isSample);
+  const dossierViewer: DossierViewer = { signedIn: viewer.signedIn, proTools: viewer.canIngest };
 
   function handleIngested(result: IngestResult) {
     // Show the new/updated product: unfiltered list, opened, highlighted.
@@ -260,8 +261,8 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
               </a>
             </p>
           )}
-          <ProductTable products={products} expanded={expanded} onToggle={toggle} highlightId={highlightId} />
-          <ProductCards products={products} expanded={expanded} onToggle={toggle} highlightId={highlightId} />
+          <ProductTable products={products} expanded={expanded} onToggle={toggle} highlightId={highlightId} dossierViewer={dossierViewer} />
+          <ProductCards products={products} expanded={expanded} onToggle={toggle} highlightId={highlightId} dossierViewer={dossierViewer} />
         </>
       )}
 
@@ -282,11 +283,12 @@ type ListProps = {
   expanded: Set<string>;
   onToggle: (id: string) => void;
   highlightId: string | null;
+  dossierViewer: DossierViewer;
 };
 
 const HIGHLIGHT = "bg-indigo-50 ring-2 ring-indigo-500 ring-inset dark:bg-indigo-950/40 dark:ring-indigo-400";
 
-function ProductTable({ products, expanded, onToggle, highlightId }: ListProps) {
+function ProductTable({ products, expanded, onToggle, highlightId, dossierViewer }: ListProps) {
   return (
     <div className="hidden overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm md:block dark:border-zinc-800 dark:bg-zinc-900">
       <div className="overflow-x-auto">
@@ -354,7 +356,7 @@ function ProductTable({ products, expanded, onToggle, highlightId }: ListProps) 
                   {open && (
                     <tr id={panelId} className="bg-zinc-50 dark:bg-zinc-950/60">
                       <td colSpan={4 + SUB_DIMENSIONS.length + 1} className="px-4 pt-1 pb-6">
-                        <ProductDetail product={p} />
+                        <OpportunityDossier product={p} viewer={dossierViewer} />
                       </td>
                     </tr>
                   )}
@@ -370,7 +372,7 @@ function ProductTable({ products, expanded, onToggle, highlightId }: ListProps) 
 
 // ── Mobile cards ─────────────────────────────────────────────────────────────
 
-function ProductCards({ products, expanded, onToggle, highlightId }: ListProps) {
+function ProductCards({ products, expanded, onToggle, highlightId, dossierViewer }: ListProps) {
   return (
     <ol className="space-y-3 md:hidden">
       {products.map((p, i) => {
@@ -414,7 +416,7 @@ function ProductCards({ products, expanded, onToggle, highlightId }: ListProps) 
 
             {open && (
               <div id={panelId} className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-                <ProductDetail product={p} />
+                <OpportunityDossier product={p} viewer={dossierViewer} />
               </div>
             )}
           </li>
@@ -483,7 +485,7 @@ function ToggleButton({
       aria-controls={controls}
       className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/40 ${focusRing}`}
     >
-      {open ? "Hide" : "Evidence"}
+      {open ? "Hide" : "Dossier"}
       <span className="sr-only"> for {name}</span>
       <svg
         aria-hidden="true"
