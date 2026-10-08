@@ -39,7 +39,7 @@ function toOpportunity(p: ProductDto, rank: number) {
         }
       : null,
     evidence: {
-      count: p.evidence.length,
+      count: p.evidenceCount,
       oldestObservedAt: observed[0] ?? null,
       newestObservedAt: observed.at(-1) ?? null,
       top: [...p.evidence]

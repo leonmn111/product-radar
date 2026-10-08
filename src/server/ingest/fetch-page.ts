@@ -1,12 +1,15 @@
 // Fetches a public web page for ingestion, defensively:
 //  - http(s) on standard ports only
-//  - refuses hosts that resolve to private/loopback/link-local addresses (SSRF),
-//    re-checked on every redirect hop
+//  - refuses private/loopback/link-local addresses (SSRF). Enforced at CONNECT
+//    time by a guarded DNS lookup on every socket — the page, robots.txt and
+//    every redirect — so a DNS answer can't change between check and use.
 //  - honours robots.txt for our user agent
 //  - 10s timeout, 3 MB cap, HTML only, max 5 redirects
 
+import { lookup as dnsLookup, type LookupAddress, type LookupOptions } from "node:dns";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
+import { Agent, fetch as undiciFetch, type RequestInit, type Response } from "undici";
 
 export const USER_AGENT = "ProductRadarBot/0.1 (product evidence ingestion)";
 const TIMEOUT_MS = 10_000;
@@ -96,9 +99,42 @@ export function parsePublicUrl(raw: string): URL {
   if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) {
     throw new FetchPageError("Private or local addresses are not allowed.", "blocked_host");
   }
+  // IP literals never go through DNS, so the connect-time guard can't see them — check here.
+  if (isIP(host) && isPrivateAddress(host)) {
+    throw new FetchPageError("Private or local addresses are not allowed.", "blocked_host");
+  }
   url.hash = "";
   return url;
 }
+
+// ── Connect-time guard ───────────────────────────────────────────────────────
+
+const BLOCKED_CODE = "EPRODUCTRADAR_BLOCKED_HOST";
+
+type LookupCallback = (err: NodeJS.ErrnoException | null, address: string | LookupAddress[], family?: number) => void;
+
+/** DNS lookup used for every outbound socket: fails if ANY resolved address is private. */
+function guardedLookup(hostname: string, options: LookupOptions, callback: LookupCallback) {
+  dnsLookup(hostname, { ...options, all: true }, (err, addresses) => {
+    if (err) return callback(err, []);
+    if (addresses.length === 0 || addresses.some((a) => isPrivateAddress(a.address))) {
+      return callback(Object.assign(new Error(`Blocked private address for ${hostname}`), { code: BLOCKED_CODE }), []);
+    }
+    if (options.all) callback(null, addresses);
+    else callback(null, addresses[0].address, addresses[0].family);
+  });
+}
+
+const guardedAgent = new Agent({ connect: { lookup: guardedLookup } });
+
+function isBlockedHostError(e: unknown): boolean {
+  for (let cur: unknown = e; cur && typeof cur === "object"; cur = (cur as { cause?: unknown }).cause) {
+    if ((cur as { code?: unknown }).code === BLOCKED_CODE) return true;
+  }
+  return false;
+}
+
+export const safeFetch = (url: URL, init: RequestInit) => undiciFetch(url, { ...init, dispatcher: guardedAgent });
 
 async function assertPublicHost(url: URL) {
   const host = url.hostname.replace(/^\[|\]$/g, "");
@@ -166,9 +202,9 @@ export function robotsAllows(robotsTxt: string, path: string, agent = "productra
 async function assertRobotsAllow(url: URL) {
   const robotsUrl = new URL("/robots.txt", url.origin);
   try {
-    const res = await fetch(robotsUrl, {
+    const res = await safeFetch(robotsUrl, {
       headers: { "User-Agent": USER_AGENT },
-      redirect: "follow",
+      redirect: "follow", // safe: every hop goes through the guarded lookup
       signal: AbortSignal.timeout(5_000),
     });
     if (!res.ok) return; // no robots.txt (or unreadable) ⇒ allowed, per convention
@@ -206,13 +242,14 @@ async function readCapped(res: Response): Promise<string> {
 
 export async function fetchPage(rawUrl: string): Promise<FetchedPage> {
   let url = parsePublicUrl(rawUrl);
+  await assertPublicHost(url); // friendly early error; the connect-time guard is the real enforcement
   await assertRobotsAllow(url);
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     await assertPublicHost(url);
     let res: Response;
     try {
-      res = await fetch(url, {
+      res = await safeFetch(url, {
         redirect: "manual",
         headers: {
           "User-Agent": USER_AGENT,
@@ -222,14 +259,16 @@ export async function fetchPage(rawUrl: string): Promise<FetchedPage> {
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
     } catch (e) {
+      if (isBlockedHostError(e)) throw new FetchPageError("Private or local addresses are not allowed.", "blocked_host");
       if (e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) {
         throw new FetchPageError("The website took too long to respond.", "timeout");
       }
       throw new FetchPageError("Couldn't connect to the website.", "network_error");
     }
 
-    if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
-      url = parsePublicUrl(new URL(res.headers.get("location")!, url).toString());
+    const location = res.headers.get("location");
+    if (res.status >= 300 && res.status < 400 && location) {
+      url = parsePublicUrl(new URL(location, url).toString());
       continue;
     }
     if (!res.ok) {

@@ -120,6 +120,10 @@ describe("fetch safety", () => {
       expect(() => parsePublicUrl(u), u).toThrow(FetchPageError);
     }
     expect(parsePublicUrl("https://shop.test/p#reviews").toString()).toBe("https://shop.test/p");
+    // Private IP literals must be refused before any request (incl. robots.txt) is made.
+    for (const u of ["http://127.0.0.1/p", "http://[::1]/p", "http://169.254.169.254/latest", "http://0x7f000001/p", "http://10.0.0.5/"]) {
+      expect(() => parsePublicUrl(u), u).toThrow(FetchPageError);
+    }
   });
 
   it("applies robots.txt rules", () => {

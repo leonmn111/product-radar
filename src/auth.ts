@@ -15,6 +15,13 @@ declare module "next-auth" {
   }
 }
 
+// The adapter loads the full User row, so the plan tier is present on it.
+declare module "@auth/core/adapters" {
+  interface AdapterUser {
+    subscriptionTier: SubscriptionTier;
+  }
+}
+
 const emailProvider = Resend({
   apiKey: env.AUTH_RESEND_KEY,
   from: env.EMAIL_FROM,
@@ -39,7 +46,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     session({ session, user }) {
       session.user.id = user.id;
-      session.user.tier = (user as typeof user & { subscriptionTier: SubscriptionTier }).subscriptionTier;
+      session.user.tier = user.subscriptionTier;
       return session;
     },
   },

@@ -446,7 +446,7 @@ function ProductName({ product: p }: { product: ProductDto }) {
         {humanizeSlug(p.category)}
       </p>
       <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-        {p.evidence.length} evidence · {p.offers.length} offer{p.offers.length === 1 ? "" : "s"}
+        {p.evidenceCount} evidence · {p.offers.length} offer{p.offers.length === 1 ? "" : "s"}
       </p>
     </div>
   );

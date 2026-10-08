@@ -28,11 +28,19 @@ export async function GET(request: NextRequest) {
   }
 
   // Free and signed-out viewers see the seeded sample data only; live data is Pro.
-  const includeLive = canViewLiveData(await getViewer());
-  const [products, hiddenLiveCount] = await Promise.all([
-    listProducts(db, { ...parsed.data, includeLive }),
-    includeLive ? 0 : countHiddenLiveProducts(db, parsed.data.category),
-  ]);
+  let includeLive: boolean;
+  let products: Awaited<ReturnType<typeof listProducts>>;
+  let hiddenLiveCount: number;
+  try {
+    includeLive = canViewLiveData(await getViewer());
+    [products, hiddenLiveCount] = await Promise.all([
+      listProducts(db, { ...parsed.data, includeLive }),
+      includeLive ? 0 : countHiddenLiveProducts(db, parsed.data.category),
+    ]);
+  } catch (e) {
+    console.error("[products] query failed", e);
+    return Response.json({ error: "internal_error", message: "Couldn't load products." }, { status: 500 });
+  }
 
   return Response.json(
     {

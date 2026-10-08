@@ -4,6 +4,8 @@
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { bestCurrentOffer } from "@/server/scoring/engine";
 
+const MAX_EVIDENCE_PER_PRODUCT = 50;
+
 export type ListProductsOptions = { category?: string; limit: number; includeLive: boolean; asOf?: Date };
 
 export async function listProducts(
@@ -32,7 +34,9 @@ export async function listProducts(
     where: { id: { in: ids } },
     include: {
       offers: { orderBy: [{ price: "asc" }, { observedAt: "desc" }] },
-      evidence: { orderBy: [{ observedAt: "desc" }, { id: "asc" }] },
+      // Newest evidence only — re-ingests add rows, so an unbounded list would grow forever.
+      evidence: { orderBy: [{ observedAt: "desc" }, { id: "asc" }], take: MAX_EVIDENCE_PER_PRODUCT },
+      _count: { select: { evidence: true } },
       scores: {
         orderBy: [{ dimension: "asc" }, { calculatedAt: "desc" }, { id: "desc" }],
         distinct: ["dimension"],
@@ -41,8 +45,12 @@ export async function listProducts(
     },
   });
 
+  // A product deleted between the two queries is simply skipped.
   const byId = new Map(rows.map((r) => [r.id, r]));
-  return ids.map((id) => toDto(byId.get(id)!, asOf));
+  return ids.flatMap((id) => {
+    const row = byId.get(id);
+    return row ? [toDto(row, asOf)] : [];
+  });
 }
 
 /** How many live products exist that this viewer can't see (for the upgrade prompt). */
@@ -51,7 +59,12 @@ export async function countHiddenLiveProducts(db: PrismaClient, category?: strin
 }
 
 type ProductRow = Prisma.ProductGetPayload<{
-  include: { offers: true; evidence: true; scores: { include: { evidence: { select: { evidenceId: true } } } } };
+  include: {
+    offers: true;
+    evidence: true;
+    scores: { include: { evidence: { select: { evidenceId: true } } } };
+    _count: { select: { evidence: true } };
+  };
 }>;
 
 function toDto(p: ProductRow, asOf: Date) {
@@ -93,6 +106,7 @@ function toDto(p: ProductRow, asOf: Date) {
       ]),
     ),
     offers,
+    evidenceCount: p._count.evidence, // total; `evidence` holds the newest MAX_EVIDENCE_PER_PRODUCT
     evidence: p.evidence.map((e) => ({
       id: e.id,
       claim: e.claim,
@@ -100,7 +114,7 @@ function toDto(p: ProductRow, asOf: Date) {
       observedAt: e.observedAt.toISOString(),
       publishedAt: e.publishedAt?.toISOString() ?? null,
       qualityScore: e.qualityScore.toNumber(),
-      metric: e.metric ? { type: e.metric, value: e.metricValue!.toNumber() } : null,
+      metric: e.metric && e.metricValue ? { type: e.metric, value: e.metricValue.toNumber() } : null,
       isSample: e.isSample,
     })),
   };

@@ -50,8 +50,9 @@ export function ProductDetail({ product }: { product: ProductDto }) {
             Score breakdown
           </h3>
           <ul className="mt-3 space-y-3">
-            {DIM_ORDER.filter((d) => product.scores[d]).map((d) => {
-              const s = product.scores[d]!;
+            {DIM_ORDER.flatMap((d) => {
+              const s = product.scores[d];
+              if (!s) return [];
               return (
                 <li key={d}>
                   <div className="flex items-baseline justify-between gap-2">
@@ -120,7 +121,12 @@ export function ProductDetail({ product }: { product: ProductDto }) {
 
       <section aria-labelledby={`evidence-${product.id}`} className="min-w-0">
         <h3 id={`evidence-${product.id}`} className="text-sm font-semibold text-zinc-950 dark:text-white">
-          Evidence <span className="font-normal text-zinc-500 dark:text-zinc-400">({product.evidence.length})</span>
+          Evidence{" "}
+          <span className="font-normal text-zinc-500 dark:text-zinc-400">
+            ({product.evidenceCount > product.evidence.length
+              ? `newest ${product.evidence.length} of ${product.evidenceCount}`
+              : product.evidenceCount})
+          </span>
         </h3>
         <ul className="mt-3 space-y-2">
           {product.evidence.map((e) => {

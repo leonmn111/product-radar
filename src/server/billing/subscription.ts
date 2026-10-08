@@ -34,7 +34,7 @@ export function tierForStatus(status: SubscriptionStatus): SubscriptionTier {
 
 export function snapshotFromStripe(sub: Stripe.Subscription): SubscriptionSnapshot {
   // Newer Stripe API versions report the billing period per subscription item.
-  const legacy = (sub as unknown as { current_period_end?: number }).current_period_end;
+  const legacy = "current_period_end" in sub && typeof sub.current_period_end === "number" ? sub.current_period_end : undefined;
   const periodEnd = sub.items?.data?.[0]?.current_period_end ?? legacy ?? null;
   return {
     id: sub.id,

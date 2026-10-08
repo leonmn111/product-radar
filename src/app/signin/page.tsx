@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { signIn } from "@/auth";
+import { createRateLimiter } from "@/lib/rate-limit";
 import { getViewer } from "@/server/auth/entitlements";
 
 export const metadata: Metadata = {
@@ -17,7 +19,12 @@ function safeCallback(raw: string | string[] | undefined) {
   return v && v.startsWith("/") && !v.startsWith("//") ? v : "/";
 }
 
+// Stops the form being used to flood someone's inbox (or burn the email quota).
+const perEmail = createRateLimiter({ windowMs: 15 * 60_000, max: 3 });
+const perClient = createRateLimiter({ windowMs: 15 * 60_000, max: 10 });
+
 const ERRORS: Record<string, string> = {
+  RateLimited: "Too many sign-in emails requested. Please wait 15 minutes and try again.",
   Verification: "That sign-in link has expired or was already used. Request a new one below.",
   EmailSignin: "We couldn't send the sign-in email. Please try again in a moment.",
   Configuration: "Sign-in isn't configured correctly on the server.",
@@ -29,6 +36,12 @@ async function sendLink(formData: FormData) {
   const callbackUrl = safeCallback(String(formData.get("callbackUrl") ?? "/"));
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     redirect(`/signin?error=InvalidEmail&callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  }
+  // Per-client limiting only when the host tells us who the client is — otherwise
+  // every visitor would share one bucket and could lock each other out.
+  const client = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim();
+  if ((client && perClient.limited(client)) || perEmail.limited(email)) {
+    redirect(`/signin?error=RateLimited&callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
   // redirect:false returns the URL Auth.js would redirect to — an error page if sending failed.
   const next = await signIn("resend", { email, redirectTo: callbackUrl, redirect: false });

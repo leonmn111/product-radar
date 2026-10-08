@@ -179,18 +179,16 @@ async function main() {
 
     for (const o of p.offers) {
       const observedAt = daysAgo(o.daysAgo);
-      const source = await db.evidence.create({
-        data: {
-          productId: product.id,
-          claim: `Listed at $${o.price} (${o.availability.toLowerCase().replaceAll("_", " ")})`,
-          sourceUrl: o.url,
-          sourceName: o.merchant,
-          sourceType: "RETAILER",
-          observedAt,
-          qualityScore: 90,
-          isSample: true,
-        },
+      const priceEvidence = EvidenceInput.parse({
+        productId: product.id,
+        claim: `Listed at $${o.price} (${o.availability.toLowerCase().replaceAll("_", " ")})`,
+        sourceUrl: o.url,
+        sourceName: o.merchant,
+        sourceType: "RETAILER",
+        observedAt,
+        qualityScore: 90,
       });
+      const source = await db.evidence.create({ data: { ...priceEvidence, isSample: true } });
       await db.offer.create({
         data: {
           productId: product.id,

@@ -134,8 +134,9 @@ export function withX402Payment(
     try {
       response = await handler(request);
     } catch (e) {
+      console.error("[x402] paid handler failed", e);
       await releaseNonce(nonce);
-      throw e;
+      return Response.json({ error: "internal_error", message: "The request failed and was not charged." }, { status: 500 });
     }
     if (!response.ok) {
       await releaseNonce(nonce); // the caller isn't charged for a failed request

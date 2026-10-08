@@ -1,6 +1,7 @@
 import { connection, type NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { createRateLimiter } from "@/lib/rate-limit";
 import { canIngest, getViewer } from "@/server/auth/entitlements";
 import { FetchPageError } from "@/server/ingest/fetch-page";
 import { IngestError, ingestUrl } from "@/server/ingest/ingest";
@@ -17,19 +18,9 @@ const Body = z.object({
     .or(z.literal("").transform(() => undefined)),
 });
 
-// Very small in-memory limiter: each ingest makes outbound requests to a third
-// party, so cap how fast one client can trigger them. Per server process only.
-const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 10;
-const hits = new Map<string, number[]>();
-function rateLimited(key: string) {
-  const now = Date.now();
-  const recent = (hits.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
-  recent.push(now);
-  hits.set(key, recent);
-  if (hits.size > 5_000) hits.clear();
-  return recent.length > MAX_PER_WINDOW;
-}
+// Each ingest makes outbound requests to a third party, so cap how fast one user can trigger them.
+const MAX_PER_MINUTE = 10;
+const ingestLimiter = createRateLimiter({ windowMs: 60_000, max: MAX_PER_MINUTE });
 
 const FETCH_ERROR_STATUS: Record<FetchPageError["code"], number> = {
   invalid_url: 400,
@@ -63,9 +54,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (rateLimited(viewer.id)) {
+  if (ingestLimiter.limited(viewer.id)) {
     return Response.json(
-      { error: "rate_limited", message: `Too many requests — max ${MAX_PER_WINDOW} per minute.` },
+      { error: "rate_limited", message: `Too many requests — max ${MAX_PER_MINUTE} per minute.` },
       { status: 429 },
     );
   }
