@@ -51,7 +51,7 @@ The page is marked `noindex` (it's an app dashboard, not a marketing page).
 
 ## Deploying (Railway)
 
-Live at https://web-production-4e971.up.railway.app (project `product-radar`: services `web` + `Postgres`).
+Live at https://theproductradar.io (also https://web-production-4e971.up.railway.app; project `product-radar`: services `web` + `Postgres`).
 
 Deploy settings are stored on the Railway `web` service (not in a repo file — Railway retired
 `railway.json` on 2026-12-01 and ignored it for CLI uploads):
