@@ -39,7 +39,11 @@ export function ProductDetail({ product }: { product: ProductDto }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
       <div className="space-y-6">
-        {product.description && <p className="text-sm text-zinc-700 dark:text-zinc-300">{product.description}</p>}
+        {product.description && (
+          <p className="line-clamp-5 text-sm text-zinc-700 dark:text-zinc-300" title={product.description}>
+            {product.description}
+          </p>
+        )}
 
         <section aria-labelledby={`scores-${product.id}`}>
           <h3 id={`scores-${product.id}`} className="text-sm font-semibold text-zinc-950 dark:text-white">

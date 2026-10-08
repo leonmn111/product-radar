@@ -7,6 +7,7 @@ const daysAgo = (d: number) => new Date(asOf.getTime() - d * 86_400_000);
 let n = 0;
 const ev = (over: Partial<EvidenceFact>): EvidenceFact => ({
   id: `00000000-0000-7000-8000-${String(++n).padStart(12, "0")}`,
+  sourceUrl: `https://source.test/${n}`,
   sourceType: "REVIEW",
   observedAt: daysAgo(1),
   qualityScore: 80,
@@ -68,9 +69,24 @@ describe("scoring engine", () => {
     expect(b.value).toBeGreaterThan(a.value);
   });
 
+  it("re-captures of the same source count once (latest wins), so resubmitting can't inflate a score", () => {
+    const once = [ev({ metric: "RATING", metricValue: 4.2, sourceUrl: "https://shop.test/p", observedAt: daysAgo(2) })];
+    const again = [
+      ...once,
+      ev({ metric: "RATING", metricValue: 4.2, sourceUrl: "https://shop.test/p", observedAt: daysAgo(1) }),
+      ev({ metric: "RATING", metricValue: 4.2, sourceUrl: "https://shop.test/p", observedAt: daysAgo(0) }),
+    ];
+    const latestOnly = byDim({ asOf, evidence: [again[2]], offers: [], categoryBestPrices: [] }).QUALITY;
+    const resubmitted = byDim({ asOf, evidence: again, offers: [], categoryBestPrices: [] }).QUALITY;
+    expect(resubmitted).toEqual(latestOnly); // three captures score exactly like one
+    expect(resubmitted.evidenceIds).toEqual([again[2].id]); // only the latest capture is cited
+  });
+
   it("TREND is above 50 when search interest rises and below when it falls", () => {
     const series = (vals: number[]) =>
-      vals.map((v, i) => ev({ metric: "SEARCH_INTEREST", metricValue: v, observedAt: daysAgo(60 - i * 30) }));
+      vals.map((v, i) =>
+        ev({ metric: "SEARCH_INTEREST", metricValue: v, sourceUrl: "https://trends.test/x", observedAt: daysAgo(60 - i * 30) }),
+      );
     const up = byDim({ asOf, evidence: series([40, 50, 60]), offers: [], categoryBestPrices: [] }).TREND;
     const down = byDim({ asOf, evidence: series([60, 50, 40]), offers: [], categoryBestPrices: [] }).TREND;
     expect(up.value).toBeGreaterThan(50);

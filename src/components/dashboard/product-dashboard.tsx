@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
+import type { IngestResult } from "@/server/ingest/ingest";
 import type { ProductDto } from "@/server/products/service";
 import {
   DIMENSION_LABEL,
@@ -10,6 +11,7 @@ import {
   humanizeSlug,
   type Dimension,
 } from "./format";
+import { IngestForm } from "./ingest-form";
 import { ProductDetail } from "./product-detail";
 import { ScoreCell } from "./score";
 
@@ -37,7 +39,10 @@ const focusRing =
 function useProducts(category: string | null) {
   const url = `/api/products?limit=50${category ? `&category=${encodeURIComponent(category)}` : ""}`;
   const [attempt, setAttempt] = useState(0);
-  const [result, setResult] = useState<{ key: string; data?: ApiResponse; error?: string }>({ key: "" });
+  const [result, setResult] = useState<{ key: string; url: string; data?: ApiResponse; error?: string }>({
+    key: "",
+    url: "",
+  });
   const key = `${url}#${attempt}`;
 
   useEffect(() => {
@@ -47,20 +52,24 @@ function useProducts(category: string | null) {
         if (!res.ok) throw new Error(`The server responded with ${res.status}.`);
         return (await res.json()) as ApiResponse;
       })
-      .then((data) => setResult({ key, data }))
+      .then((data) => setResult({ key, url, data }))
       .catch((err: unknown) => {
         if (ctrl.signal.aborted) return;
-        setResult({ key, error: err instanceof Error ? err.message : "Unknown error." });
+        setResult({ key, url, error: err instanceof Error ? err.message : "Unknown error." });
       });
     return () => ctrl.abort();
   }, [url, key]);
 
-  const current = result.key === key ? result : null;
+  // While refreshing the same list (e.g. after an ingest) keep showing the
+  // previous rows instead of flashing a skeleton.
+  const sameList = result.url === url;
+  const fresh = result.key === key;
   return {
-    data: current?.data,
-    error: current?.error,
-    loading: current === null,
-    retry: () => setAttempt((n) => n + 1),
+    data: sameList ? result.data : undefined,
+    error: fresh ? result.error : undefined,
+    loading: !sameList || (!fresh && !result.data),
+    refreshing: sameList && !fresh && Boolean(result.data),
+    refresh: () => setAttempt((n) => n + 1),
   };
 }
 
@@ -72,13 +81,15 @@ function sortProducts(products: ProductDto[], key: SortKey) {
         : null
       : (getScore(p, key)?.value ?? null);
   const dir = key === "PRICE" ? 1 : -1;
+  // Prices in different currencies aren't comparable, so group by currency first.
+  const currency = (p: ProductDto) => (key === "PRICE" ? (p.bestOffer?.price.currency ?? "") : "");
   return [...products].sort((a, b) => {
     const x = metric(a);
     const y = metric(b);
     if (x === null && y === null) return a.name.localeCompare(b.name);
     if (x === null) return 1; // missing data always sorts last
     if (y === null) return -1;
-    return (x - y) * dir || a.name.localeCompare(b.name);
+    return currency(a).localeCompare(currency(b)) || (x - y) * dir || a.name.localeCompare(b.name);
   });
 }
 
@@ -89,7 +100,8 @@ export function ProductDashboard() {
   const [sortKey, setSortKey] = useState<SortKey>("OVERALL");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [knownCategories, setKnownCategories] = useState<string[]>([]);
-  const { data, error, loading, retry } = useProducts(category);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const { data, error, loading, refreshing, refresh } = useProducts(category);
 
   // Remember categories from the unfiltered list so the tabs stay put while filtering.
   const allCategories = category === null && data ? [...new Set(data.data.map((p) => p.category))].sort() : null;
@@ -97,6 +109,24 @@ export function ProductDashboard() {
 
   const products = useMemo(() => (data ? sortProducts(data.data, sortKey) : []), [data, sortKey]);
   const hasSample = products.some((p) => p.isSample);
+
+  function handleIngested(result: IngestResult) {
+    // Show the new/updated product: unfiltered list, opened, highlighted.
+    setCategory(null);
+    setExpanded((prev) => new Set(prev).add(result.product.id));
+    setHighlightId(result.product.id);
+    refresh();
+    window.setTimeout(() => setHighlightId((id) => (id === result.product.id ? null : id)), 6000);
+  }
+
+  // Bring the highlighted product into view once it's rendered.
+  useEffect(() => {
+    if (!highlightId) return;
+    const el = [...document.querySelectorAll<HTMLElement>(`[data-product-id="${highlightId}"]`)].find(
+      (n) => n.offsetParent !== null,
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightId, data]);
 
   const toggle = (id: string) =>
     setExpanded((prev) => {
@@ -108,13 +138,16 @@ export function ProductDashboard() {
 
   return (
     <div className="space-y-4">
+      <IngestForm categories={knownCategories} onIngested={handleIngested} />
+
       {hasSample && (
         <div
           role="note"
           className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200"
         >
-          <strong className="font-semibold">Sample data.</strong> These products use fictional brands and example.com
-          sources for demonstration. They are not real market research.
+          <strong className="font-semibold">Includes sample data.</strong> Products marked &ldquo;Sample&rdquo; use
+          fictional brands and example.com sources for demonstration. Products marked &ldquo;Live&rdquo; come from real
+          pages you submitted.
         </div>
       )}
 
@@ -157,7 +190,13 @@ export function ProductDashboard() {
       </div>
 
       <div aria-live="polite" className="sr-only">
-        {loading ? "Loading products…" : error ? `Error: ${error}` : `${products.length} products shown`}
+        {loading
+          ? "Loading products…"
+          : error
+            ? `Error: ${error}`
+            : refreshing
+              ? "Updating…"
+              : `${products.length} products shown`}
       </div>
 
       {error ? (
@@ -165,7 +204,7 @@ export function ProductDashboard() {
           <p className="text-sm font-medium text-red-900 dark:text-red-200">Couldn&apos;t load products. {error}</p>
           <button
             type="button"
-            onClick={retry}
+            onClick={refresh}
             className={`mt-3 rounded-md bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800 ${focusRing}`}
           >
             Try again
@@ -183,8 +222,8 @@ export function ProductDashboard() {
         </div>
       ) : (
         <>
-          <ProductTable products={products} expanded={expanded} onToggle={toggle} />
-          <ProductCards products={products} expanded={expanded} onToggle={toggle} />
+          <ProductTable products={products} expanded={expanded} onToggle={toggle} highlightId={highlightId} />
+          <ProductCards products={products} expanded={expanded} onToggle={toggle} highlightId={highlightId} />
         </>
       )}
 
@@ -200,9 +239,16 @@ export function ProductDashboard() {
 
 // ── Desktop table ────────────────────────────────────────────────────────────
 
-type ListProps = { products: ProductDto[]; expanded: Set<string>; onToggle: (id: string) => void };
+type ListProps = {
+  products: ProductDto[];
+  expanded: Set<string>;
+  onToggle: (id: string) => void;
+  highlightId: string | null;
+};
 
-function ProductTable({ products, expanded, onToggle }: ListProps) {
+const HIGHLIGHT = "bg-indigo-50 ring-2 ring-indigo-500 ring-inset dark:bg-indigo-950/40 dark:ring-indigo-400";
+
+function ProductTable({ products, expanded, onToggle, highlightId }: ListProps) {
   return (
     <div className="hidden overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm md:block dark:border-zinc-800 dark:bg-zinc-900">
       <div className="overflow-x-auto">
@@ -238,7 +284,16 @@ function ProductTable({ products, expanded, onToggle }: ListProps) {
               const panelId = `detail-table-${p.id}`;
               return (
                 <Fragment key={p.id}>
-                  <tr className={open ? "bg-zinc-50 dark:bg-zinc-950/60" : "hover:bg-zinc-50 dark:hover:bg-zinc-800/40"}>
+                  <tr
+                    data-product-id={p.id}
+                    className={`transition-colors duration-700 ${
+                      p.id === highlightId
+                        ? HIGHLIGHT
+                        : open
+                          ? "bg-zinc-50 dark:bg-zinc-950/60"
+                          : "hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+                    }`}
+                  >
                     <td className="py-4 pl-4 align-top text-sm tabular-nums text-zinc-500 dark:text-zinc-400">{i + 1}</td>
                     <td className="px-3 py-4 align-top">
                       <ProductName product={p} />
@@ -277,7 +332,7 @@ function ProductTable({ products, expanded, onToggle }: ListProps) {
 
 // ── Mobile cards ─────────────────────────────────────────────────────────────
 
-function ProductCards({ products, expanded, onToggle }: ListProps) {
+function ProductCards({ products, expanded, onToggle, highlightId }: ListProps) {
   return (
     <ol className="space-y-3 md:hidden">
       {products.map((p, i) => {
@@ -287,7 +342,10 @@ function ProductCards({ products, expanded, onToggle }: ListProps) {
         return (
           <li
             key={p.id}
-            className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+            data-product-id={p.id}
+            className={`rounded-xl border border-zinc-200 p-4 shadow-sm transition-colors duration-700 dark:border-zinc-800 ${
+              p.id === highlightId ? HIGHLIGHT : "bg-white dark:bg-zinc-900"
+            }`}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 gap-3">
@@ -333,7 +391,18 @@ function ProductCards({ products, expanded, onToggle }: ListProps) {
 function ProductName({ product: p }: { product: ProductDto }) {
   return (
     <div className="min-w-0">
-      <p className="font-medium text-zinc-950 dark:text-white">{p.name}</p>
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-zinc-950 dark:text-white">
+        <span>{p.name}</span>
+        {p.isSample ? (
+          <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-600/20 ring-inset dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-400/20">
+            Sample
+          </span>
+        ) : (
+          <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-600/20 ring-inset dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-400/20">
+            Live
+          </span>
+        )}
+      </p>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         {p.brand && <>{p.brand} · </>}
         {humanizeSlug(p.category)}

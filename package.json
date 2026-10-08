@@ -16,11 +16,13 @@
     "typecheck": "tsc --noEmit",
     "db:verify": "tsx scripts/verify-schema.ts",
     "test": "vitest run",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:rescore": "tsx scripts/rescore.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
+    "cheerio": "^1.2.0",
     "next": "16.4.0",
     "pg": "^8.23.1",
     "react": "19.3.0",

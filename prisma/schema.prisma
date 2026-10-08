@@ -45,7 +45,7 @@ model Product {
   brand       String?
   category    String
   description String?
-  url         String?
+  url         String?  @unique // canonical product page; live ingests upsert on this
   imageUrl    String?
   isSample    Boolean  @default(false) // seeded demo product (fictional brand)
   createdAt   DateTime @default(now()) @db.Timestamptz(3)

@@ -10,6 +10,11 @@
 // Evidence weight     w = (quality / 100) × 0.5^(ageDays / 90) × sourceWeight[sourceType]
 //                     (90-day half-life; future-dated evidence is ignored)
 //
+// Re-captures         RATING, REVIEW_COUNT and SENTIMENT are snapshots: repeated captures
+//                     from the same source URL count once (latest wins), so re-submitting a
+//                     page can't inflate a score. SEARCH_INTEREST is a time series — every
+//                     capture is kept, because TREND needs the history.
+//
 // Shrunk mean         S = (Σ wᵢ·xᵢ + K·50) / (Σ wᵢ + K),  K = 1
 //                     Pulls thinly-evidenced products toward a neutral 50.
 //
@@ -33,7 +38,7 @@
 
 import type { Availability, EvidenceMetric, ScoreDimension, SourceType } from "@/generated/prisma/enums";
 
-export const METHODOLOGY_VERSION = "1.0.0";
+export const METHODOLOGY_VERSION = "1.1.0";
 
 const HALF_LIFE_DAYS = 90;
 const PRIOR = 50;
@@ -68,6 +73,7 @@ export const OVERALL_WEIGHTS: Record<Exclude<ScoreDimension, "OVERALL">, number>
 
 export type EvidenceFact = {
   id: string;
+  sourceUrl: string;
   sourceType: SourceType;
   observedAt: Date;
   qualityScore: number; // 0–100
@@ -113,9 +119,28 @@ export function evidenceWeight(e: EvidenceFact, asOf: Date): number {
 
 type Point = { id: string; x: number; w: number; t: number };
 
+const TIME_SERIES_METRICS: EvidenceMetric[] = ["SEARCH_INTEREST"];
+
+/** For snapshot metrics keep only the latest capture per source URL (ties → highest id). */
+function latestPerSource(evidence: EvidenceFact[]): EvidenceFact[] {
+  const latest = new Map<string, EvidenceFact>();
+  for (const e of evidence) {
+    const cur = latest.get(e.sourceUrl);
+    const newer =
+      !cur ||
+      e.observedAt.getTime() > cur.observedAt.getTime() ||
+      (e.observedAt.getTime() === cur.observedAt.getTime() && e.id > cur.id);
+    if (newer) latest.set(e.sourceUrl, e);
+  }
+  return [...latest.values()];
+}
+
 function points(input: ScoringInput, metric: EvidenceMetric, normalise: (v: number) => number): Point[] {
-  return input.evidence
-    .filter((e) => e.metric === metric && e.metricValue !== null)
+  const usable = input.evidence.filter(
+    (e) => e.metric === metric && e.metricValue !== null && e.observedAt.getTime() <= input.asOf.getTime(),
+  );
+  const deduped = TIME_SERIES_METRICS.includes(metric) ? usable : latestPerSource(usable);
+  return deduped
     .map((e) => ({
       id: e.id,
       x: normalise(e.metricValue as number),

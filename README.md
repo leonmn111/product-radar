@@ -27,7 +27,8 @@ Check it works: open http://localhost:3000/api/health
 | `npm run db:studio` | Browse the database in a web UI. |
 | `npm run db:verify` | Tries to break every data rule against the real database and reports pass/fail. Cleans up after itself. |
 | `npm run db:seed` | Replace sample products (fictional brands, example.com sources) and calculate their scores. Refuses to run in production. |
-| `npm test` | Unit tests for the scoring engine. |
+| `npm run db:rescore` | Recalculate scores for every category (e.g. after a formula change). History is kept. |
+| `npm test` | Unit tests for the scoring engine and ingestion. |
 | `npm run typecheck` / `npm run lint` | Static checks. |
 | `npm run build` | Production build. |
 
@@ -45,6 +46,25 @@ Check it works: open http://localhost:3000/api/health
 and open a product to see its score breakdown, offers and every piece of evidence with the scores it fed into.
 Data comes from `/api/products` in the browser. Components live in `src/components/dashboard/`.
 The page is marked `noindex` until authentication exists.
+
+## Live ingestion
+
+Paste a product URL into **New opportunity URL** on the dashboard (or `POST /api/ingest`
+`{"url": "...", "category": "running-shoes"}`). The server:
+
+1. Fetches the page safely — public http(s) only, private/internal addresses blocked on every redirect,
+   robots.txt respected, 10 s timeout, 3 MB cap, max 10 requests/minute per client.
+2. Extracts only what the store publishes for machines (schema.org JSON-LD › Open Graph › microdata › `<title>`):
+   title, brand, description, image, price + currency + stock, rating, review count. **Prices are never guessed
+   from page text**; no currency ⇒ no offer. Pages that don't declare a product (homepages, bot-check pages) are rejected.
+3. Saves a live Product (keyed by its canonical URL — resubmitting updates it) plus Evidence for each fact and an
+   Offer for the price. Evidence quality: JSON-LD 80, microdata 70, Open Graph 65, `<title>` 40; seller-hosted
+   ratings capped at 60.
+4. Recalculates scores for the whole category.
+
+Code: `src/server/ingest/` (`fetch-page.ts`, `extract.ts`, `ingest.ts`) and `src/app/api/ingest/route.ts`.
+Many large retailers (Amazon, REI, Brooks…) block automated readers and return an error; independent stores
+(Shopify, WooCommerce) usually work.
 
 ## Products endpoint
 
@@ -64,6 +84,8 @@ scores. Full formulas are in the file header. In short:
 - QUALITY (star ratings), SENTIMENT, DEMAND (review counts + search interest), TREND (search-interest slope),
   VALUE (quality vs. price relative to the category median), OVERALL (weighted blend).
 - Thin evidence is pulled toward a neutral 50 and gets low confidence. No usable evidence → no score at all.
+- Re-captures of the same rating/review count/sentiment from the same source count once (latest wins), so
+  resubmitting a page can't inflate its score. Search-interest captures are all kept for TREND.
 - `src/server/scoring/service.ts` loads data, runs the engine per category, and stores scores with links to
   their evidence (history is kept).
 
@@ -101,7 +123,9 @@ src/lib/validation/         Zod input validators
 src/server/scoring/         scoring engine (pure) + service (DB) + tests
 src/server/products/        product read model for the API
 src/app/api/products/       products endpoint
-src/components/dashboard/   dashboard UI (table, cards, evidence panel)
+src/components/dashboard/   dashboard UI (URL bar, table, cards, evidence panel)
+src/server/ingest/          live URL ingestion (safe fetch, extraction, storage)
+src/app/api/ingest/         ingestion endpoint
 prisma/seed.ts              sample data
 src/app/api/health/route.ts health check
 scripts/db-start.mjs        local Postgres runner

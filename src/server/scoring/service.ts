@@ -25,7 +25,15 @@ async function loadCategory(db: PrismaClient, category: string, asOf: Date) {
       id: true,
       evidence: {
         where: { observedAt: { lte: asOf } },
-        select: { id: true, sourceType: true, observedAt: true, qualityScore: true, metric: true, metricValue: true },
+        select: {
+          id: true,
+          sourceUrl: true,
+          sourceType: true,
+          observedAt: true,
+          qualityScore: true,
+          metric: true,
+          metricValue: true,
+        },
       },
       offers: {
         where: { observedAt: { gte: offerSince, lte: asOf } },
@@ -38,6 +46,7 @@ async function loadCategory(db: PrismaClient, category: string, asOf: Date) {
 const toEvidenceFacts = (rows: CategoryData[number]["evidence"]): EvidenceFact[] =>
   rows.map((e) => ({
     id: e.id,
+    sourceUrl: e.sourceUrl,
     sourceType: e.sourceType,
     observedAt: e.observedAt,
     qualityScore: e.qualityScore.toNumber(),
