@@ -27,7 +27,9 @@ const ERRORS: Record<string, string> = {
   RateLimited: "Too many sign-in emails requested. Please wait 15 minutes and try again.",
   Verification: "That sign-in link has expired or was already used. Request a new one below.",
   EmailSignin: "We couldn't send the sign-in email. Please try again in a moment.",
-  Configuration: "Sign-in isn't configured correctly on the server.",
+  // Auth.js reports any failure to send the email (e.g. the provider rejecting
+  // the address) as "Configuration"; the real reason is in the server logs.
+  Configuration: "We couldn't send a sign-in email to that address. Please check it and try again.",
 };
 
 async function sendLink(formData: FormData) {
