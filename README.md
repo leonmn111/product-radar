@@ -49,6 +49,14 @@ and open a product to see its score breakdown, offers and every piece of evidenc
 Data comes from `/api/products` in the browser. Components live in `src/components/dashboard/`.
 The page is marked `noindex` (it's an app dashboard, not a marketing page).
 
+## Deploying (Railway)
+
+`railway.json` configures the service: build with `npm run build`, run `prisma migrate deploy` before each
+release, start with `npm run start` (Next.js reads Railway's `PORT`), and only switch traffic once
+`/api/health` reports healthy. `.railwayignore` keeps `.env` and local data out of uploads. Required service
+variables: `DATABASE_URL` (reference the Railway Postgres service), `AUTH_SECRET`, `AUTH_TRUST_HOST=true`,
+`AUTH_RESEND_KEY`, `EMAIL_FROM`, `APP_URL`, and the Stripe keys. Leave `X402_MODE` unset in production.
+
 ## Accounts & plans
 
 | | Signed out / Free | Pro (£39/month) |

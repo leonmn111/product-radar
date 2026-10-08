@@ -1,0 +1,11 @@
+# Never upload secrets or local-only data (in addition to .gitignore)
+.env
+.env.*
+!.env.example
+.postgres-data/
+.next/
+node_modules/
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
