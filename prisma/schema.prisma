@@ -23,17 +23,89 @@ enum SubscriptionTier {
   BUSINESS
 }
 
-// Tier is an entitlement flag only. How a user pays for it (x402) lives in a
-// separate payments module and must never be stored on this model.
+// Mirrors Stripe's subscription.status values.
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  PAUSED
+}
+
+// subscriptionTier is the ONLY field core features read (via
+// src/server/auth/entitlements.ts). The stripe*/subscription* fields are
+// written exclusively by the billing module (src/server/billing) from Stripe
+// webhooks — payment logic stays isolated from business logic (CLAUDE.md Rule 2).
 model User {
   id               String           @id @default(uuid(7)) @db.Uuid
   email            String           @unique
+  emailVerified    DateTime?        @db.Timestamptz(3)
   name             String?
+  image            String?
   subscriptionTier SubscriptionTier @default(FREE)
   createdAt        DateTime         @default(now()) @db.Timestamptz(3)
   updatedAt        DateTime         @updatedAt @db.Timestamptz(3)
 
+  // ── Billing (Stripe) — billing module only ──
+  stripeCustomerId              String?             @unique
+  stripeSubscriptionId          String?             @unique
+  subscriptionStatus            SubscriptionStatus?
+  subscriptionCurrentPeriodEnd  DateTime?           @db.Timestamptz(3)
+  subscriptionCancelAtPeriodEnd Boolean             @default(false)
+  subscriptionSyncedAt          DateTime?           @db.Timestamptz(3) // Stripe event time last applied (ignores out-of-order events)
+
+  accounts Account[]
+  sessions Session[]
+
   @@index([subscriptionTier])
+}
+
+// ─── Auth.js (NextAuth) tables — shapes required by @auth/prisma-adapter ─────
+
+model Account {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  userId            String   @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime @db.Timestamptz(3)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime @db.Timestamptz(3)
+
+  @@id([identifier, token])
 }
 
 // ─── Products ────────────────────────────────────────────────────────────────

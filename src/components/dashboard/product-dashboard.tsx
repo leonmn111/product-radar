@@ -14,10 +14,18 @@ import {
 import { IngestForm } from "./ingest-form";
 import { ProductDetail } from "./product-detail";
 import { ScoreCell } from "./score";
+import { UpgradeCard } from "./upgrade-card";
 
 type ApiResponse = {
   data: ProductDto[];
-  meta: { count: number; category: string | null; methodologyVersion: string; disclaimer: string };
+  meta: {
+    count: number;
+    category: string | null;
+    access: "full" | "sample_only";
+    hiddenLiveCount: number;
+    methodologyVersion: string;
+    disclaimer: string;
+  };
 };
 
 type SortKey = Dimension | "PRICE";
@@ -95,7 +103,9 @@ function sortProducts(products: ProductDto[], key: SortKey) {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function ProductDashboard() {
+export type DashboardViewer = { signedIn: boolean; canIngest: boolean };
+
+export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
   const [category, setCategory] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("OVERALL");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -138,16 +148,29 @@ export function ProductDashboard() {
 
   return (
     <div className="space-y-4">
-      <IngestForm categories={knownCategories} onIngested={handleIngested} />
+      {viewer.canIngest ? (
+        <IngestForm categories={knownCategories} onIngested={handleIngested} />
+      ) : (
+        <UpgradeCard signedIn={viewer.signedIn} />
+      )}
 
       {hasSample && (
         <div
           role="note"
           className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200"
         >
-          <strong className="font-semibold">Includes sample data.</strong> Products marked &ldquo;Sample&rdquo; use
-          fictional brands and example.com sources for demonstration. Products marked &ldquo;Live&rdquo; come from real
-          pages you submitted.
+          {data?.meta.access === "sample_only" ? (
+            <>
+              <strong className="font-semibold">You&apos;re viewing sample data.</strong> These products use fictional
+              brands and example.com sources to show how ProductRadar works.
+            </>
+          ) : (
+            <>
+              <strong className="font-semibold">Includes sample data.</strong> Products marked &ldquo;Sample&rdquo; use
+              fictional brands and example.com sources for demonstration. Products marked &ldquo;Live&rdquo; come from
+              real store pages.
+            </>
+          )}
         </div>
       )}
 
@@ -222,6 +245,21 @@ export function ProductDashboard() {
         </div>
       ) : (
         <>
+          {data && data.meta.hiddenLiveCount > 0 && (
+            <p className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+              <span>
+                <strong className="font-semibold text-zinc-950 dark:text-white">{data.meta.hiddenLiveCount}</strong> live
+                product{data.meta.hiddenLiveCount === 1 ? "" : "s"} from real stores{" "}
+                {data.meta.hiddenLiveCount === 1 ? "is" : "are"} hidden on your plan.
+              </span>
+              <a
+                href="/upgrade"
+                className={`font-semibold text-indigo-700 underline underline-offset-2 hover:no-underline dark:text-indigo-300 ${focusRing}`}
+              >
+                Unlock with Pro
+              </a>
+            </p>
+          )}
           <ProductTable products={products} expanded={expanded} onToggle={toggle} highlightId={highlightId} />
           <ProductCards products={products} expanded={expanded} onToggle={toggle} highlightId={highlightId} />
         </>

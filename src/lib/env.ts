@@ -3,15 +3,32 @@ import { z } from "zod";
 
 // Server-side environment, validated once at startup so a missing or
 // malformed variable fails loudly instead of surfacing as a vague DB error.
-const EnvSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  DATABASE_URL: z
-    .string()
-    .url()
-    .refine((v) => v.startsWith("postgresql://") || v.startsWith("postgres://"), {
-      message: "must be a postgresql:// connection string",
+// Optional integrations (email, Stripe) may be empty: the features that need
+// them report "not configured" instead of crashing the app.
+const optional = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v) => (v ? v : undefined));
+
+const EnvSchema = z
+  .object({
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    DATABASE_URL: z
+      .string()
+      .url()
+      .refine((v) => v.startsWith("postgresql://") || v.startsWith("postgres://"), {
+        message: "must be a postgresql:// connection string",
+      }),
+    AUTH_SECRET: z.string().min(32, "must be at least 32 characters (openssl rand -base64 32)"),
+    AUTH_RESEND_KEY: optional,
+    EMAIL_FROM: z.string().trim().min(3).default("ProductRadar <onboarding@resend.dev>"),
+    STRIPE_SECRET_KEY: optional.refine((v) => !v || /^(sk|rk)_(test|live)_/.test(v), {
+      message: "must start with sk_test_ / sk_live_",
     }),
-});
+    STRIPE_WEBHOOK_SECRET: optional.refine((v) => !v || v.startsWith("whsec_"), { message: "must start with whsec_" }),
+    APP_URL: optional.refine((v) => !v || /^https?:\/\//.test(v), { message: "must start with http(s)://" }),
+  });
 
 const parsed = EnvSchema.safeParse(process.env);
 

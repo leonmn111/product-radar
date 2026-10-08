@@ -1,6 +1,7 @@
 import { connection, type NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { canIngest, getViewer } from "@/server/auth/entitlements";
 import { FetchPageError } from "@/server/ingest/fetch-page";
 import { IngestError, ingestUrl } from "@/server/ingest/ingest";
 
@@ -41,14 +42,28 @@ const FETCH_ERROR_STATUS: Record<FetchPageError["code"], number> = {
   network_error: 502,
 };
 
-// POST /api/ingest  { "url": "https://store.example/products/x", "category": "running-shoes" }
+// POST /api/ingest  (Pro only)  { "url": "https://store.example/products/x", "category": "running-shoes" }
 // Fetches the page, extracts structured product data, stores Product / Offer /
 // Evidence, and recalculates scores for the product's category.
 export async function POST(request: NextRequest) {
   await connection();
 
-  const client = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  if (rateLimited(client)) {
+  // Live ingestion is a paid feature (Pro / Business).
+  const viewer = await getViewer();
+  if (!viewer) {
+    return Response.json(
+      { error: "unauthenticated", message: "Sign in with a Pro account to analyze live product links." },
+      { status: 401 },
+    );
+  }
+  if (!canIngest(viewer)) {
+    return Response.json(
+      { error: "upgrade_required", message: "Live product analysis is a Pro feature. Upgrade to Pro (£39/month) to use it." },
+      { status: 403 },
+    );
+  }
+
+  if (rateLimited(viewer.id)) {
     return Response.json(
       { error: "rate_limited", message: `Too many requests — max ${MAX_PER_WINDOW} per minute.` },
       { status: 429 },

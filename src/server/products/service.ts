@@ -4,9 +4,12 @@
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { bestCurrentOffer } from "@/server/scoring/engine";
 
-export type ListProductsOptions = { category?: string; limit: number; asOf?: Date };
+export type ListProductsOptions = { category?: string; limit: number; includeLive: boolean; asOf?: Date };
 
-export async function listProducts(db: PrismaClient, { category, limit, asOf = new Date() }: ListProductsOptions) {
+export async function listProducts(
+  db: PrismaClient,
+  { category, limit, includeLive, asOf = new Date() }: ListProductsOptions,
+) {
   // Rank by latest OVERALL score (uses ProductScore_productId_dimension_calculatedAt_idx).
   const ranked = await db.$queryRaw<{ id: string }[]>`
     SELECT p.id
@@ -17,7 +20,8 @@ export async function listProducts(db: PrismaClient, { category, limit, asOf = n
       ORDER BY s."calculatedAt" DESC, s.id DESC
       LIMIT 1
     ) overall ON true
-    WHERE ${category ?? null}::text IS NULL OR p.category = ${category ?? null}
+    WHERE (${category ?? null}::text IS NULL OR p.category = ${category ?? null})
+      AND (${includeLive} OR p."isSample")
     ORDER BY overall.value DESC NULLS LAST, p.name ASC
     LIMIT ${limit}`;
 
@@ -39,6 +43,11 @@ export async function listProducts(db: PrismaClient, { category, limit, asOf = n
 
   const byId = new Map(rows.map((r) => [r.id, r]));
   return ids.map((id) => toDto(byId.get(id)!, asOf));
+}
+
+/** How many live products exist that this viewer can't see (for the upgrade prompt). */
+export async function countHiddenLiveProducts(db: PrismaClient, category?: string) {
+  return db.product.count({ where: { isSample: false, ...(category ? { category } : {}) } });
 }
 
 type ProductRow = Prisma.ProductGetPayload<{

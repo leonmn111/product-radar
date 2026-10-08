@@ -28,7 +28,8 @@ Check it works: open http://localhost:3000/api/health
 | `npm run db:verify` | Tries to break every data rule against the real database and reports pass/fail. Cleans up after itself. |
 | `npm run db:seed` | Replace sample products (fictional brands, example.com sources) and calculate their scores. Refuses to run in production. |
 | `npm run db:rescore` | Recalculate scores for every category (e.g. after a formula change). History is kept. |
-| `npm test` | Unit tests for the scoring engine and ingestion. |
+| `npm run stripe:setup` | Create the Pro product + £39/month price in Stripe (uses `STRIPE_SECRET_KEY`). |
+| `npm test` | Unit tests for scoring, ingestion and billing. |
 | `npm run typecheck` / `npm run lint` | Static checks. |
 | `npm run build` | Production build. |
 
@@ -45,7 +46,39 @@ Check it works: open http://localhost:3000/api/health
 `http://localhost:3000/` — ranked product table (cards on phones). Filter by category, sort by any score or price,
 and open a product to see its score breakdown, offers and every piece of evidence with the scores it fed into.
 Data comes from `/api/products` in the browser. Components live in `src/components/dashboard/`.
-The page is marked `noindex` until authentication exists.
+The page is marked `noindex` (it's an app dashboard, not a marketing page).
+
+## Accounts & plans
+
+| | Signed out / Free | Pro (£39/month) |
+| --- | --- | --- |
+| View sample data | ✓ | ✓ |
+| View live products | — (count shown as a teaser) | ✓ |
+| Submit product URLs (`/api/ingest`) | — (401 / 403) | ✓ |
+
+- **Sign-in:** passwordless email links (Auth.js v5, database sessions). In development, with no
+  `AUTH_RESEND_KEY`, the link is printed in the terminal running `npm run dev`. In production set
+  `AUTH_RESEND_KEY` (resend.com, free tier) and an `EMAIL_FROM` on a domain you've verified in Resend.
+- **Plan checks** live in `src/server/auth/entitlements.ts` and only read `User.subscriptionTier`.
+- **Billing** (Stripe) is isolated in `src/server/billing/` and is the only code that writes the
+  `stripe*` / `subscription*` fields on `User`.
+  - `/upgrade` → sign in if needed → Stripe Checkout (or the billing portal if already Pro)
+  - `/billing/manage` → Stripe customer portal (card, invoices, cancel)
+  - `/billing/success` → confirms the checkout with Stripe and unlocks Pro immediately
+  - `POST /api/billing/webhook` → signature-verified; applies `customer.subscription.*` events,
+    ignores out-of-order (older) events. `active`, `trialing`, `past_due` ⇒ Pro; anything else ⇒ Free.
+
+### Turning on Stripe (test mode first)
+
+1. Create a Stripe account → Developers → API keys → copy the **test** secret key into `.env` as `STRIPE_SECRET_KEY`.
+2. `npm run stripe:setup` — creates the "ProductRadar Pro" product and £39/month price (safe to re-run).
+3. Webhook: in production add an endpoint `https://<your-site>/api/billing/webhook` in Stripe → Developers →
+   Webhooks, listening to `customer.subscription.created`, `.updated`, `.deleted` and
+   `checkout.session.completed`; copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+   Locally you can skip this — the success page confirms the payment directly — or use the Stripe CLI
+   (`stripe listen --forward-to localhost:3000/api/billing/webhook`).
+4. Stripe → Settings → Billing → Customer portal: click **Save** once so the "Billing" button works.
+5. Test card: `4242 4242 4242 4242`, any future date, any CVC.
 
 ## Live ingestion
 
@@ -73,7 +106,7 @@ Many large retailers (Amazon, REI, Brooks…) block automated readers and return
 Products ranked by latest OVERALL score. Each includes `bestOffer`, `scores` (latest per dimension, with
 `confidence`, `methodologyVersion` and the `evidenceIds` used), `offers`, and `evidence` (source, timestamp,
 quality score, metric). `category` must be a lowercase slug; `limit` is 1–50 (default 20). Invalid input → 400.
-No authentication yet — treat as internal.
+Signed-out and Free viewers get sample products only (`meta.access = "sample_only"`, with `meta.hiddenLiveCount`).
 
 ## Scoring engine
 
@@ -111,6 +144,13 @@ Validated at startup by `src/lib/env.ts` — the app refuses to start with a mis
 | Name | Required | Notes |
 | --- | --- | --- |
 | `DATABASE_URL` | yes | `postgresql://user:pass@host:5432/db` |
+| `AUTH_SECRET` | yes | `openssl rand -base64 32` |
+| `AUTH_TRUST_HOST` | self-hosting | `true` when running `next start` yourself |
+| `AUTH_RESEND_KEY` | production | Sends sign-in emails. Empty in dev ⇒ link printed to terminal. |
+| `EMAIL_FROM` | production | e.g. `ProductRadar <login@yourdomain.com>` |
+| `STRIPE_SECRET_KEY` | for billing | `sk_test_…` first, `sk_live_…` when ready |
+| `STRIPE_WEBHOOK_SECRET` | for billing | `whsec_…` |
+| `APP_URL` | optional | Public URL for Stripe redirects; defaults to the request's address |
 
 ## Layout
 
@@ -125,6 +165,11 @@ src/server/products/        product read model for the API
 src/app/api/products/       products endpoint
 src/components/dashboard/   dashboard UI (URL bar, table, cards, evidence panel)
 src/server/ingest/          live URL ingestion (safe fetch, extraction, storage)
+src/auth.ts                 Auth.js config (email sign-in links)
+src/server/auth/            plan checks (entitlements)
+src/server/billing/         Stripe: checkout, portal, webhook, subscription sync
+src/app/signin/             sign-in pages
+src/app/upgrade, billing/   upgrade, manage-billing and success routes
 src/app/api/ingest/         ingestion endpoint
 prisma/seed.ts              sample data
 src/app/api/health/route.ts health check

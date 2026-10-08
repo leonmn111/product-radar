@@ -1,8 +1,9 @@
 import { connection, type NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { canViewLiveData, getViewer } from "@/server/auth/entitlements";
+import { countHiddenLiveProducts, listProducts } from "@/server/products/service";
 import { METHODOLOGY_VERSION } from "@/server/scoring/engine";
-import { listProducts } from "@/server/products/service";
 
 const Query = z.object({
   category: z
@@ -13,7 +14,7 @@ const Query = z.object({
 });
 
 // GET /api/products?category=wireless-earbuds&limit=20
-// Internal read endpoint: products ranked by latest OVERALL score, with the
+// Read endpoint (sample data for everyone; live data for Pro): products ranked by latest OVERALL score, with the
 // offers, evidence and per-dimension scores behind each one.
 export async function GET(request: NextRequest) {
   await connection(); // request-time only, never prerendered
@@ -26,7 +27,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const products = await listProducts(db, parsed.data);
+  // Free and signed-out viewers see the seeded sample data only; live data is Pro.
+  const includeLive = canViewLiveData(await getViewer());
+  const [products, hiddenLiveCount] = await Promise.all([
+    listProducts(db, { ...parsed.data, includeLive }),
+    includeLive ? 0 : countHiddenLiveProducts(db, parsed.data.category),
+  ]);
 
   return Response.json(
     {
@@ -34,11 +40,13 @@ export async function GET(request: NextRequest) {
       meta: {
         count: products.length,
         category: parsed.data.category ?? null,
+        access: includeLive ? "full" : "sample_only",
+        hiddenLiveCount,
         methodologyVersion: METHODOLOGY_VERSION,
         disclaimer:
           "Scores are calculated estimates (0–100) with a confidence (0–1), derived only from the linked evidence. They are not guarantees.",
       },
     },
-    { headers: { "Cache-Control": "no-store" } },
+    { headers: { "Cache-Control": "private, no-store" } },
   );
 }
