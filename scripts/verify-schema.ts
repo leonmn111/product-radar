@@ -111,6 +111,16 @@ async function main() {
       VALUES (gen_random_uuid(), ${product.id}::uuid, 'x', 'https://e.com', 'E', 'OTHER', NULL, 50)`,
   );
 
+  await expectRejected("evidence with a 6-star rating", () =>
+    db.evidence.create({ data: { ...base, metric: "RATING", metricValue: 6 } }),
+  );
+  await expectRejected("evidence with a metric but no value", () =>
+    db.evidence.create({ data: { ...base, metric: "SENTIMENT" } }),
+  );
+  await expectRejected("evidence with a fractional review count", () =>
+    db.evidence.create({ data: { ...base, metric: "REVIEW_COUNT", metricValue: 10.5 } }),
+  );
+
   console.log("Offer rules");
   await expectRejected("offer citing another product's evidence", () =>
     db.offer.create({
