@@ -18,7 +18,8 @@
     "test": "vitest run",
     "db:seed": "prisma db seed",
     "db:rescore": "tsx scripts/rescore.ts",
-    "stripe:setup": "tsx scripts/stripe-setup.ts"
+    "stripe:setup": "tsx scripts/stripe-setup.ts",
+    "agent:test": "tsx scripts/test-agent-client.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "2.11.3",
@@ -32,6 +33,7 @@
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",
     "stripe": "23.0.0",
+    "viem": "2.57.4",
     "zod": "^4.6.5"
   },
   "devDependencies": {

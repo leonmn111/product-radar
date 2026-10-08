@@ -265,3 +265,31 @@ model ProductScoreEvidence {
   @@id([scoreId, evidenceId])
   @@index([evidenceId])
 }
+
+// ─── x402 agent payments (payments module only — CLAUDE.md Rule 2) ──────────
+// Written exclusively by src/server/payments/x402. Nothing in the product,
+// evidence or scoring domain reads or references these rows.
+
+enum AgentPaymentStatus {
+  RESERVED // signature verified, nonce locked while the request is served
+  SETTLED // response delivered and payment settled
+}
+
+model AgentPayment {
+  id          String             @id @default(uuid(7)) @db.Uuid
+  nonce       String             @unique // EIP-3009 authorization nonce — one use only (replay protection)
+  payer       String // 0x… wallet that signed
+  payTo       String
+  network     String // CAIP-2, e.g. "eip155:84532"
+  asset       String // token contract
+  amount      String // atomic units (USDC has 6 decimals)
+  resource    String // URL that was paid for
+  status      AgentPaymentStatus @default(RESERVED)
+  transaction String? // settlement reference ("mock:" prefix when settled by the mock facilitator)
+  validBefore DateTime           @db.Timestamptz(3)
+  createdAt   DateTime           @default(now()) @db.Timestamptz(3)
+  settledAt   DateTime?          @db.Timestamptz(3)
+
+  @@index([payer, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+}

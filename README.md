@@ -29,7 +29,8 @@ Check it works: open http://localhost:3000/api/health
 | `npm run db:seed` | Replace sample products (fictional brands, example.com sources) and calculate their scores. Refuses to run in production. |
 | `npm run db:rescore` | Recalculate scores for every category (e.g. after a formula change). History is kept. |
 | `npm run stripe:setup` | Create the Pro product + £39/month price in Stripe (uses `STRIPE_SECRET_KEY`). |
-| `npm test` | Unit tests for scoring, ingestion and billing. |
+| `npm run agent:test` | Mock AI agent: full x402 402 → pay → 200 flow plus abuse checks against a running server. |
+| `npm test` | Unit tests for scoring, ingestion, billing and x402 verification. |
 | `npm run typecheck` / `npm run lint` | Static checks. |
 | `npm run build` | Production build. |
 
@@ -79,6 +80,35 @@ The page is marked `noindex` (it's an app dashboard, not a marketing page).
    (`stripe listen --forward-to localhost:3000/api/billing/webhook`).
 4. Stripe → Settings → Billing → Customer portal: click **Save** once so the "Billing" button works.
 5. Test card: `4242 4242 4242 4242`, any future date, any CVC.
+
+## Agent API (x402)
+
+`GET /api/agent/v1/opportunity?category=earplugs&limit=10&includeSample=false` — ranked product
+opportunities for AI agents, paid per request with the [x402](https://x402.org) protocol (v2, "exact"
+scheme, USDC via EIP-3009). No account needed: the payment is the authorization.
+
+1. Request without payment → **402** with a `PAYMENT-REQUIRED` header (base64 JSON: price, asset, network, `payTo`).
+2. Agent signs a USDC `transferWithAuthorization` for that amount and retries with `PAYMENT-SIGNATURE`.
+3. Server verifies the signature, recipient, amount, validity window and that the nonce was never used,
+   runs the request, settles, and returns **200** with a `PAYMENT-RESPONSE` receipt header.
+   Failed requests (e.g. 400 bad query) are not charged — the authorization stays usable.
+
+Payload: rank, opportunity score + confidence, per-dimension scores, best offer, and the top evidence
+(source URL, timestamp, quality score) behind each product.
+
+**Rule 2 isolation:** all payment code is in `src/server/payments/x402/` (`protocol.ts`, `verify.ts`,
+`facilitator.ts`, `middleware.ts`) and the `AgentPayment` ledger table. The opportunity data comes from
+`src/server/opportunities/service.ts`, which knows nothing about payments; the route just wraps one
+with the other.
+
+**Modes:** `X402_MODE="mock"` (local only) fully verifies real signed authorizations on Base Sepolia
+but does not move funds; settlement references start with `mock:`. It is refused when
+`NODE_ENV=production`. Taking real payments needs a real facilitator (e.g. Coinbase's) added behind the
+`Facilitator` interface, Base mainnet, and your own `X402_PAY_TO` wallet.
+
+**Mock agent:** `npm run agent:test -- http://localhost:3000` — gets the 402, signs with a throwaway
+wallet, retrieves the data, then checks that replays, underpayment, expired or tampered payments and
+garbage headers are refused and that a failed request isn't charged.
 
 ## Live ingestion
 
@@ -151,6 +181,9 @@ Validated at startup by `src/lib/env.ts` — the app refuses to start with a mis
 | `STRIPE_SECRET_KEY` | for billing | `sk_test_…` first, `sk_live_…` when ready |
 | `STRIPE_WEBHOOK_SECRET` | for billing | `whsec_…` |
 | `APP_URL` | optional | Public URL for Stripe redirects; defaults to the request's address |
+| `X402_MODE` | for agent API | `mock` (local testing only). Empty = agent API returns 503. |
+| `X402_PAY_TO` | for agent API | Wallet address that receives agent payments |
+| `X402_PRICE_USDC` | optional | Price per agent request, default `0.01` |
 
 ## Layout
 
@@ -168,6 +201,10 @@ src/server/ingest/          live URL ingestion (safe fetch, extraction, storage)
 src/auth.ts                 Auth.js config (email sign-in links)
 src/server/auth/            plan checks (entitlements)
 src/server/billing/         Stripe: checkout, portal, webhook, subscription sync
+src/server/payments/x402/   x402 agent payments: protocol, verification, facilitator, 402 middleware
+src/server/opportunities/   agent-facing opportunity data (no payment knowledge)
+src/app/api/agent/v1/       paid agent endpoints
+scripts/test-agent-client.ts  mock x402 agent
 src/app/signin/             sign-in pages
 src/app/upgrade, billing/   upgrade, manage-billing and success routes
 src/app/api/ingest/         ingestion endpoint

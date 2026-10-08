@@ -28,6 +28,16 @@ const EnvSchema = z
     }),
     STRIPE_WEBHOOK_SECRET: optional.refine((v) => !v || v.startsWith("whsec_"), { message: "must start with whsec_" }),
     APP_URL: optional.refine((v) => !v || /^https?:\/\//.test(v), { message: "must start with http(s)://" }),
+    X402_MODE: z
+      .enum(["mock"])
+      .optional()
+      .or(z.literal("").transform(() => undefined)),
+    X402_PAY_TO: optional.refine((v) => !v || /^0x[0-9a-fA-F]{40}$/.test(v), { message: "must be a 0x… wallet address" }),
+    X402_PRICE_USDC: z
+      .string()
+      .trim()
+      .regex(/^\d+(\.\d{1,6})?$/, "must be a USDC amount like 0.01")
+      .default("0.01"),
   });
 
 const parsed = EnvSchema.safeParse(process.env);
