@@ -182,7 +182,7 @@ async function main() {
       const source = await db.evidence.create({
         data: {
           productId: product.id,
-          claim: `Listed at $${o.price} (${o.availability.toLowerCase().replace("_", " ")})`,
+          claim: `Listed at $${o.price} (${o.availability.toLowerCase().replaceAll("_", " ")})`,
           sourceUrl: o.url,
           sourceName: o.merchant,
           sourceType: "RETAILER",

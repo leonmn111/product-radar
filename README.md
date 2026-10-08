@@ -39,6 +39,13 @@ Check it works: open http://localhost:3000/api/health
 - **503** `{"status":"degraded"}` — database reachable but migrations not run or one failed.
 - **503** `{"status":"error"}` — database unreachable. (Error detail is shown only outside production.)
 
+## Dashboard
+
+`http://localhost:3000/` — ranked product table (cards on phones). Filter by category, sort by any score or price,
+and open a product to see its score breakdown, offers and every piece of evidence with the scores it fed into.
+Data comes from `/api/products` in the browser. Components live in `src/components/dashboard/`.
+The page is marked `noindex` until authentication exists.
+
 ## Products endpoint
 
 `GET /api/products?category=wireless-earbuds&limit=20`
@@ -94,6 +101,7 @@ src/lib/validation/         Zod input validators
 src/server/scoring/         scoring engine (pure) + service (DB) + tests
 src/server/products/        product read model for the API
 src/app/api/products/       products endpoint
+src/components/dashboard/   dashboard UI (table, cards, evidence panel)
 prisma/seed.ts              sample data
 src/app/api/health/route.ts health check
 scripts/db-start.mjs        local Postgres runner
