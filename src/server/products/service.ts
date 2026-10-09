@@ -6,6 +6,18 @@ import { bestCurrentOffer } from "@/server/scoring/engine";
 
 const MAX_EVIDENCE_PER_PRODUCT = 50;
 
+const PRODUCT_INCLUDE = {
+  offers: { orderBy: [{ price: "asc" }, { observedAt: "desc" }] },
+  // Newest evidence only — re-ingests add rows, so an unbounded list would grow forever.
+  evidence: { orderBy: [{ observedAt: "desc" }, { id: "asc" }], take: MAX_EVIDENCE_PER_PRODUCT },
+  _count: { select: { evidence: true } },
+  scores: {
+    orderBy: [{ dimension: "asc" }, { calculatedAt: "desc" }, { id: "desc" }],
+    distinct: ["dimension"],
+    include: { evidence: { select: { evidenceId: true } } },
+  },
+} satisfies Prisma.ProductInclude;
+
 export type ListProductsOptions = { category?: string; limit: number; includeLive: boolean; asOf?: Date };
 
 export async function listProducts(
@@ -30,20 +42,7 @@ export async function listProducts(
   const ids = ranked.map((r) => r.id);
   if (ids.length === 0) return [];
 
-  const rows = await db.product.findMany({
-    where: { id: { in: ids } },
-    include: {
-      offers: { orderBy: [{ price: "asc" }, { observedAt: "desc" }] },
-      // Newest evidence only — re-ingests add rows, so an unbounded list would grow forever.
-      evidence: { orderBy: [{ observedAt: "desc" }, { id: "asc" }], take: MAX_EVIDENCE_PER_PRODUCT },
-      _count: { select: { evidence: true } },
-      scores: {
-        orderBy: [{ dimension: "asc" }, { calculatedAt: "desc" }, { id: "desc" }],
-        distinct: ["dimension"],
-        include: { evidence: { select: { evidenceId: true } } },
-      },
-    },
-  });
+  const rows = await db.product.findMany({ where: { id: { in: ids } }, include: PRODUCT_INCLUDE });
 
   // A product deleted between the two queries is simply skipped.
   const byId = new Map(rows.map((r) => [r.id, r]));
@@ -51,6 +50,12 @@ export async function listProducts(
     const row = byId.get(id);
     return row ? [toDto(row, asOf)] : [];
   });
+}
+
+/** One product by id (sample or live), or null if it doesn't exist. */
+export async function getProduct(db: PrismaClient, id: string, asOf = new Date()) {
+  const row = await db.product.findUnique({ where: { id }, include: PRODUCT_INCLUDE });
+  return row ? toDto(row, asOf) : null;
 }
 
 /** How many live products exist that this viewer can't see (for the upgrade prompt). */

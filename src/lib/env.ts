@@ -29,9 +29,14 @@ const EnvSchema = z
     STRIPE_WEBHOOK_SECRET: optional.refine((v) => !v || v.startsWith("whsec_"), { message: "must start with whsec_" }),
     APP_URL: optional.refine((v) => !v || /^https?:\/\//.test(v), { message: "must start with http(s)://" }),
     X402_MODE: z
-      .enum(["mock"])
+      .enum(["mock", "facilitator"])
       .optional()
       .or(z.literal("").transform(() => undefined)),
+    X402_NETWORK: z
+      .enum(["eip155:84532", "eip155:8453"])
+      .optional()
+      .or(z.literal("").transform(() => undefined)),
+    X402_FACILITATOR_URL: optional.refine((v) => !v || /^https:\/\//.test(v), { message: "must start with https://" }),
     X402_PAY_TO: optional.refine((v) => !v || /^0x[0-9a-fA-F]{40}$/.test(v), { message: "must be a 0x… wallet address" }),
     X402_PRICE_USDC: z
       .string()

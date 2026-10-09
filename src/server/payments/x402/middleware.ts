@@ -7,58 +7,30 @@
 //   valid proof               → nonce locked → handler runs →
 //        2xx: settle, record, 200 + PAYMENT-RESPONSE
 //        non-2xx: nonce released, nothing charged, handler response returned
+//   facilitator unreachable   → 503 before the handler runs (nothing charged), or
+//                               502 at settlement (nonce stays locked: status unknown)
 
 import { connection, type NextRequest } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
-import { env } from "@/lib/env";
-import { mockFacilitator, type Facilitator } from "./facilitator";
+import { loadPaymentConfig } from "./config";
+import { FacilitatorUnavailableError } from "./facilitator";
 import {
   decodePaymentSignature,
   encodeHeader,
   HEADER_REQUIRED,
   HEADER_RESPONSE,
   HEADER_SIGNATURE,
-  USDC,
-  usdcToAtomic,
-  X402_VERSION,
+  paymentRequiredBody,
   type PaymentPayload,
-  type PaymentRequired,
   type PaymentRequirements,
   type ResourceInfo,
 } from "./protocol";
 
-const MOCK_NETWORK = "eip155:84532"; // Base Sepolia (testnet) — mock never advertises mainnet
-const MAX_TIMEOUT_SECONDS = 120;
-
-type Config =
-  | { ok: true; facilitator: Facilitator; requirements: PaymentRequirements }
-  | { ok: false; reason: string };
-
-function loadConfig(): Config {
-  if (env.X402_MODE !== "mock") return { ok: false, reason: "Agent payments are not enabled on this server." };
-  if (env.NODE_ENV === "production") return { ok: false, reason: "Mock payments are disabled in production." };
-  if (!env.X402_PAY_TO) return { ok: false, reason: "X402_PAY_TO is not configured." };
-  const usdc = USDC[MOCK_NETWORK];
-  return {
-    ok: true,
-    facilitator: mockFacilitator,
-    requirements: {
-      scheme: "exact",
-      network: MOCK_NETWORK,
-      asset: usdc.address,
-      amount: usdcToAtomic(env.X402_PRICE_USDC),
-      payTo: env.X402_PAY_TO,
-      maxTimeoutSeconds: MAX_TIMEOUT_SECONDS,
-      extra: { name: usdc.name, version: usdc.version },
-    },
-  };
-}
-
 const HEADERS_EXPOSED = `${HEADER_REQUIRED}, ${HEADER_RESPONSE}`;
 
 function paymentRequired(resource: ResourceInfo, requirements: PaymentRequirements, error?: string) {
-  const body: PaymentRequired = { x402Version: X402_VERSION, ...(error ? { error } : {}), resource, accepts: [requirements] };
+  const body = paymentRequiredBody(resource, requirements, error);
   return Response.json(body, {
     status: 402,
     headers: {
@@ -100,7 +72,7 @@ export function withX402Payment(
 ) {
   return async function paidHandler(request: NextRequest): Promise<Response> {
     await connection();
-    const config = loadConfig();
+    const config = loadPaymentConfig();
     if (!config.ok) {
       return Response.json({ error: "payments_unavailable", message: config.reason }, { status: 503 });
     }
@@ -122,7 +94,17 @@ export function withX402Payment(
       return paymentRequired(resource, requirements, "invalid_payment_header");
     }
 
-    const verdict = await facilitator.verify(payment, requirements, Math.floor(Date.now() / 1000));
+    let verdict;
+    try {
+      verdict = await facilitator.verify(payment, requirements, Math.floor(Date.now() / 1000));
+    } catch (e) {
+      if (!(e instanceof FacilitatorUnavailableError)) throw e;
+      console.error("[x402] verify failed", e.message);
+      return Response.json(
+        { error: "facilitator_unavailable", message: "Payment verification is temporarily unavailable. You were not charged; retry shortly." },
+        { status: 503, headers: { "Retry-After": "30", "Cache-Control": "no-store" } },
+      );
+    }
     if (!verdict.isValid) return paymentRequired(resource, requirements, verdict.invalidReason);
 
     if (!(await reserveNonce(payment, requirements, verdict.payer, resource.url))) {
@@ -143,7 +125,23 @@ export function withX402Payment(
       return response;
     }
 
-    const settlement = await facilitator.settle(payment, requirements, verdict.payer);
+    let settlement;
+    try {
+      settlement = await facilitator.settle(payment, requirements, verdict.payer);
+    } catch (e) {
+      if (!(e instanceof FacilitatorUnavailableError)) throw e;
+      // The transfer may or may not have landed, so the nonce stays locked (status RESERVED):
+      // this authorization can never buy a second response. Sign a fresh one to retry.
+      console.error("[x402] settle status unknown", nonce, e.message);
+      return Response.json(
+        {
+          error: "settlement_unknown",
+          message: "We couldn't confirm your payment with the facilitator, so no data was returned. Retry with a newly signed payment.",
+          nonce,
+        },
+        { status: 502, headers: { "Cache-Control": "no-store" } },
+      );
+    }
     if (!settlement.success) {
       await releaseNonce(nonce);
       return paymentRequired(resource, requirements, settlement.errorReason ?? "settlement_failed");

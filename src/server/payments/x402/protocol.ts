@@ -12,9 +12,26 @@ export const HEADER_SIGNATURE = "PAYMENT-SIGNATURE";
 export const HEADER_RESPONSE = "PAYMENT-RESPONSE";
 
 /** Supported networks: CAIP-2 id → USDC deployment (EIP-712 domain). */
-export const USDC: Record<string, { chainId: number; address: `0x${string}`; name: string; version: string }> = {
-  "eip155:84532": { chainId: 84532, address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", name: "USDC", version: "2" }, // Base Sepolia
-  "eip155:8453": { chainId: 8453, address: "0x833589fCD6eDb6E08f4c3C32D4f71b54bdA02913", name: "USD Coin", version: "2" }, // Base
+export const USDC: Record<
+  string,
+  { chainId: number; address: `0x${string}`; name: string; version: string; label: string; testnet: boolean }
+> = {
+  "eip155:84532": {
+    chainId: 84532,
+    address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    name: "USDC",
+    version: "2",
+    label: "Base Sepolia",
+    testnet: true,
+  },
+  "eip155:8453": {
+    chainId: 8453,
+    address: "0x833589fCD6eDb6E08f4c3C32D4f71b54bdA02913",
+    name: "USD Coin",
+    version: "2",
+    label: "Base",
+    testnet: false,
+  },
 };
 export const USDC_DECIMALS = 6;
 
@@ -88,6 +105,11 @@ export const PaymentPayloadSchema = z.object({
 export type PaymentPayload = z.infer<typeof PaymentPayloadSchema>;
 
 export const encodeHeader = (value: unknown) => Buffer.from(JSON.stringify(value), "utf8").toString("base64");
+
+/** The 402 challenge: sent as the response body and, base64-encoded, as PAYMENT-REQUIRED. */
+export function paymentRequiredBody(resource: ResourceInfo, requirements: PaymentRequirements, error?: string): PaymentRequired {
+  return { x402Version: X402_VERSION, ...(error ? { error } : {}), resource, accepts: [requirements] };
+}
 
 export function decodePaymentSignature(header: string): PaymentPayload {
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(header) || header.length > 16_384) throw new Error("malformed header");

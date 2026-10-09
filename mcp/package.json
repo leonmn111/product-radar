@@ -1,0 +1,31 @@
+{
+  "name": "productradar-mcp",
+  "version": "0.1.0",
+  "description": "ProductRadar as an MCP tool: evidence-backed product opportunities and dossiers, paid per call in USDC over x402.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bin": {
+    "productradar-mcp": "dist/productradar-mcp.mjs"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@types/node": "^24.19.1",
+    "@x402/evm": "2.28.0",
+    "@x402/fetch": "2.28.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5",
+    "viem": "2.57.4",
+    "zod": "^4.6.5"
+  }
+}

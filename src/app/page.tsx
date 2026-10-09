@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { AccountMenu } from "@/components/account/account-menu";
 import { ProductDashboard } from "@/components/dashboard/product-dashboard";
@@ -50,9 +51,17 @@ export default function Home({ searchParams }: { searchParams: SearchParams }) {
               evidence each score is based on.
             </p>
           </div>
-          <Suspense fallback={<div className="h-8 w-40 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />}>
-            <AccountMenu />
-          </Suspense>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 md:justify-end">
+            <Link
+              href="/docs"
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:focus-visible:outline-indigo-400"
+            >
+              API for agents
+            </Link>
+            <Suspense fallback={<div className="h-8 w-40 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />}>
+              <AccountMenu />
+            </Suspense>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">

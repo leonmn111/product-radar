@@ -30,7 +30,8 @@ Check it works: open http://localhost:3000/api/health
 | `npm run db:rescore` | Recalculate scores for every category (e.g. after a formula change). History is kept. |
 | `npm run stripe:setup` | Create the Pro product + £39/month price in Stripe (uses `STRIPE_SECRET_KEY`). |
 | `npm run agent:test` | Mock AI agent: full x402 402 → pay → 200 flow plus abuse checks against a running server. |
-| `npm test` | Unit tests for scoring, ingestion, billing and x402 verification. |
+| `npm run mcp:build` | Bundle the MCP server (`mcp/`) and pack it into `public/mcp/` for download. |
+| `npm test` | Unit tests for scoring, ingestion, billing, x402 verification/facilitator and the agent dossier. |
 | `npm run typecheck` / `npm run lint` | Static checks. |
 | `npm run build` | Production build. |
 
@@ -68,8 +69,8 @@ Deploy from this folder with `railway up --service web --detach` (needs a projec
 `.railwayignore` keeps `.env` and local data out of uploads.
 
 Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SECRET`, `AUTH_TRUST_HOST=true`,
-`AUTH_RESEND_KEY`, `EMAIL_FROM`, `APP_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`. Leave `X402_MODE`
-unset in production.
+`AUTH_RESEND_KEY`, `EMAIL_FROM`, `APP_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`. For agent payments add
+`X402_MODE=facilitator` and `X402_PAY_TO` (your wallet); never `mock` in production.
 
 ## Accounts & plans
 
@@ -105,32 +106,61 @@ unset in production.
 
 ## Agent API (x402)
 
-`GET /api/agent/v1/opportunity?category=earplugs&limit=10&includeSample=false` — ranked product
-opportunities for AI agents, paid per request with the [x402](https://x402.org) protocol (v2, "exact"
-scheme, USDC via EIP-3009). No account needed: the payment is the authorization.
+Public docs for developers and agents: **`/docs`** (always dark; price, network and the example 402 come
+from the live payment config).
+
+- `GET /api/agent/v1/opportunity?category=earplugs&limit=10&includeSample=false` — ranked product
+  opportunities: rank, opportunity score + confidence, per-dimension scores, best offer, and the top
+  evidence (source URL, timestamp, quality score) behind each product.
+- `GET /api/agent/v1/dossier?productId=<uuid>` — the full Opportunity Dossier for one product: rule-based
+  verdict + confidence, every score with its evidence ids, all offers, a profit estimate (assumptions
+  listed), supplier search keywords/links, a draft Shopify CSV, and up to 50 cited sources. 404 if unknown.
+
+Both are paid per request with the [x402](https://x402.org) protocol (v2, "exact" scheme, USDC via
+EIP-3009). No account needed: the payment is the authorization.
 
 1. Request without payment → **402** with a `PAYMENT-REQUIRED` header (base64 JSON: price, asset, network, `payTo`).
 2. Agent signs a USDC `transferWithAuthorization` for that amount and retries with `PAYMENT-SIGNATURE`.
 3. Server verifies the signature, recipient, amount, validity window and that the nonce was never used,
    runs the request, settles, and returns **200** with a `PAYMENT-RESPONSE` receipt header.
-   Failed requests (e.g. 400 bad query) are not charged — the authorization stays usable.
-
-Payload: rank, opportunity score + confidence, per-dimension scores, best offer, and the top evidence
-(source URL, timestamp, quality score) behind each product.
+   Failed requests (e.g. 400 bad query, 404) are not charged — the authorization stays usable.
+   Facilitator unreachable before the request runs → 503, not charged. Settlement outcome unknown → 502,
+   no data, and that authorization is retired (the `AgentPayment` row stays `RESERVED` for reconciliation).
 
 **Rule 2 isolation:** all payment code is in `src/server/payments/x402/` (`protocol.ts`, `verify.ts`,
-`facilitator.ts`, `middleware.ts`) and the `AgentPayment` ledger table. The opportunity data comes from
-`src/server/opportunities/service.ts`, which knows nothing about payments; the route just wraps one
-with the other.
+`facilitator.ts`, `config.ts`, `middleware.ts`) and the `AgentPayment` ledger table. The data comes from
+`src/server/opportunities/` (`service.ts`, `dossier.ts`), which knows nothing about payments; each route
+just wraps one with the other.
 
-**Modes:** `X402_MODE="mock"` (local only) fully verifies real signed authorizations on Base Sepolia
-but does not move funds; settlement references start with `mock:`. It is refused when
-`NODE_ENV=production`. Taking real payments needs a real facilitator (e.g. Coinbase's) added behind the
-`Facilitator` interface, Base mainnet, and your own `X402_PAY_TO` wallet.
+**Modes** (`X402_MODE`):
+
+- `mock` (local only) fully verifies real signed authorizations on Base Sepolia but moves no funds;
+  settlement references start with `mock:`. Refused when `NODE_ENV=production`.
+- `facilitator` verifies locally first, then verifies and settles on-chain through an x402 facilitator
+  (`X402_FACILITATOR_URL`, default `https://x402.org/facilitator` — free, **testnet only**). Network is
+  `X402_NETWORK` (default `eip155:84532` Base Sepolia). Base mainnet (`eip155:8453`) is refused unless
+  `X402_FACILITATOR_URL` points at a facilitator that supports it.
+- unset: agent endpoints answer 503.
+
+Payments are received at `X402_PAY_TO` — your own wallet address. The facilitator pays the gas; payers
+need USDC only.
 
 **Mock agent:** `npm run agent:test -- http://localhost:3000` — gets the 402, signs with a throwaway
 wallet, retrieves the data, then checks that replays, underpayment, expired or tampered payments and
 garbage headers are refused and that a failed request isn't charged.
+
+### MCP server (`mcp/`)
+
+A stdio MCP server so Claude Desktop, Cursor, Claude Code and agent frameworks can use ProductRadar as
+native tools: `find_product_opportunities`, `get_product_dossier` (both paid, settled automatically with the
+official `@x402/fetch` client from the user's own wallet) and `get_payment_status` (free). Spending caps:
+`PRODUCTRADAR_MAX_PRICE_USDC` (default 0.10 per call) and `PRODUCTRADAR_BUDGET_USDC` (default 1.00 per session).
+
+It is a separate package with its own dependencies, bundled into one file and served from this site:
+`npm run mcp:build` → `public/mcp/productradar-mcp-<version>.tgz` (commit it; older versions stay published
+because installs point at their exact URL). Users install it with
+`npx -y https://theproductradar.io/mcp/productradar-mcp-<version>.tgz` — see `/docs#mcp` and `mcp/README.md`.
+Bump `mcp/package.json`'s version for every change; `/docs` links whatever version that file names.
 
 ## Live ingestion
 
@@ -203,7 +233,9 @@ Validated at startup by `src/lib/env.ts` — the app refuses to start with a mis
 | `STRIPE_SECRET_KEY` | for billing | `sk_test_…` first, `sk_live_…` when ready |
 | `STRIPE_WEBHOOK_SECRET` | for billing | `whsec_…` |
 | `APP_URL` | optional | Public URL for Stripe redirects; defaults to the request's address |
-| `X402_MODE` | for agent API | `mock` (local testing only). Empty = agent API returns 503. |
+| `X402_MODE` | for agent API | `facilitator` (real settlement) or `mock` (local testing only). Empty = agent API returns 503. |
+| `X402_NETWORK` | optional | `eip155:84532` Base Sepolia testnet (default) or `eip155:8453` Base mainnet |
+| `X402_FACILITATOR_URL` | optional | Default `https://x402.org/facilitator` (free, testnet only) |
 | `X402_PAY_TO` | for agent API | Wallet address that receives agent payments |
 | `X402_PRICE_USDC` | optional | Price per agent request, default `0.01` |
 
@@ -224,9 +256,11 @@ src/auth.ts                 Auth.js config (email sign-in links)
 src/server/auth/            plan checks (entitlements)
 src/server/billing/         Stripe: checkout, portal, webhook, subscription sync
 src/server/payments/x402/   x402 agent payments: protocol, verification, facilitator, 402 middleware
-src/server/opportunities/   agent-facing opportunity data (no payment knowledge)
+src/server/opportunities/   agent-facing opportunity data + dossier (no payment knowledge)
 src/app/api/agent/v1/       paid agent endpoints
 scripts/test-agent-client.ts  mock x402 agent
+src/app/docs/               public API + MCP docs page (/docs)
+mcp/                        MCP server package (own deps; bundled by npm run mcp:build)
 src/app/signin/             sign-in pages
 src/app/upgrade, billing/   upgrade, manage-billing and success routes
 src/app/api/ingest/         ingestion endpoint
@@ -236,4 +270,4 @@ scripts/db-start.mjs        local Postgres runner
 scripts/verify-schema.ts    data-rule checks (npm run db:verify)
 ```
 
-Payments (x402) are intentionally not implemented yet and must stay isolated from core logic.
+Payment code (Stripe in `src/server/billing/`, x402 in `src/server/payments/x402/`) must stay isolated from core logic.

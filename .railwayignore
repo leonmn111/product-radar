@@ -9,3 +9,5 @@ node_modules/
 .claude/
 .windsurf/
 skills-lock.json
+mcp/node_modules/
+mcp/dist/
