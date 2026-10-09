@@ -26,7 +26,7 @@ if (!/^https?:\/\//.test(API_URL)) fail("PRODUCTRADAR_API_URL must start with ht
 
 // Only USDC is ever paid: the session budget below relies on its 6 decimals.
 const USDC: Record<string, { address: string; label: string }> = {
-  "eip155:8453": { address: "0x833589fCD6eDb6E08f4c3C32D4f71b54bdA02913", label: "Base" },
+  "eip155:8453": { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", label: "Base" },
   "eip155:84532": { address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", label: "Base Sepolia (testnet)" },
 };
 

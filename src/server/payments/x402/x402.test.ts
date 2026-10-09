@@ -1,3 +1,4 @@
+import { isAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it } from "vitest";
 import { decodePaymentSignature, EIP3009_TYPES, encodeHeader, USDC, usdcToAtomic, type PaymentRequirements } from "./protocol";
@@ -83,5 +84,11 @@ describe("x402 exact-EVM verification", () => {
     expect(usdcToAtomic("0.01")).toBe("10000");
     expect(usdcToAtomic("1")).toBe("1000000");
     expect(usdcToAtomic("12.345678")).toBe("12345678");
+  });
+
+  it("uses Circle's official USDC contracts (a one-character typo fails the checksum)", () => {
+    expect(USDC["eip155:8453"].address).toBe("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913");
+    expect(USDC["eip155:84532"].address).toBe("0x036CbD53842c5426634e7929541eC2318f3dCF7e");
+    for (const { address } of Object.values(USDC)) expect(isAddress(address, { strict: true })).toBe(true);
   });
 });
