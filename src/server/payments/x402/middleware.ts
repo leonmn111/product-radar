@@ -29,9 +29,10 @@ import {
 
 const HEADERS_EXPOSED = `${HEADER_REQUIRED}, ${HEADER_RESPONSE}`;
 
-function paymentRequired(resource: ResourceInfo, requirements: PaymentRequirements, error?: string) {
+function paymentRequired(resource: ResourceInfo, requirements: PaymentRequirements, error?: string, message?: string) {
   const body = paymentRequiredBody(resource, requirements, error);
-  return Response.json(body, {
+  // `message` is a human explanation for the JSON body only; the header stays the standard x402 shape.
+  return Response.json(message ? { ...body, message } : body, {
     status: 402,
     headers: {
       [HEADER_REQUIRED]: encodeHeader(body),
@@ -105,7 +106,7 @@ export function withX402Payment(
         { status: 503, headers: { "Retry-After": "30", "Cache-Control": "no-store" } },
       );
     }
-    if (!verdict.isValid) return paymentRequired(resource, requirements, verdict.invalidReason);
+    if (!verdict.isValid) return paymentRequired(resource, requirements, verdict.invalidReason, verdict.invalidMessage);
 
     if (!(await reserveNonce(payment, requirements, verdict.payer, resource.url))) {
       return paymentRequired(resource, requirements, "nonce_already_used");

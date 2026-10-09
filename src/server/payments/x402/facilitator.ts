@@ -7,9 +7,9 @@
 //          the USDC transfer on-chain and pays the gas.
 
 import { generateJwt } from "@coinbase/cdp-sdk/auth";
-import { keccak256, toHex } from "viem";
+import { createPublicClient, erc20Abi, formatUnits, http, keccak256, toHex } from "viem";
 import { z } from "zod";
-import type { PaymentPayload, PaymentRequirements, SettleResponse } from "./protocol";
+import { USDC, USDC_DECIMALS, type PaymentPayload, type PaymentRequirements, type SettleResponse } from "./protocol";
 import { verifyExactEvmPayment, type VerifyResult } from "./verify";
 
 export interface Facilitator {
@@ -59,6 +59,23 @@ export const mockFacilitator: Facilitator = {
   },
 };
 
+/** A wallet's USDC balance in atomic units, or undefined when it can't be read. */
+export type UsdcBalanceReader = (network: string, wallet: `0x${string}`) => Promise<bigint | undefined>;
+
+export const readUsdcBalance: UsdcBalanceReader = async (network, wallet) => {
+  const usdc = USDC[network];
+  if (!usdc) return undefined;
+  try {
+    const client = createPublicClient({ transport: http(usdc.rpcUrl, { timeout: 5_000, retryCount: 0 }) });
+    return await client.readContract({ address: usdc.address, abi: erc20Abi, functionName: "balanceOf", args: [wallet] });
+  } catch {
+    return undefined;
+  }
+};
+
+export const INSUFFICIENT_FUNDS = "insufficient_funds";
+const usdcAmount = (atomic: bigint) => formatUnits(atomic, USDC_DECIMALS);
+
 const VERIFY_TIMEOUT_MS = 10_000;
 const SETTLE_TIMEOUT_MS = 30_000; // waits for the transfer to land on-chain
 // Coinbase: broadcast but not confirmed in time. Resending the identical request re-checks that same
@@ -106,7 +123,11 @@ async function post(url: string, body: unknown, timeoutMs: number, auth?: Facili
   }
 }
 
-export function httpFacilitator(baseUrl: string, auth?: FacilitatorAuth): Facilitator {
+export function httpFacilitator(
+  baseUrl: string,
+  auth?: FacilitatorAuth,
+  { usdcBalance = readUsdcBalance }: { usdcBalance?: UsdcBalanceReader } = {},
+): Facilitator {
   const url = baseUrl.replace(/\/+$/, "");
   const body = (payment: PaymentPayload, req: PaymentRequirements) => ({
     x402Version: payment.x402Version,
@@ -124,7 +145,22 @@ export function httpFacilitator(baseUrl: string, auth?: FacilitatorAuth): Facili
       // The facilitator adds what we can't check offline: balance and on-chain nonce state.
       const parsed = VerifyResponseSchema.safeParse(await post(`${url}/verify`, body(payment, req), VERIFY_TIMEOUT_MS, auth));
       if (!parsed.success) throw new FacilitatorUnavailableError(`${url}/verify gave an unexpected response`);
-      if (!parsed.data.isValid) return { isValid: false, invalidReason: parsed.data.invalidReason ?? "facilitator_rejected" };
+      if (!parsed.data.isValid) {
+        // Facilitators word an empty wallet differently (Coinbase: a generic "invalid_payload" from its
+        // on-chain dry run), so check the balance ourselves and say it plainly.
+        const balance = await usdcBalance(req.network, local.payer);
+        if (balance !== undefined && balance < BigInt(req.amount)) {
+          const network = USDC[req.network]?.label ?? req.network;
+          return {
+            isValid: false,
+            invalidReason: INSUFFICIENT_FUNDS,
+            invalidMessage:
+              `Insufficient funds: wallet ${local.payer} holds ${usdcAmount(balance)} USDC on ${network}, but this request ` +
+              `costs ${usdcAmount(BigInt(req.amount))} USDC. Add USDC on ${network} to that wallet and sign a new payment. You were not charged.`,
+          };
+        }
+        return { isValid: false, invalidReason: parsed.data.invalidReason ?? "facilitator_rejected" };
+      }
       return local;
     },
     async settle(payment, req, payer) {

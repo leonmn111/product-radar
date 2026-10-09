@@ -53,7 +53,15 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("HTTP facilitator", () => {
-  const facilitator = httpFacilitator("https://facilitator.test/x402/");
+  let balance: bigint | undefined; // what the on-chain balance lookup returns (undefined = couldn't read it)
+  const balanceLookups: string[] = [];
+  const facilitator = httpFacilitator("https://facilitator.test/x402/", undefined, {
+    usdcBalance: async (network, wallet) => (balanceLookups.push(`${network} ${wallet}`), balance),
+  });
+  beforeEach(() => {
+    balance = undefined;
+    balanceLookups.length = 0;
+  });
 
   it("forwards a locally valid payment to /verify in the x402 v2 shape", async () => {
     answer(200, { isValid: true, payer: payer.address });
@@ -73,6 +81,35 @@ describe("HTTP facilitator", () => {
   it("passes on the facilitator's rejection reason (e.g. an empty wallet)", async () => {
     answer(400, { isValid: false, invalidReason: "insufficient_funds" });
     expect(await facilitator.verify(await signedPayment(), req, NOW)).toEqual({ isValid: false, invalidReason: "insufficient_funds" });
+  });
+
+  it("says insufficient_funds, with the balance, when a vague refusal comes from an underfunded wallet", async () => {
+    answer(400, { isValid: false, invalidReason: "invalid_payload", invalidMessage: "contract call failed: execution reverted" });
+    balance = BigInt(2500); // 0.0025 USDC
+    expect(await facilitator.verify(await signedPayment(), req, NOW)).toEqual({
+      isValid: false,
+      invalidReason: "insufficient_funds",
+      invalidMessage:
+        `Insufficient funds: wallet ${payer.address} holds 0.0025 USDC on Base Sepolia, but this request costs 0.01 USDC. ` +
+        "Add USDC on Base Sepolia to that wallet and sign a new payment. You were not charged.",
+    });
+    expect(balanceLookups).toEqual([`eip155:84532 ${payer.address}`]);
+  });
+
+  it.each([
+    ["holds enough USDC", BigInt(10_000)],
+    ["can't be checked", undefined],
+  ])("keeps the facilitator's reason when the wallet %s", async (_label, held) => {
+    answer(400, { isValid: false, invalidReason: "invalid_payload" });
+    balance = held;
+    expect(await facilitator.verify(await signedPayment(), req, NOW)).toEqual({ isValid: false, invalidReason: "invalid_payload" });
+  });
+
+  it("only looks up balances after a refusal", async () => {
+    answer(200, { isValid: true, payer: payer.address });
+    await facilitator.verify(await signedPayment(), req, NOW);
+    expect(await facilitator.verify(await signedPayment("1"), req, NOW)).toMatchObject({ invalidReason: "amount_mismatch" });
+    expect(balanceLookups).toEqual([]);
   });
 
   it.each([

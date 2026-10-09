@@ -737,9 +737,18 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
             ],
             [
               "402",
+              <C key="12">insufficient_funds</C>,
+              <>
+                The paying wallet doesn&apos;t hold enough USDC on this network. <C>message</C> says how much it has and
+                what the request costs. Not charged.
+              </>,
+            ],
+            [
+              "402",
               "facilitator reasons",
               <>
-                For example <C>invalid_exact_evm_insufficient_balance</C>: the wallet lacks the USDC.
+                Any other refusal from the facilitator, passed on as is. For example <C>kyt_risk_detected</C>: the wallet
+                failed sanctions screening.
               </>,
             ],
             [

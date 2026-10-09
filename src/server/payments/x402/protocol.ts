@@ -14,7 +14,7 @@ export const HEADER_RESPONSE = "PAYMENT-RESPONSE";
 /** Supported networks: CAIP-2 id → USDC deployment (EIP-712 domain). */
 export const USDC: Record<
   string,
-  { chainId: number; address: `0x${string}`; name: string; version: string; label: string; testnet: boolean }
+  { chainId: number; address: `0x${string}`; name: string; version: string; label: string; testnet: boolean; rpcUrl: string }
 > = {
   "eip155:84532": {
     chainId: 84532,
@@ -23,6 +23,7 @@ export const USDC: Record<
     version: "2",
     label: "Base Sepolia",
     testnet: true,
+    rpcUrl: "https://sepolia.base.org", // public; only used to read balances
   },
   "eip155:8453": {
     chainId: 8453,
@@ -31,6 +32,7 @@ export const USDC: Record<
     version: "2",
     label: "Base",
     testnet: false,
+    rpcUrl: "https://mainnet.base.org",
   },
 };
 export const USDC_DECIMALS = 6;

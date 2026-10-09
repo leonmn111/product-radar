@@ -143,7 +143,9 @@ just wraps one with the other.
   with `CDP_API_KEY_ID` + `CDP_API_KEY_SECRET` (first 1,000 settlements a month free, then $0.001 each).
   If Coinbase answers `settlement_pending`, the identical settle request is resent once; if it is still
   pending, the caller gets `settlement_unknown` with the `transaction` hash, which is also stored on the
-  `RESERVED` row for reconciliation.
+  `RESERVED` row for reconciliation. When a facilitator refuses a payment, the payer's USDC balance is read
+  from the chain (public Base RPC); if it is short, the 402 says `insufficient_funds` with a plain `message`
+  (Coinbase otherwise reports an empty wallet as a generic `invalid_payload`).
 - unset: agent endpoints answer 503.
 
 Payments are received at `X402_PAY_TO` — your own wallet address. The facilitator pays the gas; payers

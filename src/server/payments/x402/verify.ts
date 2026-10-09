@@ -8,7 +8,9 @@ import { EIP3009_TYPES, USDC, X402_VERSION, type PaymentPayload, type PaymentReq
 /** A facilitator needs a few seconds to settle before the authorization expires. */
 const MIN_VALIDITY_SECONDS = 6;
 
-export type VerifyResult = { isValid: true; payer: `0x${string}` } | { isValid: false; invalidReason: string };
+export type VerifyResult =
+  | { isValid: true; payer: `0x${string}` }
+  | { isValid: false; invalidReason: string; invalidMessage?: string };
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
