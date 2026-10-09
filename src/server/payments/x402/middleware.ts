@@ -132,12 +132,21 @@ export function withX402Payment(
       if (!(e instanceof FacilitatorUnavailableError)) throw e;
       // The transfer may or may not have landed, so the nonce stays locked (status RESERVED):
       // this authorization can never buy a second response. Sign a fresh one to retry.
-      console.error("[x402] settle status unknown", nonce, e.message);
+      console.error("[x402] settle status unknown", nonce, e.transaction ?? "", e.message);
+      if (e.transaction) {
+        // Broadcast but unconfirmed: keep the hash on the reserved row for reconciliation.
+        await db.agentPayment
+          .update({ where: { nonce: nonce.toLowerCase() }, data: { transaction: e.transaction } })
+          .catch((err) => console.error("[x402] couldn't record pending transaction", nonce, err));
+      }
       return Response.json(
         {
           error: "settlement_unknown",
-          message: "We couldn't confirm your payment with the facilitator, so no data was returned. Retry with a newly signed payment.",
+          message: e.transaction
+            ? "Your payment was sent to the network but not yet confirmed, so no data was returned. Check `transaction` on a block explorer before signing a new payment to retry."
+            : "We couldn't confirm your payment with the facilitator, so no data was returned. Retry with a newly signed payment.",
           nonce,
+          ...(e.transaction ? { transaction: e.transaction } : {}),
         },
         { status: 502, headers: { "Cache-Control": "no-store" } },
       );

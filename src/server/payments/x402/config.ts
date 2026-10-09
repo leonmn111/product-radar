@@ -2,10 +2,11 @@
 // environment (see .env.example). Payment code only (CLAUDE.md Rule 2).
 
 import { env } from "@/lib/env";
-import { httpFacilitator, mockFacilitator, type Facilitator } from "./facilitator";
+import { cdpAuth, httpFacilitator, mockFacilitator, type Facilitator } from "./facilitator";
 import { USDC, usdcToAtomic, type PaymentRequirements } from "./protocol";
 
 export const DEFAULT_FACILITATOR_URL = "https://x402.org/facilitator"; // free; testnet only
+export const CDP_FACILITATOR_URL = "https://api.cdp.coinbase.com/platform/v2/x402"; // mainnet default; needs an API key
 const TESTNET = "eip155:84532"; // Base Sepolia — the default, and the only network mock mode advertises
 const MAX_TIMEOUT_SECONDS = 120;
 const PLACEHOLDER_PAY_TO = "0x0000000000000000000000000000000000000000"; // docs example only
@@ -36,10 +37,19 @@ export function loadPaymentConfig(): PaymentConfig {
     network = TESTNET;
   } else if (env.X402_MODE === "facilitator") {
     network = env.X402_NETWORK ?? TESTNET;
-    if (!USDC[network].testnet && !env.X402_FACILITATOR_URL) {
-      return { ok: false, reason: "Base mainnet needs X402_FACILITATOR_URL: the default facilitator is testnet-only." };
+    const url = env.X402_FACILITATOR_URL ?? (USDC[network].testnet ? DEFAULT_FACILITATOR_URL : CDP_FACILITATOR_URL);
+    const host = new URL(url).host;
+    if (!USDC[network].testnet && host === new URL(DEFAULT_FACILITATOR_URL).host) {
+      return { ok: false, reason: "Base mainnet can't settle through the testnet-only x402.org facilitator." };
     }
-    facilitator = httpFacilitator(env.X402_FACILITATOR_URL ?? DEFAULT_FACILITATOR_URL);
+    if (host === new URL(CDP_FACILITATOR_URL).host) {
+      if (!env.CDP_API_KEY_ID || !env.CDP_API_KEY_SECRET) {
+        return { ok: false, reason: "The Coinbase facilitator needs CDP_API_KEY_ID and CDP_API_KEY_SECRET." };
+      }
+      facilitator = httpFacilitator(url, cdpAuth(env.CDP_API_KEY_ID, env.CDP_API_KEY_SECRET));
+    } else {
+      facilitator = httpFacilitator(url);
+    }
   } else {
     return { ok: false, reason: "Agent payments are not enabled on this server." };
   }

@@ -1,10 +1,12 @@
 // A facilitator verifies and settles payments. Two implementations share one
 // interface, so the route and the domain code never know which is in use:
 //   mock — fully verifies the signed authorization off-chain, moves no funds.
-//   http — a real x402 facilitator (POST /verify, POST /settle), e.g. the free
-//          testnet one at https://x402.org/facilitator. It submits the USDC
-//          transfer on-chain and pays the gas.
+//   http — a real x402 facilitator (POST /verify, POST /settle): the free
+//          testnet one at https://x402.org/facilitator, or Coinbase's (CDP) for
+//          Base mainnet, which signs each request with an API key. It submits
+//          the USDC transfer on-chain and pays the gas.
 
+import { generateJwt } from "@coinbase/cdp-sdk/auth";
 import { keccak256, toHex } from "viem";
 import { z } from "zod";
 import type { PaymentPayload, PaymentRequirements, SettleResponse } from "./protocol";
@@ -20,7 +22,25 @@ export interface Facilitator {
  * The facilitator could not be reached or gave an answer we can't read. Unlike
  * a rejected payment, this says nothing about whether the payment is valid.
  */
-export class FacilitatorUnavailableError extends Error {}
+export class FacilitatorUnavailableError extends Error {
+  /** Set when the transfer was broadcast but its confirmation wasn't seen. */
+  readonly transaction?: string;
+  constructor(message: string, transaction?: string) {
+    super(message);
+    this.transaction = transaction;
+  }
+}
+
+/** Extra headers for one facilitator request, e.g. an API token. */
+export type FacilitatorAuth = (method: "POST", url: URL) => Promise<Record<string, string>>;
+
+/** Coinbase Developer Platform: a short-lived JWT, signed with the API key and bound to this exact request. */
+export function cdpAuth(apiKeyId: string, apiKeySecret: string): FacilitatorAuth {
+  return async (method, url) => {
+    const jwt = await generateJwt({ apiKeyId, apiKeySecret, requestMethod: method, requestHost: url.host, requestPath: url.pathname });
+    return { Authorization: `Bearer ${jwt}` };
+  };
+}
 
 export const mockFacilitator: Facilitator = {
   kind: "mock",
@@ -41,6 +61,9 @@ export const mockFacilitator: Facilitator = {
 
 const VERIFY_TIMEOUT_MS = 10_000;
 const SETTLE_TIMEOUT_MS = 30_000; // waits for the transfer to land on-chain
+// Coinbase: broadcast but not confirmed in time. Resending the identical request re-checks that same
+// transaction instead of sending a second one, so it's safe to ask once more.
+const SETTLEMENT_PENDING = "settlement_pending";
 
 const VerifyResponseSchema = z.object({
   isValid: z.boolean(),
@@ -57,12 +80,18 @@ const SettleResponseSchema = z.object({
   amount: z.string().optional(),
 });
 
-async function post(url: string, body: unknown, timeoutMs: number): Promise<unknown> {
+async function post(url: string, body: unknown, timeoutMs: number, auth?: FacilitatorAuth): Promise<unknown> {
+  let authHeaders: Record<string, string> = {};
+  try {
+    if (auth) authHeaders = await auth("POST", new URL(url));
+  } catch (e) {
+    throw new FacilitatorUnavailableError(`couldn't sign the request to ${url}: ${e instanceof Error ? e.message : e}`);
+  }
   let res: Response;
   try {
     res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     });
@@ -77,7 +106,7 @@ async function post(url: string, body: unknown, timeoutMs: number): Promise<unkn
   }
 }
 
-export function httpFacilitator(baseUrl: string): Facilitator {
+export function httpFacilitator(baseUrl: string, auth?: FacilitatorAuth): Facilitator {
   const url = baseUrl.replace(/\/+$/, "");
   const body = (payment: PaymentPayload, req: PaymentRequirements) => ({
     x402Version: payment.x402Version,
@@ -93,15 +122,22 @@ export function httpFacilitator(baseUrl: string): Facilitator {
       if (!local.isValid) return local;
 
       // The facilitator adds what we can't check offline: balance and on-chain nonce state.
-      const parsed = VerifyResponseSchema.safeParse(await post(`${url}/verify`, body(payment, req), VERIFY_TIMEOUT_MS));
+      const parsed = VerifyResponseSchema.safeParse(await post(`${url}/verify`, body(payment, req), VERIFY_TIMEOUT_MS, auth));
       if (!parsed.success) throw new FacilitatorUnavailableError(`${url}/verify gave an unexpected response`);
       if (!parsed.data.isValid) return { isValid: false, invalidReason: parsed.data.invalidReason ?? "facilitator_rejected" };
       return local;
     },
     async settle(payment, req, payer) {
-      const parsed = SettleResponseSchema.safeParse(await post(`${url}/settle`, body(payment, req), SETTLE_TIMEOUT_MS));
-      if (!parsed.success) throw new FacilitatorUnavailableError(`${url}/settle gave an unexpected response`);
-      const s = parsed.data;
+      const attempt = async () => {
+        const parsed = SettleResponseSchema.safeParse(await post(`${url}/settle`, body(payment, req), SETTLE_TIMEOUT_MS, auth));
+        if (!parsed.success) throw new FacilitatorUnavailableError(`${url}/settle gave an unexpected response`);
+        return parsed.data;
+      };
+      const pending = (r: z.infer<typeof SettleResponseSchema>) => !r.success && r.errorReason === SETTLEMENT_PENDING;
+
+      let s = await attempt();
+      if (pending(s)) s = await attempt();
+      if (pending(s)) throw new FacilitatorUnavailableError(`${url}/settle is still pending`, s.transaction || undefined);
       return { ...s, payer: s.payer ?? payer, amount: s.amount ?? req.amount };
     },
   };

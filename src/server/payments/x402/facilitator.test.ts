@@ -1,11 +1,12 @@
+import { generateKeyPairSync, verify as verifySignature } from "node:crypto";
 import { privateKeyToAccount } from "viem/accounts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FacilitatorUnavailableError, httpFacilitator } from "./facilitator";
+import { cdpAuth, FacilitatorUnavailableError, httpFacilitator } from "./facilitator";
 import { EIP3009_TYPES, USDC, type PaymentRequirements } from "./protocol";
 
 const env = vi.hoisted(() => ({}) as Record<string, string | undefined>);
 vi.mock("@/lib/env", () => ({ env }));
-const { agentPaymentStatus, loadPaymentConfig } = await import("./config");
+const { agentPaymentStatus, CDP_FACILITATOR_URL, loadPaymentConfig } = await import("./config");
 
 // Fixed throwaway test key — never holds funds.
 const payer = privateKeyToAccount("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d");
@@ -102,6 +103,56 @@ describe("HTTP facilitator", () => {
   });
 });
 
+describe("Coinbase (CDP) facilitator", () => {
+  // Throwaway Ed25519 key in CDP's format: base64(seed ‖ public key).
+  const { privateKey, publicKey } = generateKeyPairSync("ed25519");
+  const jwk = privateKey.export({ format: "jwk" });
+  const secret = Buffer.concat([Buffer.from(jwk.d!, "base64url"), Buffer.from(jwk.x!, "base64url")]).toString("base64");
+  const KEY_ID = "organizations/test-org/apiKeys/test-key";
+  const facilitator = httpFacilitator(CDP_FACILITATOR_URL, cdpAuth(KEY_ID, secret));
+  const decode = (part: string) => JSON.parse(Buffer.from(part, "base64url").toString());
+
+  it("signs each request with a short-lived token bound to that exact endpoint", async () => {
+    answer(200, { isValid: true, payer: payer.address });
+    answer(200, { success: true, transaction: "0xabc", network: "eip155:84532" });
+    const payment = await signedPayment();
+    await facilitator.verify(payment, req, NOW);
+    await facilitator.settle(payment, req, payer.address);
+
+    for (const [i, path] of [[0, "verify"], [1, "settle"]] as const) {
+      const [url, init] = fetchMock.mock.calls[i];
+      expect(url).toBe(`https://api.cdp.coinbase.com/platform/v2/x402/${path}`);
+      const [h, p, sig] = (init!.headers as Record<string, string>).Authorization.replace(/^Bearer /, "").split(".");
+      expect(decode(h)).toMatchObject({ alg: "EdDSA", kid: KEY_ID });
+      const claims = decode(p);
+      expect(claims).toMatchObject({ iss: "cdp", sub: KEY_ID, uris: [`POST api.cdp.coinbase.com/platform/v2/x402/${path}`] });
+      expect(claims.exp - claims.nbf).toBeLessThanOrEqual(120);
+      expect(verifySignature(null, Buffer.from(`${h}.${p}`), publicKey, Buffer.from(sig, "base64url"))).toBe(true);
+    }
+  });
+
+  it("treats a key it can't sign with as unavailable, without calling Coinbase", async () => {
+    const broken = httpFacilitator(CDP_FACILITATOR_URL, cdpAuth(KEY_ID, "not-a-key"));
+    await expect(broken.verify(await signedPayment(), req, NOW)).rejects.toBeInstanceOf(FacilitatorUnavailableError);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("asks once more while settlement is pending, then hands back the unconfirmed transaction", async () => {
+    const pendingBody = { success: false, errorReason: "settlement_pending", transaction: "0xpending", network: "eip155:8453" };
+    answer(500, pendingBody);
+    answer(200, { success: true, transaction: "0xpending", network: "eip155:8453" });
+    expect(await facilitator.settle(await signedPayment(), req, payer.address)).toMatchObject({ success: true, transaction: "0xpending" });
+    expect(fetchMock.mock.calls[1][1]!.body).toBe(fetchMock.mock.calls[0][1]!.body); // the identical request, resent
+
+    answer(500, pendingBody);
+    answer(500, pendingBody);
+    const error = await facilitator.settle(await signedPayment(), req, payer.address).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(FacilitatorUnavailableError);
+    expect((error as FacilitatorUnavailableError).transaction).toBe("0xpending");
+    expect(fetchMock).toHaveBeenCalledTimes(4); // never more than one resend
+  });
+});
+
 describe("payment config", () => {
   beforeEach(() => {
     for (const k of Object.keys(env)) delete env[k];
@@ -131,13 +182,22 @@ describe("payment config", () => {
     expect(agentPaymentStatus()).toMatchObject({ enabled: true, mock: false, testnet: true, networkLabel: "Base Sepolia" });
   });
 
-  it("won't advertise mainnet through the testnet-only default facilitator", () => {
+  it("settles Base mainnet through Coinbase, which needs an API key", () => {
     Object.assign(env, { X402_MODE: "facilitator", X402_NETWORK: "eip155:8453" });
+    expect(loadPaymentConfig()).toEqual({ ok: false, reason: "The Coinbase facilitator needs CDP_API_KEY_ID and CDP_API_KEY_SECRET." });
+
+    Object.assign(env, { CDP_API_KEY_ID: "key-id", CDP_API_KEY_SECRET: "key-secret" });
+    const config = loadPaymentConfig();
+    expect(config.ok && config.requirements).toMatchObject({ network: "eip155:8453", asset: USDC["eip155:8453"].address, extra: { name: "USD Coin" } });
+    expect(agentPaymentStatus()).toMatchObject({ enabled: true, testnet: false, networkLabel: "Base" });
+  });
+
+  it("won't settle mainnet through the testnet-only x402.org facilitator", () => {
+    Object.assign(env, { X402_MODE: "facilitator", X402_NETWORK: "eip155:8453", X402_FACILITATOR_URL: "https://x402.org/facilitator/" });
     expect(loadPaymentConfig()).toMatchObject({ ok: false });
 
     env.X402_FACILITATOR_URL = "https://mainnet-facilitator.test";
-    const config = loadPaymentConfig();
-    expect(config.ok && config.requirements.asset).toBe(USDC["eip155:8453"].address);
+    expect(loadPaymentConfig()).toMatchObject({ ok: true });
   });
 
   it("needs a wallet to pay into", () => {

@@ -43,6 +43,10 @@ const EnvSchema = z
       .trim()
       .regex(/^\d+(\.\d{1,6})?$/, "must be a USDC amount like 0.01")
       .default("0.01"),
+    // Coinbase Developer Platform API key, for the Coinbase facilitator (Base mainnet). The secret is an
+    // Ed25519 key (base64) or an EC key (PEM); a PEM pasted on one line with literal "\n"s is unfolded.
+    CDP_API_KEY_ID: optional,
+    CDP_API_KEY_SECRET: optional.transform((v) => v?.replace(/\\n/g, "\n")),
   });
 
 const parsed = EnvSchema.safeParse(process.env);

@@ -762,7 +762,11 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
             [
               "502",
               <C key="11">settlement_unknown</C>,
-              "Settlement couldn't be confirmed, so no data was returned. That authorization is retired. Sign a new one to retry.",
+              <>
+                Settlement couldn&apos;t be confirmed, so no data was returned. That authorization is retired. Sign a
+                new one to retry. If <C>transaction</C> is present, the transfer was sent and may still confirm: check
+                it on a block explorer first.
+              </>,
             ],
           ]}
         />

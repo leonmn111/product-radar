@@ -136,10 +136,14 @@ just wraps one with the other.
 
 - `mock` (local only) fully verifies real signed authorizations on Base Sepolia but moves no funds;
   settlement references start with `mock:`. Refused when `NODE_ENV=production`.
-- `facilitator` verifies locally first, then verifies and settles on-chain through an x402 facilitator
-  (`X402_FACILITATOR_URL`, default `https://x402.org/facilitator` — free, **testnet only**). Network is
-  `X402_NETWORK` (default `eip155:84532` Base Sepolia). Base mainnet (`eip155:8453`) is refused unless
-  `X402_FACILITATOR_URL` points at a facilitator that supports it.
+- `facilitator` verifies locally first, then verifies and settles on-chain through an x402 facilitator.
+  Network is `X402_NETWORK` (default `eip155:84532` Base Sepolia). The facilitator (`X402_FACILITATOR_URL`)
+  defaults to `https://x402.org/facilitator` on testnet (free, **testnet only**) and to Coinbase's
+  `https://api.cdp.coinbase.com/platform/v2/x402` on Base mainnet (`eip155:8453`), which signs every request
+  with `CDP_API_KEY_ID` + `CDP_API_KEY_SECRET` (first 1,000 settlements a month free, then $0.001 each).
+  If Coinbase answers `settlement_pending`, the identical settle request is resent once; if it is still
+  pending, the caller gets `settlement_unknown` with the `transaction` hash, which is also stored on the
+  `RESERVED` row for reconciliation.
 - unset: agent endpoints answer 503.
 
 Payments are received at `X402_PAY_TO` — your own wallet address. The facilitator pays the gas; payers
@@ -235,9 +239,11 @@ Validated at startup by `src/lib/env.ts` — the app refuses to start with a mis
 | `APP_URL` | optional | Public URL for Stripe redirects; defaults to the request's address |
 | `X402_MODE` | for agent API | `facilitator` (real settlement) or `mock` (local testing only). Empty = agent API returns 503. |
 | `X402_NETWORK` | optional | `eip155:84532` Base Sepolia testnet (default) or `eip155:8453` Base mainnet |
-| `X402_FACILITATOR_URL` | optional | Default `https://x402.org/facilitator` (free, testnet only) |
+| `X402_FACILITATOR_URL` | optional | Default `https://x402.org/facilitator` (free) on testnet, Coinbase CDP on mainnet |
 | `X402_PAY_TO` | for agent API | Wallet address that receives agent payments |
 | `X402_PRICE_USDC` | optional | Price per agent request, default `0.01` |
+| `CDP_API_KEY_ID` | for mainnet | Coinbase Developer Platform secret API key ID (portal.cdp.coinbase.com) |
+| `CDP_API_KEY_SECRET` | for mainnet | That key's secret (Ed25519 base64, or EC PEM) |
 
 ## Layout
 

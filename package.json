@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "2.11.3",
+    "@coinbase/cdp-sdk": "1.58.0",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "cheerio": "^1.2.0",
