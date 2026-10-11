@@ -151,7 +151,8 @@ const server = new McpServer(
   {
     instructions:
       "ProductRadar ranks e-commerce product opportunities using scores calculated from sourced, timestamped evidence. " +
-      "Start with find_product_opportunities, then call get_product_dossier for the few products worth a closer look. " +
+      "Start with find_product_opportunities (search in plain words), then call get_product_dossier for the few products " +
+      "worth a closer look. " +
       "Both are paid per call in USDC; get_payment_status is free. Scores and verdicts are estimates, not guarantees: " +
       "cite the evidence sources when you report them.",
   },
@@ -164,23 +165,37 @@ server.registerTool(
   {
     title: "Find product opportunities",
     description:
-      "Ranked e-commerce product opportunities. Each result has an opportunity score (0–100, a calculated estimate) with a " +
-      "confidence (0–1), quality/value/demand/sentiment/trend scores, the best current offer, and the top cited evidence " +
-      "(source URL, timestamp, quality score). Pass a result's product.id to get_product_dossier for the full picture. " +
-      "Paid: one x402 micro-payment in USDC per call.",
+      "Search and rank e-commerce product opportunities. Describe what you want in plain words (query), optionally within a " +
+      "category. Each result has an opportunity score (0–100, a calculated estimate) with a confidence (0–1), " +
+      "quality/value/demand/sentiment/trend scores, the best current offer, the top cited evidence (source URL, timestamp, " +
+      "quality score) and the query words it matched. Every response lists availableCategories. Pass a result's product.id " +
+      "to get_product_dossier for the full picture. Paid: one x402 micro-payment in USDC per call.",
     inputSchema: {
+      query: z
+        .string()
+        .max(200)
+        .optional()
+        .describe(
+          'What to look for, in plain words, e.g. "wireless earbuds", "pizza oven" or "moisturizer". Matches product names, ' +
+            "brands, categories and descriptions, ignoring case, plurals and British/American spelling; products matching " +
+            "more of the words rank first. Omit to rank everything.",
+        ),
       category: z
         .string()
-        .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "a lowercase slug, e.g. wireless-earbuds")
+        .max(100)
         .optional()
-        .describe("Category slug, e.g. earplugs or wireless-earbuds. Omit to search every category."),
+        .describe(
+          "Optional category to narrow to, e.g. beauty, gadgets or tech-accessories. A value that isn't one of " +
+            "availableCategories is searched for like query words instead.",
+        ),
       limit: z.number().int().min(1).max(25).default(10).describe("How many products to return (1–25)."),
       includeSample: z.boolean().default(false).describe("Also include ProductRadar's demo products (marked isSample)."),
     },
     annotations: paid,
   },
-  async ({ category, limit, includeSample }) => {
+  async ({ query, category, limit, includeSample }) => {
     const q = new URLSearchParams({ limit: String(limit), includeSample: String(includeSample) });
+    if (query) q.set("q", query);
     if (category) q.set("category", category);
     return callApi("find_product_opportunities", `/api/agent/v1/opportunity?${q}`);
   },

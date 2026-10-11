@@ -2,14 +2,16 @@
 // reads products, evidence and scores — knows nothing about how the caller paid.
 
 import type { PrismaClient } from "@/generated/prisma/client";
-import { listProducts, type ProductDto } from "@/server/products/service";
+import { parseSearch, toCategorySlug } from "@/server/products/search";
+import { listCategories, listProducts, searchProducts, type ProductDto } from "@/server/products/service";
 import { METHODOLOGY_VERSION } from "@/server/scoring/engine";
 
-export type OpportunityQuery = { category?: string; limit: number; includeSample: boolean };
+/** `q` is plain words ("wireless earbuds"); `category` may be a slug or plain words too. */
+export type OpportunityQuery = { q?: string; category?: string; limit: number; includeSample: boolean };
 
 const TOP_EVIDENCE = 5;
 
-function toOpportunity(p: ProductDto, rank: number) {
+function toOpportunity(p: ProductDto, rank: number, matched?: string[]) {
   const overall = p.scores.OVERALL;
   const observed = p.evidence.map((e) => e.observedAt).sort();
   return {
@@ -21,6 +23,7 @@ function toOpportunity(p: ProductDto, rank: number) {
       category: p.category,
       isSample: p.isSample,
     },
+    ...(matched ? { matchedWords: matched } : {}),
     opportunityScore: overall
       ? { value: overall.value, confidence: overall.confidence, calculatedAt: overall.calculatedAt }
       : null,
@@ -59,16 +62,39 @@ function toOpportunity(p: ProductDto, rank: number) {
 }
 
 export async function getOpportunities(db: PrismaClient, q: OpportunityQuery) {
-  // Over-fetch when sample rows must be filtered out after ranking.
-  const products = await listProducts(db, { category: q.category, limit: q.includeSample ? q.limit : 50, includeLive: true });
-  const ranked = products.filter((p) => q.includeSample || !p.isSample).slice(0, q.limit);
+  const categories = await listCategories(db, { includeSample: q.includeSample });
+
+  // A category filters only when it names one that has products. Anything else
+  // ("wireless earbuds", or a category with only demo products) is searched for
+  // like the query words, so a guessed category still finds what it describes.
+  const slug = q.category ? toCategorySlug(q.category) : "";
+  const category = categories.some((c) => c.category === slug) ? slug : undefined;
+  const terms = parseSearch([q.q, category ? "" : q.category].filter(Boolean).join(" "));
+
+  let results: { product: ProductDto; matched?: string[] }[];
+  if (terms.length > 0) {
+    results = await searchProducts(db, { terms, category, limit: q.limit, includeSample: q.includeSample });
+  } else {
+    // Over-fetch when sample rows must be filtered out after ranking.
+    const products = await listProducts(db, { category, limit: q.includeSample ? q.limit : 50, includeLive: true });
+    results = products
+      .filter((p) => q.includeSample || !p.isSample)
+      .slice(0, q.limit)
+      .map((product) => ({ product }));
+  }
+
   return {
     generatedAt: new Date().toISOString(),
     methodologyVersion: METHODOLOGY_VERSION,
     disclaimer:
       "opportunityScore is a calculated estimate (0–100) with a confidence (0–1), derived only from the cited evidence. It is not a guarantee.",
     query: q,
-    count: ranked.length,
-    opportunities: ranked.map((p, i) => toOpportunity(p, i + 1)),
+    interpretedAs: { category: category ?? null, searchWords: terms.map((t) => t.word) },
+    count: results.length,
+    ...(results.length === 0
+      ? { hint: "Nothing matched. Try fewer or broader words, or one of availableCategories." }
+      : {}),
+    availableCategories: categories,
+    opportunities: results.map((r, i) => toOpportunity(r.product, i + 1, r.matched)),
   };
 }

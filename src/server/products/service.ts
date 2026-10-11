@@ -3,6 +3,7 @@
 
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { bestCurrentOffer } from "@/server/scoring/engine";
+import type { SearchTerm } from "./search";
 
 const MAX_EVIDENCE_PER_PRODUCT = 50;
 
@@ -39,16 +40,81 @@ export async function listProducts(
     ORDER BY overall.value DESC NULLS LAST, p.name ASC
     LIMIT ${limit}`;
 
-  const ids = ranked.map((r) => r.id);
-  if (ids.length === 0) return [];
+  return (await loadInOrder(db, ranked, asOf)).map(({ dto }) => dto);
+}
 
-  const rows = await db.product.findMany({ where: { id: { in: ids } }, include: PRODUCT_INCLUDE });
+export type SearchProductsOptions = {
+  terms: SearchTerm[];
+  category?: string;
+  limit: number;
+  includeSample: boolean;
+  asOf?: Date;
+};
 
-  // A product deleted between the two queries is simply skipped.
+/**
+ * Live products (and samples, if asked) whose name, brand, category or description
+ * has a word starting with any of the search terms, ignoring case. Ranked by how much of the query
+ * matched (sum of matched term weights), then by latest OVERALL score. Each result
+ * lists the query words it matched.
+ */
+export async function searchProducts(
+  db: PrismaClient,
+  { terms, category, limit, includeSample, asOf = new Date() }: SearchProductsOptions,
+) {
+  // One row per (word, pattern); patterns are letters and digits only, so safe inside a regex.
+  const rows = terms.flatMap((t) => t.patterns.map((pattern) => ({ word: t.word, weight: t.weight, pattern })));
+  if (rows.length === 0) return [];
+
+  const ranked = await db.$queryRaw<{ id: string; matched: string[] }[]>`
+    WITH term AS (
+      SELECT * FROM unnest(
+        ${rows.map((r) => r.word)}::text[],
+        ${rows.map((r) => r.weight)}::float8[],
+        ${rows.map((r) => r.pattern)}::text[]
+      ) AS t(word, weight, pattern)
+    ),
+    hit AS (
+      SELECT DISTINCT p.id, p.name, term.word, term.weight
+      FROM "Product" p
+      -- Match at the start of a word: "oven" finds "ovens", not "proven".
+      JOIN term ON lower(concat_ws(' ', p.name, p.brand, p.category, p.description)) ~ ('(^|[^[:alnum:]])' || term.pattern)
+      WHERE (${category ?? null}::text IS NULL OR p.category = ${category ?? null})
+        AND (${includeSample} OR NOT p."isSample")
+    )
+    SELECT hit.id, array_agg(hit.word ORDER BY hit.weight DESC, hit.word) AS matched
+    FROM hit
+    LEFT JOIN LATERAL (
+      SELECT s.value FROM "ProductScore" s
+      WHERE s."productId" = hit.id AND s.dimension = 'OVERALL'
+      ORDER BY s."calculatedAt" DESC, s.id DESC
+      LIMIT 1
+    ) overall ON true
+    GROUP BY hit.id, hit.name, overall.value
+    ORDER BY sum(hit.weight) DESC, overall.value DESC NULLS LAST, hit.name ASC
+    LIMIT ${limit}`;
+
+  return (await loadInOrder(db, ranked, asOf)).map(({ dto, hit }) => ({ product: dto, matched: hit.matched }));
+}
+
+/** Categories that have products, with how many (live only, unless samples are asked for). */
+export async function listCategories(db: PrismaClient, { includeSample }: { includeSample: boolean }) {
+  const groups = await db.product.groupBy({
+    by: ["category"],
+    where: includeSample ? {} : { isSample: false },
+    _count: { _all: true },
+    orderBy: { category: "asc" },
+  });
+  return groups.map((g) => ({ category: g.category, products: g._count._all }));
+}
+
+/** Full products for ranked ids, in the same order. A product deleted in between is skipped. */
+async function loadInOrder<T extends { id: string }>(db: PrismaClient, ranked: T[], asOf: Date) {
+  if (ranked.length === 0) return [];
+  const rows = await db.product.findMany({ where: { id: { in: ranked.map((r) => r.id) } }, include: PRODUCT_INCLUDE });
   const byId = new Map(rows.map((r) => [r.id, r]));
-  return ids.flatMap((id) => {
-    const row = byId.get(id);
-    return row ? [toDto(row, asOf)] : [];
+  return ranked.flatMap((hit) => {
+    const row = byId.get(hit.id);
+    return row ? [{ hit, dto: toDto(row, asOf) }] : [];
   });
 }
 

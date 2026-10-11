@@ -110,9 +110,13 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
 Public docs for developers and agents: **`/docs`** (always dark; price, network and the example 402 come
 from the live payment config).
 
-- `GET /api/agent/v1/opportunity?category=earplugs&limit=10&includeSample=false` — ranked product
-  opportunities: rank, opportunity score + confidence, per-dimension scores, best offer, and the top
-  evidence (source URL, timestamp, quality score) behind each product.
+- `GET /api/agent/v1/opportunity?q=wireless+earbuds&category=gadgets&limit=10&includeSample=false` — ranked
+  product opportunities: rank, opportunity score + confidence, per-dimension scores, best offer, and the top
+  evidence (source URL, timestamp, quality score) behind each product. `q` is a plain-words search over
+  name, brand, category and description (word starts, any case, plurals, British/American spelling;
+  products matching more words rank first, each lists `matchedWords`). `category` filters only when it
+  names a category with products; anything else is searched like `q`. Every response lists
+  `availableCategories`.
 - `GET /api/agent/v1/dossier?productId=<uuid>` — the full Opportunity Dossier for one product: rule-based
   verdict + confidence, every score with its evidence ids, all offers, a profit estimate (assumptions
   listed), supplier search keywords/links, a draft Shopify CSV, and up to 50 cited sources. 404 if unknown.

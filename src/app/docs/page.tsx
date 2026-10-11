@@ -337,7 +337,7 @@ async function DocsMain() {
   await connection();
   const status = agentPaymentStatus();
   const req = status.requirements;
-  const exampleUrl = `${SITE}/api/agent/v1/opportunity?category=earplugs&limit=5`;
+  const exampleUrl = `${SITE}/api/agent/v1/opportunity?q=wireless+earbuds&limit=5`;
   const challenge = paymentRequiredBody(
     {
       url: exampleUrl,
@@ -553,7 +553,7 @@ const fetchWithPayment = wrapFetchWithPaymentFromConfig(fetch, {
   spendControls: { maxAmountPerPayment: "$0.10" }, // never pay more than this per request
 });
 
-const res = await fetchWithPayment("${SITE}/api/agent/v1/opportunity?category=earplugs&limit=5");
+const res = await fetchWithPayment("${SITE}/api/agent/v1/opportunity?q=wireless+earbuds&limit=5");
 const data = await res.json();
 const receipt = decodePaymentResponseHeader(res.headers.get("PAYMENT-RESPONSE")!);
 
@@ -581,16 +581,30 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
 
         <div id="opportunity" className="scroll-mt-6 space-y-4">
           <h3 className="font-mono text-base font-semibold text-white">GET /api/agent/v1/opportunity</h3>
-          <p>Products ranked by opportunity score, with the evidence behind each one.</p>
+          <p>
+            Products ranked by opportunity score, with the evidence behind each one. Search in plain words with{" "}
+            <C>q</C>: products matching more of the words come first, and each result lists its{" "}
+            <C>matchedWords</C>. Every response also lists <C>availableCategories</C>.
+          </p>
           <Table
             head={["Parameter", "Type", "Default", "Meaning"]}
             rows={[
               [
+                <C key="q">q</C>,
+                "text",
+                "none",
+                <>
+                  What to look for, e.g. <C>wireless earbuds</C> or <C>pizza oven</C>. Matches names, brands, categories
+                  and descriptions, ignoring case, plurals and British/American spelling
+                </>,
+              ],
+              [
                 <C key="c">category</C>,
-                "slug",
+                "text",
                 "all",
                 <>
-                  Lowercase category, e.g. <C>earplugs</C> or <C>wireless-earbuds</C>
+                  Narrow to one category, e.g. <C>beauty</C> or <C>tech-accessories</C>. A value that isn&apos;t a
+                  category is searched for like <C>q</C>
                 </>,
               ],
               [<C key="l">limit</C>, "1–25", "10", "How many products to return"],
@@ -642,7 +656,7 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
               <span key="p" className="whitespace-nowrap">
                 {status.priceUsdc} USDC
               </span>,
-              "Ranked products with scores, confidence, best offer and top evidence",
+              "Plain-words search; ranked products with scores, confidence, best offer and top evidence",
             ],
             [
               <C key="d">get_product_dossier</C>,

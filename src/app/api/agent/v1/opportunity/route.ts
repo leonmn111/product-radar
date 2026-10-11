@@ -4,11 +4,17 @@ import { db } from "@/lib/db";
 import { getOpportunities } from "@/server/opportunities/service";
 import { withX402Payment } from "@/server/payments/x402/middleware";
 
-const Query = z.object({
-  category: z
+const optionalText = (max: number) =>
+  z
     .string()
-    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "category must be a lowercase slug, e.g. earplugs")
-    .optional(),
+    .trim()
+    .max(max)
+    .optional()
+    .transform((v) => v || undefined);
+
+const Query = z.object({
+  q: optionalText(200),
+  category: optionalText(100),
   limit: z.coerce.number().int().min(1).max(25).default(10),
   includeSample: z
     .enum(["true", "false"])
@@ -16,8 +22,9 @@ const Query = z.object({
     .transform((v) => v === "true"),
 });
 
-// GET /api/agent/v1/opportunity?category=earplugs&limit=10
+// GET /api/agent/v1/opportunity?q=wireless+earbuds&category=gadgets&limit=10
 // Ranked product opportunities for AI agents, paid per request via x402.
+// `q` searches names, brands, categories and descriptions in plain words.
 // The handler below is pure domain logic; payment is handled by the wrapper.
 export const GET = withX402Payment(
   { description: "ProductRadar ranked product opportunities with evidence-backed scores" },
