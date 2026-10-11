@@ -37,6 +37,12 @@ export const GET = withX402Payment(
         { status: 400 },
       );
     }
-    return Response.json(await getOpportunities(db, parsed.data));
+    const result = await getOpportunities(db, parsed.data);
+    if (result.count === 0) {
+      // Non-2xx ⇒ no charge: an agent never pays for an empty answer. The message
+      // carries the categories, since MCP clients show only `message` on errors.
+      return Response.json({ error: "no_results", message: result.hint, ...result }, { status: 404 });
+    }
+    return Response.json(result);
   },
 );

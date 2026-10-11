@@ -61,6 +61,13 @@ function toOpportunity(p: ProductDto, rank: number, matched?: string[]) {
   };
 }
 
+function noResultsHint(words: string[], categories: { category: string; products: number }[]) {
+  const searched = words.length > 0 ? ` matched "${words.join(" ")}"` : " were found";
+  const list = categories.map((c) => `${c.category} (${c.products})`).join(", ");
+  // No closing full stop: MCP clients append their own sentence after it.
+  return `No products${searched}. Try fewer or broader words${list ? `, or one of these categories: ${list}` : ""}`;
+}
+
 export async function getOpportunities(db: PrismaClient, q: OpportunityQuery) {
   const categories = await listCategories(db, { includeSample: q.includeSample });
 
@@ -91,9 +98,7 @@ export async function getOpportunities(db: PrismaClient, q: OpportunityQuery) {
     query: q,
     interpretedAs: { category: category ?? null, searchWords: terms.map((t) => t.word) },
     count: results.length,
-    ...(results.length === 0
-      ? { hint: "Nothing matched. Try fewer or broader words, or one of availableCategories." }
-      : {}),
+    ...(results.length === 0 ? { hint: noResultsHint(terms.map((t) => t.word), categories) } : {}),
     availableCategories: categories,
     opportunities: results.map((r, i) => toOpportunity(r.product, i + 1, r.matched)),
   };

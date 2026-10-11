@@ -584,7 +584,8 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
           <p>
             Products ranked by opportunity score, with the evidence behind each one. Search in plain words with{" "}
             <C>q</C>: products matching more of the words come first, and each result lists its{" "}
-            <C>matchedWords</C>. Every response also lists <C>availableCategories</C>.
+            <C>matchedWords</C>. Every response also lists <C>availableCategories</C>. A search that matches
+            nothing returns <C>404</C> with <C>error: &quot;no_results&quot;</C> and a hint, and is not charged.
           </p>
           <Table
             head={["Parameter", "Type", "Default", "Meaning"]}

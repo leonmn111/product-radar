@@ -116,7 +116,7 @@ from the live payment config).
   name, brand, category and description (word starts, any case, plurals, British/American spelling;
   products matching more words rank first, each lists `matchedWords`). `category` filters only when it
   names a category with products; anything else is searched like `q`. Every response lists
-  `availableCategories`.
+  `availableCategories`. No matches → 404 `no_results` with a hint, and no charge.
 - `GET /api/agent/v1/dossier?productId=<uuid>` — the full Opportunity Dossier for one product: rule-based
   verdict + confidence, every score with its evidence ids, all offers, a profit estimate (assumptions
   listed), supplier search keywords/links, a draft Shopify CSV, and up to 50 cited sources. 404 if unknown.
