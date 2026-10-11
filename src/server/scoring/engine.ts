@@ -5,10 +5,12 @@
 // (0–1) and the ids of the evidence it was computed from (Rule 3). If there is
 // no usable evidence for a dimension, NO score is produced — never a default.
 //
-// ── Formulas (methodology v1.0.0) ───────────────────────────────────────────
+// ── Formulas (methodology v1.2.0) ───────────────────────────────────────────
 //
 // Evidence weight     w = (quality / 100) × 0.5^(ageDays / 90) × sourceWeight[sourceType]
-//                     (90-day half-life; future-dated evidence is ignored)
+//                     (90-day half-life; future-dated evidence is ignored). Age counts from
+//                     publishedAt when the source dates the fact (e.g. an expert review),
+//                     otherwise from observedAt — reading an old review today doesn't make it new.
 //
 // Re-captures         RATING, REVIEW_COUNT and SENTIMENT are snapshots: repeated captures
 //                     from the same source URL count once (latest wins), so re-submitting a
@@ -38,7 +40,7 @@
 
 import type { Availability, EvidenceMetric, ScoreDimension, SourceType } from "@/generated/prisma/enums";
 
-export const METHODOLOGY_VERSION = "1.1.0";
+export const METHODOLOGY_VERSION = "1.2.0";
 
 const HALF_LIFE_DAYS = 90;
 const PRIOR = 50;
@@ -76,6 +78,7 @@ export type EvidenceFact = {
   sourceUrl: string;
   sourceType: SourceType;
   observedAt: Date;
+  publishedAt?: Date | null; // when the source published it, if known
   qualityScore: number; // 0–100
   metric: EvidenceMetric | null;
   metricValue: number | null;
@@ -112,8 +115,9 @@ const round = (x: number, dp: number) => Math.round(x * 10 ** dp) / 10 ** dp;
 const confidenceFrom = (weightSum: number) => 1 - Math.exp(-weightSum / CONFIDENCE_SCALE);
 
 export function evidenceWeight(e: EvidenceFact, asOf: Date): number {
-  const ageDays = (asOf.getTime() - e.observedAt.getTime()) / DAY_MS;
-  if (ageDays < 0) return 0; // not yet observed as of this calculation
+  if (e.observedAt.getTime() > asOf.getTime()) return 0; // not yet observed as of this calculation
+  const since = e.publishedAt && e.publishedAt.getTime() < e.observedAt.getTime() ? e.publishedAt : e.observedAt;
+  const ageDays = (asOf.getTime() - since.getTime()) / DAY_MS;
   return (e.qualityScore / 100) * 0.5 ** (ageDays / HALF_LIFE_DAYS) * SOURCE_WEIGHT[e.sourceType];
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { extractProduct, normaliseAvailability, normalisePrice } from "./extract";
 import { FetchPageError, isPrivateAddress, parsePublicUrl, robotsAllows } from "./fetch-page";
-import { slugify } from "./ingest";
+import { namesLookAlike, slugify } from "./ingest";
 
 const page = (head: string, body = "") => `<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
 const ld = (obj: unknown) => `<script type="application/ld+json">${JSON.stringify(obj)}</script>`;
@@ -23,6 +23,8 @@ describe("extractProduct", () => {
     );
     const x = extractProduct(html, URL_);
     expect(x.title).toEqual({ value: "Trail Runner 2", method: "json-ld" });
+    const shopify = page(ld({ "@type": "Product", name: "spotwear strawberry — Default Title" }));
+    expect(extractProduct(shopify, URL_).title?.value).toBe("spotwear strawberry");
     expect(x.brand?.value).toBe("Peak");
     expect(x.imageUrl?.value).toBe("https://shop.test/img/a.jpg");
     expect(x.price).toEqual({ value: { amount: "129.00", currency: "USD", availability: "IN_STOCK" }, method: "json-ld" });
@@ -68,6 +70,70 @@ describe("extractProduct", () => {
     expect(extractProduct(bad, URL_).rating).toBeNull();
   });
 
+  it("ignores placeholder ratings and the count published with them", () => {
+    // Some stores publish "0 / 5" before their review widget loads; on schema.org's default 1–5 scale that isn't a rating.
+    const placeholder = page(ld({ "@type": "Product", name: "Kettle", aggregateRating: { ratingValue: "0", reviewCount: "1365" } }));
+    expect(extractProduct(placeholder, URL_).rating).toBeNull();
+    expect(extractProduct(placeholder, URL_).reviewCount).toBeNull();
+    const none = page(ld({ "@type": "Product", name: "Kettle", aggregateRating: { ratingValue: 0, reviewCount: 0 } }));
+    expect(extractProduct(none, URL_).reviewCount?.value).toBe(0);
+    const zeroBased = page(ld({ "@type": "Product", name: "Kettle", aggregateRating: { ratingValue: 0, worstRating: 0, ratingCount: 3 } }));
+    expect(extractProduct(zeroBased, URL_).rating?.value).toEqual({ value: 0, best: 5 });
+  });
+
+  it("reads an expert review's score, reviewer, date and subject", () => {
+    // Publisher style: a Product with no offers carrying one review.
+    const article = page(
+      ld({
+        "@type": "Product",
+        name: "Ooni Koda 2",
+        review: {
+          "@type": "Review",
+          reviewRating: { "@type": "Rating", ratingValue: 4.5, bestRating: 5 },
+          author: { "@type": "Person", name: "Laura Honey" },
+          datePublished: "2025-08-10T14:00:00+00:00",
+        },
+      }),
+    );
+    expect(extractProduct(article, URL_).review).toEqual({
+      value: {
+        rating: { value: 4.5, best: 5 },
+        itemName: "Ooni Koda 2",
+        author: "Laura Honey",
+        publishedAt: new Date("2025-08-10T14:00:00Z"),
+      },
+      method: "json-ld",
+    });
+    // A top-level Review, dated by its article.
+    const standalone = page(
+      ld([
+        { "@type": "NewsArticle", datePublished: "2026-01-05T09:00:00Z" },
+        { "@type": "Review", itemReviewed: { "@type": "Product", name: "Halo Pro" }, reviewRating: { ratingValue: 8, bestRating: 10 }, author: [{ name: "A. Writer" }] },
+      ]),
+    );
+    expect(extractProduct(standalone, URL_).review?.value).toEqual({
+      rating: { value: 8, best: 10 },
+      itemName: "Halo Pro",
+      author: "A. Writer",
+      publishedAt: new Date("2026-01-05T09:00:00Z"),
+    });
+  });
+
+  it("never treats a store page's customer reviews as an expert review", () => {
+    const customerReview = { "@type": "Review", reviewRating: { ratingValue: 5 }, author: { name: "Sam" } };
+    const priced = page(ld({ "@type": "Product", name: "Mug", offers: { price: "12", priceCurrency: "USD" }, review: customerReview }));
+    expect(extractProduct(priced, URL_).review).toBeNull();
+    const many = page(ld({ "@type": "Product", name: "Mug", review: [customerReview, customerReview] }));
+    expect(extractProduct(many, URL_).review).toBeNull();
+    const priceInMeta = page(
+      ld({ "@type": "Product", name: "Mug", review: customerReview }) +
+        `<meta property="product:price:amount" content="12"><meta property="product:price:currency" content="USD">`,
+    );
+    expect(extractProduct(priceInMeta, URL_).review).toBeNull();
+    const outOfRange = page(ld({ "@type": "Review", reviewRating: { ratingValue: 9 } })); // 9 out of a default 5
+    expect(extractProduct(outOfRange, URL_).review).toBeNull();
+  });
+
   it("survives malformed JSON-LD and uses the next layer", () => {
     const html = page(`<script type="application/ld+json">{ not json</script><meta property="og:title" content="Fallback">`);
     expect(extractProduct(html, URL_).title).toEqual({ value: "Fallback", method: "open-graph" });
@@ -104,6 +170,14 @@ describe("normalisers", () => {
   });
   it("slugifies titles to the database's slug format", () => {
     expect(slugify("Caffè  Uno — Lever (2024)!")).toBe("caffe-uno-lever-2024");
+  });
+  it("checks an extra source names the same item before adding it to a product", () => {
+    expect(namesLookAlike("Ooni Koda 2 Gas Powered Pizza Oven- 2nd Generation", "Ooni Koda 2 Gas Fuel Outdoor Pizza Oven")).toBe(true);
+    expect(namesLookAlike("Skullcandy Crusher® Evo - True Black", "Skullcandy Crusher Evo review")).toBe(true);
+    expect(namesLookAlike("ILIA Limitless Lash Mascara", "Limitless Lash Mascara")).toBe(true);
+    expect(namesLookAlike("Ooni Koda 2", "Glow Recipe Banana Soufflé Moisture Cream")).toBe(false);
+    expect(namesLookAlike("Skullcandy Crusher Evo", "Skullcandy Method 360 ANC")).toBe(false); // brand alone isn't enough
+    expect(namesLookAlike("The Black Set", "The Black Set")).toBe(false); // only generic words
   });
 });
 

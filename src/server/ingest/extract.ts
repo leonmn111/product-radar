@@ -5,6 +5,11 @@
 // schema.org microdata › plain <title>/<meta description>. A price is only
 // returned with an explicit currency; we never infer a price from loose text.
 // Each fact records where it came from so evidence quality can reflect it.
+//
+// Two kinds of page are understood: a store's product page (price, the store's
+// own customer rating) and an expert review article that publishes its verdict
+// as structured data (a dated score by a named reviewer). A score written only
+// in the article text is never read.
 
 import * as cheerio from "cheerio";
 
@@ -24,9 +29,19 @@ export type ExtractedProduct = {
   price: Sourced<{ amount: string; currency: string; availability: ExtractedAvailability }> | null;
   rating: Sourced<{ value: number; best: number }> | null; // value on 0..best
   reviewCount: Sourced<number> | null;
+  // An expert's review of the product (never set on a store page — customer
+  // reviews there are summarised by `rating`).
+  review: Sourced<ExpertReview> | null;
   // True only when the page explicitly declares itself a product: schema.org
   // Product (JSON-LD or microdata), og:type "product", or product price tags.
   declaresProduct: boolean;
+};
+
+export type ExpertReview = {
+  rating: { value: number; best: number };
+  itemName: string | null; // what the review says it is about
+  author: string | null;
+  publishedAt: Date | null;
 };
 
 type Json = Record<string, unknown>;
@@ -75,6 +90,30 @@ const currencyOf = (v: unknown) => {
   return c && /^[A-Z]{3}$/.test(c) ? c : null;
 };
 
+/** A schema.org Rating / AggregateRating as { value, best }, or null if it isn't a usable rating. */
+function ratingOf(r: unknown): { value: number; best: number } | null {
+  if (!r || typeof r !== "object") return null;
+  const o = r as Json;
+  const value = Number(text(o.ratingValue));
+  const best = Number(text(o.bestRating) ?? 5);
+  // schema.org's default worstRating is 1: a 0 on that scale is a placeholder some
+  // stores publish before their review widget loads, not a real rating.
+  const worst = Number(text(o.worstRating) ?? 1);
+  if (![value, best, worst].every(Number.isFinite) || worst < 0 || best <= worst) return null;
+  return value >= worst && value <= best ? { value, best } : null;
+}
+
+const nameOf = (v: unknown) => {
+  const x = first(v as unknown);
+  return text(typeof x === "object" && x ? (x as Json).name : x);
+};
+
+const pastDate = (v: unknown): Date | null => {
+  const s = text(v);
+  const d = s ? new Date(s) : null;
+  return d && !Number.isNaN(d.getTime()) && d.getTime() <= Date.now() ? d : null;
+};
+
 // ── JSON-LD ──────────────────────────────────────────────────────────────────
 
 function jsonLdNodes($: cheerio.CheerioAPI): Json[] {
@@ -103,7 +142,8 @@ function fromJsonLd(nodes: Json[]): Partial<ExtractedProduct> {
   const m = "json-ld" as const;
   const out: Partial<ExtractedProduct> = {};
 
-  const name = text(product.name);
+  // Shopify appends its placeholder variant name ("Spot Patch — Default Title") to single-variant products.
+  const name = text(product.name)?.replace(/\s+[—–-]\s+Default Title$/i, "");
   if (name) out.title = { value: name, method: m };
   const desc = text(product.description);
   if (desc) out.description = { value: desc, method: m };
@@ -143,15 +183,47 @@ function fromJsonLd(nodes: Json[]): Partial<ExtractedProduct> {
 
   const agg = product.aggregateRating as Json | undefined;
   if (agg && typeof agg === "object") {
-    const value = Number(text(agg.ratingValue));
-    const best = Number(text(agg.bestRating) ?? 5);
-    if (Number.isFinite(value) && Number.isFinite(best) && best > 0 && value >= 0 && value <= best) {
-      out.rating = { value: { value, best }, method: m };
-    }
+    const rating = ratingOf(agg);
+    if (rating) out.rating = { value: rating, method: m };
     const count = Number(text(agg.ratingCount) ?? text(agg.reviewCount));
-    if (Number.isInteger(count) && count >= 0) out.reviewCount = { value: count, method: m };
+    // A published-but-unusable average (e.g. "0 / 5 from 1,365 reviews") means the summary
+    // is broken, so its count isn't trusted either.
+    const brokenAverage = !rating && text(agg.ratingValue) !== null && count > 0;
+    if (Number.isInteger(count) && count >= 0 && !brokenAverage) out.reviewCount = { value: count, method: m };
   }
   return out;
+}
+
+/**
+ * An expert review published as structured data: either one top-level Review of
+ * an item, or a Product with no offers carrying a single review (how many
+ * publishers mark up review articles). A Product with offers is a store page, and
+ * its reviews are customers', so it never yields an expert review.
+ */
+function expertReviewFromJsonLd(nodes: Json[]): Sourced<ExpertReview> | null {
+  const products = nodes.filter((n) => isType(n, "product") || isType(n, "productgroup"));
+  if (products.some((p) => p.offers)) return null;
+
+  const found: { review: Json; item: Json | undefined }[] = [];
+  for (const n of nodes) if (isType(n, "review")) found.push({ review: n, item: first(n.itemReviewed as Json | Json[] | undefined) });
+  for (const p of products) {
+    if (p.review && !Array.isArray(p.review)) found.push({ review: p.review as Json, item: p });
+  }
+  if (found.length !== 1) return null; // none, or a list of reviews — not one verdict
+
+  const { review, item } = found[0];
+  const rating = ratingOf(review.reviewRating);
+  if (!rating) return null;
+  const article = nodes.find((n) => ["article", "newsarticle", "reviewnewsarticle", "blogposting"].some((t) => isType(n, t)));
+  return {
+    value: {
+      rating,
+      itemName: text(item?.name),
+      author: nameOf(review.author),
+      publishedAt: pastDate(review.datePublished) ?? pastDate(article?.datePublished),
+    },
+    method: "json-ld",
+  };
 }
 
 // ── Meta tags & microdata ────────────────────────────────────────────────────
@@ -222,6 +294,7 @@ export function extractProduct(html: string, pageUrl: string): ExtractedProduct 
   const $ = cheerio.load(html);
   const nodes = jsonLdNodes($);
   const layers = [fromJsonLd(nodes), fromMeta($), fromMicrodata($), fromHtml($)];
+  const review = expertReviewFromJsonLd(nodes);
   const ogType = $('meta[property="og:type"]').attr("content")?.toLowerCase() ?? "";
   const declaresProduct =
     nodes.some((n) => isType(n, "product") || isType(n, "productgroup")) ||
@@ -262,6 +335,8 @@ export function extractProduct(html: string, pageUrl: string): ExtractedProduct 
     price: pick("price"),
     rating: pick("rating"),
     reviewCount: pick("reviewCount"),
+    // A priced page is a store page, whatever else it marks up.
+    review: pick("price") ? null : review,
     declaresProduct,
   };
 }

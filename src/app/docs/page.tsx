@@ -132,7 +132,7 @@ const json = (v: unknown) => JSON.stringify(v, null, 2);
 // Real responses from ProductRadar (a live product page ingested on 2026-10-08), shortened.
 const OPPORTUNITY_EXAMPLE = json({
   generatedAt: "2026-10-09T01:23:21.102Z",
-  methodologyVersion: "1.1.0",
+  methodologyVersion: "1.2.0",
   disclaimer:
     "opportunityScore is a calculated estimate (0–100) with a confidence (0–1), derived only from the cited evidence. It is not a guarantee.",
   query: { category: "earplugs", limit: 1, includeSample: false },
@@ -183,7 +183,7 @@ const OPPORTUNITY_EXAMPLE = json({
 
 const DOSSIER_EXAMPLE = json({
   generatedAt: "2026-10-09T01:23:21.129Z",
-  methodologyVersion: "1.1.0",
+  methodologyVersion: "1.2.0",
   disclaimer:
     "Scores, the verdict and the profit figures are rule-based estimates calculated only from the cited evidence. They are not guarantees.",
   product: {
@@ -210,7 +210,7 @@ const DOSSIER_EXAMPLE = json({
       confidence: 0.157,
       confidenceLevel: "low",
       calculatedAt: "2026-10-08T11:03:34.831Z",
-      methodologyVersion: "1.1.0",
+      methodologyVersion: "1.2.0",
       evidenceIds: ["01a11b1e-f453-7037-b272-0558155253db", "…"],
     },
     "…": "value, quality, demand, sentiment, trend",

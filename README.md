@@ -28,6 +28,7 @@ Check it works: open http://localhost:3000/api/health
 | `npm run db:verify` | Tries to break every data rule against the real database and reports pass/fail. Cleans up after itself. |
 | `npm run db:seed` | Replace sample products (fictional brands, example.com sources) and calculate their scores. Refuses to run in production. |
 | `npm run db:rescore` | Recalculate scores for every category (e.g. after a formula change). History is kept. |
+| `npm run products:import -- <list.json>` | Import real products from a list of store pages, each with optional extra sources (other stores, expert reviews). See "Bulk import" below. |
 | `npm run stripe:setup` | Create the Pro product + £39/month price in Stripe (uses `STRIPE_SECRET_KEY`). |
 | `npm run agent:test` | Mock AI agent: full x402 402 → pay → 200 flow plus abuse checks against a running server. |
 | `npm run mcp:build` | Bundle the MCP server (`mcp/`) and pack it into `public/mcp/` for download. |
@@ -183,9 +184,31 @@ Paste a product URL into **New opportunity URL** on the dashboard (or `POST /api
    ratings capped at 60.
 4. Recalculates scores for the whole category.
 
+A page can also be added to an existing product as an **extra source** (`ingestUrl(db, { url, productId })`):
+another store selling the same item (its price becomes another offer, its rating more evidence), or an **expert
+review** that publishes its verdict as structured data (score, reviewer, publication date — saved as REVIEW
+evidence, quality 80; scores written only in article text are never read). Before adding, the two pages' names
+must share distinctive words, which catches a wrong link but not a close variant — choose links carefully.
+Placeholder ratings (e.g. "0 / 5 from 1,365 reviews") are rejected along with their count.
+
 Code: `src/server/ingest/` (`fetch-page.ts`, `extract.ts`, `ingest.ts`) and `src/app/api/ingest/route.ts`.
 Many large retailers (Amazon, REI, Brooks…) block automated readers and return an error; independent stores
 (Shopify, WooCommerce) usually work.
+
+### Bulk import
+
+`npm run products:import -- scripts/data/real-products-2026-10.json` reads every page in the list with the
+same code (robots.txt respected, one request a second) and prints each product's overall confidence. Entries
+are `{ "category": "beauty", "url": "<store page>", "sources": ["<other store or expert review>", …] }`.
+Re-running re-reads the pages as new captures. On production, run it inside the `web` service:
+
+```bash
+npx -y @railway/cli@latest ssh --service web "npx -y tsx scripts/import-products.ts scripts/data/real-products-2026-10.json"
+```
+
+Confidence reflects how much independent, recent evidence exists: one store page gives about 0.16; each extra
+store or recent expert review adds to it. OVERALL can't reach 0.80 without SENTIMENT and TREND evidence
+(20% of its weight), which nothing collects yet.
 
 ## Products endpoint
 
@@ -202,6 +225,8 @@ Signed-out and Free viewers get sample products only (`meta.access = "sample_onl
 scores. Full formulas are in the file header. In short:
 
 - Each piece of evidence is weighted by its quality score, its age (halves every 90 days) and its source type.
+  Age counts from the source's publication date when it has one (an expert review from 2024 is old even if we
+  read it today), otherwise from when we captured it.
 - QUALITY (star ratings), SENTIMENT, DEMAND (review counts + search interest), TREND (search-interest slope),
   VALUE (quality vs. price relative to the category median), OVERALL (weighted blend).
 - Thin evidence is pulled toward a neutral 50 and gets low confidence. No usable evidence → no score at all.

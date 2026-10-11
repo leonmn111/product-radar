@@ -38,6 +38,16 @@ describe("scoring engine", () => {
     expect(calculateScores(input)).toEqual(calculateScores({ ...input, evidence: [...evidence].reverse() }));
   });
 
+  it("ages a dated source from when it was published, not when we read it", () => {
+    const readToday = ev({ observedAt: daysAgo(0) });
+    const publishedLastQuarter = ev({ observedAt: daysAgo(0), publishedAt: daysAgo(90) });
+    expect(evidenceWeight(publishedLastQuarter, asOf)).toBeCloseTo(evidenceWeight(readToday, asOf) / 2, 10);
+    // A publication date after our capture is impossible, so capture time is used.
+    expect(evidenceWeight(ev({ observedAt: daysAgo(0), publishedAt: daysAgo(-5) }), asOf)).toBe(evidenceWeight(readToday, asOf));
+    // Not yet captured as of the calculation ⇒ ignored, whatever the publication date.
+    expect(evidenceWeight(ev({ observedAt: daysAgo(-1), publishedAt: daysAgo(30) }), asOf)).toBe(0);
+  });
+
   it("weights evidence by quality, age (90-day half-life) and source type", () => {
     const fresh = ev({ observedAt: asOf, qualityScore: 100, sourceType: "REVIEW" });
     expect(evidenceWeight(fresh, asOf)).toBe(1);

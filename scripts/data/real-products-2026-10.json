@@ -1,0 +1,79 @@
+[
+  { "category": "tech-accessories", "url": "https://spigen.com/products/style-ring" },
+  { "category": "tech-accessories", "url": "https://spigen.com/products/iphone-17-series-case-classic-ls-magfit" },
+  { "category": "tech-accessories", "url": "https://spigen.com/products/iphone-16-series-case-ultra-hybrid-t-magfit" },
+  { "category": "tech-accessories", "url": "https://gonimble.com/products/champ-portable-charger-1" },
+  { "category": "tech-accessories", "url": "https://gonimble.com/products/champ-lite-portable-charger" },
+  { "category": "tech-accessories", "url": "https://gonimble.com/products/iphone-clear-case" },
+  { "category": "tech-accessories", "url": "https://gonimble.com/products/apollo-wireless-pad" },
+  { "category": "tech-accessories", "url": "https://nativeunion.com/products/reclear-case-for-iphone-18" },
+
+  {
+    "category": "beauty",
+    "url": "https://iliabeauty.com/products/limitless-lash-lengthening-mascara",
+    "sources": ["https://uk.spacenk.com/uk/makeup/eyes/mascara/limitless-lash-mascara-MUK200041015.html"]
+  },
+  {
+    "category": "beauty",
+    "url": "https://iliabeauty.com/products/eye-stylus-eyeshadow-stick",
+    "sources": ["https://www.spacenk.com/us/makeup/eyes/eyeshadow/eye-stylus-shadow-stick-MUK200054672.html"]
+  },
+  {
+    "category": "beauty",
+    "url": "https://theinkeylist.com/products/bio-active-ceramide-moisturiser",
+    "sources": [
+      "https://www.spacenk.com/us/skincare/moisturisers/day-moisturiser/bio-active-ceramide-repairing-and-plumping-moisturiser-MUK200054962.html",
+      "https://www.lookfantastic.com/p/the-inkey-list-bio-active-ceramide-moisturizer-50ml/14992375/",
+      "https://www.cultbeauty.co.uk/p/the-inkey-list-bio-active-ceramide-repairing-and-plumping-moisturiser-50ml/14992375/"
+    ]
+  },
+  { "category": "beauty", "url": "https://theinkeylist.com/products/caffeine-eye-cream" },
+  {
+    "category": "beauty",
+    "url": "https://glowrecipe.com/products/banana-cream",
+    "sources": ["https://www.cultbeauty.co.uk/p/13310733/"]
+  },
+  { "category": "beauty", "url": "https://tower28beauty.com/products/swipe-foundation" },
+  { "category": "beauty", "url": "https://rarebeauty.com/products/rare-eau-de-parfum" },
+  { "category": "beauty", "url": "https://supergoop.com/products/mineral-mattescreen-spf-40-untinted-duo" },
+  { "category": "beauty", "url": "https://rhodeskin.com/products/spotwear-strawberry" },
+
+  { "category": "gadgets", "url": "https://loftie.com/products/loftie" },
+  { "category": "gadgets", "url": "https://loftie.com/products/loftie-lamp" },
+  { "category": "gadgets", "url": "https://skullcandy.com/products/crusher-evo-sensory-bass-headphones-with-personal-sound" },
+  {
+    "category": "gadgets",
+    "url": "https://skullcandy.com/products/crusher-anc-2-sensory-bass-headphones-with-active-noise-canceling",
+    "sources": [
+      "https://www.soundguys.com/skullcandy-crusher-anc-2-review-91910/",
+      "https://www.tomsguide.com/reviews/skullcandy-crusher-anc-2",
+      "https://www.expertreviews.co.uk/headphones/skullcandy-crusher-anc-2-review"
+    ]
+  },
+  {
+    "category": "gadgets",
+    "url": "https://skullcandy.com/products/method-360-anc-noise-canceling-earbuds",
+    "sources": [
+      "https://www.tomsguide.com/audio/earbuds/skullcandy-method-360-anc-review",
+      "https://www.expertreviews.co.uk/technology/headphones-audio/skullcandy-method-360-anc-review"
+    ]
+  },
+  {
+    "category": "gadgets",
+    "url": "https://ooni.com/products/ooni-koda-2",
+    "sources": [
+      "https://www.johnlewis.com/ooni-koda-2-gas-fuel-outdoor-pizza-oven/slate-blue/p112893157",
+      "https://www.womanandhome.com/homes/kitchen/ooni-koda-14-2nd-generation-review/"
+    ]
+  },
+  {
+    "category": "gadgets",
+    "url": "https://ooni.com/products/ooni-halo-pro-spiral-mixer",
+    "sources": [
+      "https://www.johnlewis.com/ooni-halo-pro-pizza-dough-home-baking-spiral-stand-mixer/p114316648",
+      "https://www.tomsguide.com/home/home-appliances/ooni-halo-pro-spiral-stand-mixer-review",
+      "https://www.t3.com/home-living/appliances/ooni-halo-pro"
+    ]
+  },
+  { "category": "gadgets", "url": "https://lifx.com/products/lifx-string-lights" }
+]
