@@ -3,7 +3,7 @@
 
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { bestCurrentOffer } from "@/server/scoring/engine";
-import type { SearchTerm } from "./search";
+import { minimumMatch, type SearchTerm } from "./search";
 
 const MAX_EVIDENCE_PER_PRODUCT = 50;
 
@@ -53,9 +53,9 @@ export type SearchProductsOptions = {
 
 /**
  * Live products (and samples, if asked) whose name, brand, category or description
- * has a word starting with any of the search terms, ignoring case. Ranked by how much of the query
- * matched (sum of matched term weights), then by latest OVERALL score. Each result
- * lists the query words it matched.
+ * has a word starting with any of the search terms, ignoring case, covering at least
+ * minimumMatch() of the query. Ranked by how much of the query matched (sum of matched
+ * term weights), then by latest OVERALL score. Each result lists the query words it matched.
  */
 export async function searchProducts(
   db: PrismaClient,
@@ -90,6 +90,7 @@ export async function searchProducts(
       LIMIT 1
     ) overall ON true
     GROUP BY hit.id, hit.name, overall.value
+    HAVING sum(hit.weight) >= ${minimumMatch(terms)}
     ORDER BY sum(hit.weight) DESC, overall.value DESC NULLS LAST, hit.name ASC
     LIMIT ${limit}`;
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSearch, toCategorySlug } from "./search";
+import { minimumMatch, parseSearch, toCategorySlug } from "./search";
 
 // Mirrors the SQL in searchProducts: a pattern must start a word.
 const matches = (query: string, text: string) =>
@@ -59,6 +59,29 @@ describe("parseSearch", () => {
     for (const t of parseSearch("100% _cotton_ t-shirt 50%off \\ % _")) {
       for (const p of t.patterns) expect(p).toMatch(/^[\p{L}\p{N}]+$/u);
     }
+  });
+});
+
+describe("minimumMatch", () => {
+  const matched = (query: string, words: string[]) =>
+    parseSearch(query)
+      .filter((t) => words.includes(t.word))
+      .reduce((sum, t) => sum + t.weight, 0) >= minimumMatch(parseSearch(query));
+
+  it("needs the last word of a two-word query", () => {
+    expect(matched("wireless earbuds", ["wireless", "earbuds"])).toBe(true);
+    expect(matched("wireless earbuds", ["earbuds"])).toBe(true);
+    expect(matched("wireless earbuds", ["wireless"])).toBe(false);
+  });
+
+  it("lets any single word through on its own", () => {
+    expect(matched("earbuds", ["earbuds"])).toBe(true);
+  });
+
+  it("needs the last word, or all the others, for longer queries", () => {
+    expect(matched("noise cancelling headphones", ["headphones"])).toBe(true);
+    expect(matched("noise cancelling headphones", ["noise", "cancelling"])).toBe(true);
+    expect(matched("noise cancelling headphones", ["noise"])).toBe(false);
   });
 });
 

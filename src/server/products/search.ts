@@ -70,6 +70,16 @@ export function parseSearch(text: string): SearchTerm[] {
   }));
 }
 
+/**
+ * The least total weight a product must match to be a result: half the query.
+ * With the last word counting double, "wireless earbuds" needs "earbuds" (an
+ * earbud qualifies, a wireless charger doesn't), and "noise cancelling
+ * headphones" needs "headphones" or both of the other words.
+ */
+export function minimumMatch(terms: SearchTerm[]) {
+  return terms.reduce((sum, t) => sum + t.weight, 0) / 2;
+}
+
 /** A category name in any form ("Tech Accessories", "tech_accessories") as a slug. */
 export function toCategorySlug(text: string) {
   return stripAccents(text)
