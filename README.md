@@ -29,6 +29,7 @@ Check it works: open http://localhost:3000/api/health
 | `npm run db:seed` | Replace sample products (fictional brands, example.com sources) and calculate their scores. Refuses to run in production. |
 | `npm run db:rescore` | Recalculate scores for every category (e.g. after a formula change). History is kept. |
 | `npm run products:import -- <list.json>` | Import real products from a list of store pages, each with optional extra sources (other stores, expert reviews). See "Bulk import" below. |
+| `npm run trends:enrich -- <keywords.json> [--dry-run] [--limit N] [--only text]` | Add Google search-interest evidence (Google Trends via SerpApi) to real products and rescore them. See "Search interest" below. |
 | `npm run stripe:setup` | Create the Pro product + £39/month price in Stripe (uses `STRIPE_SECRET_KEY`). |
 | `npm run agent:test` | Mock AI agent: full x402 402 → pay → 200 flow plus abuse checks against a running server. |
 | `npm run mcp:build` | Bundle the MCP server (`mcp/`) and pack it into `public/mcp/` for download. |
@@ -211,8 +212,30 @@ npx -y @railway/cli@latest ssh --service web "npx -y tsx scripts/import-products
 ```
 
 Confidence reflects how much independent, recent evidence exists: one store page gives about 0.16; each extra
-store or recent expert review adds to it. OVERALL can't reach 0.80 without SENTIMENT and TREND evidence
-(20% of its weight), which nothing collects yet.
+store or recent expert review adds to it. QUALITY (35%) and VALUE (25%) grow only with more independent
+ratings, so they set the ceiling; nothing collects SENTIMENT (10%) yet.
+
+### Search interest (Google Trends)
+
+`npm run trends:enrich -- scripts/data/trend-keywords-2026-10.json` fetches 12 months of weekly Google search
+interest per product through [SerpApi](https://serpapi.com/google-trends-api) and stores one SEARCH_INTEREST
+evidence row per complete calendar month (the average of its weeks), then rescores the affected categories.
+The list maps each product name to the keyword shoppers search for; every claim quotes that keyword and links
+the same chart on Google Trends. Demo products are never enriched.
+
+- Cost: one SerpApi search per product per run (free plan: 250 a month). The account check is free, and
+  products that already hold last month's data are skipped, so a monthly run of 25 products uses 25.
+- Start with `--dry-run`: it shows the searches left and what would be fetched, and uses none.
+- Monthly points, not weekly: one lookup can't count as 52 pieces of evidence. Google scales each lookup to
+  its own busiest week, so a month added by a later run can sit on a slightly different scale.
+- Effect: SEARCH_INTEREST feeds DEMAND and TREND, adding about +0.13 OVERALL confidence (e.g. 0.17 → 0.30
+  for a one-store product). Keywords with too little search volume get no data, and use a search anyway.
+
+On production (`SERPAPI_API_KEY` set on the `web` service):
+
+```bash
+npx -y @railway/cli@latest ssh --service web "npx -y tsx scripts/enrich-trends.ts scripts/data/trend-keywords-2026-10.json --dry-run"
+```
 
 ## Products endpoint
 
@@ -275,6 +298,7 @@ Validated at startup by `src/lib/env.ts` — the app refuses to start with a mis
 | `X402_PRICE_USDC` | optional | Price per agent request, default `0.01` |
 | `CDP_API_KEY_ID` | for mainnet | Coinbase Developer Platform secret API key ID (portal.cdp.coinbase.com) |
 | `CDP_API_KEY_SECRET` | for mainnet | That key's secret (Ed25519 base64, or EC PEM) |
+| `SERPAPI_API_KEY` | for `trends:enrich` | SerpApi key (serpapi.com, free plan 250 searches/month). Read by the script only, not the app. |
 
 ## Layout
 
