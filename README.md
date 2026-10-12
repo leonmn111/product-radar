@@ -29,6 +29,7 @@ Check it works: open http://localhost:3000/api/health
 | `npm run db:seed` | Replace sample products (fictional brands, example.com sources) and calculate their scores. Refuses to run in production. |
 | `npm run db:rescore` | Recalculate scores for every category (e.g. after a formula change). History is kept. |
 | `npm run products:import -- <list.json>` | Import real products from a list of store pages, each with optional extra sources (other stores, expert reviews). See "Bulk import" below. |
+| `npm run fx:update` | Refresh the ECB euro reference rates in `src/server/scoring/fx-rates.json` (used only to compare prices across currencies). Commit, deploy, then rescore. |
 | `npm run trends:enrich -- <keywords.json> [--dry-run] [--limit N] [--only text]` | Add Google search-interest evidence (Google Trends via SerpApi) to real products and rescore them. See "Search interest" below. |
 | `npm run stripe:setup` | Create the Pro product + £39/month price in Stripe (uses `STRIPE_SECRET_KEY`). |
 | `npm run agent:test` | Mock AI agent: full x402 402 → pay → 200 flow plus abuse checks against a running server. |
@@ -260,6 +261,10 @@ scores. Full formulas are in the file header. In short:
   read it today), otherwise from when we captured it.
 - QUALITY (star ratings), SENTIMENT, DEMAND (review counts), TREND (search-interest slope),
   VALUE (quality vs. price relative to the category median), OVERALL (weighted blend).
+- Prices in different currencies are compared in euros at the European Central Bank's reference rates
+  (`src/server/scoring/fx-rates.json`, dated; refresh with `npm run fx:update`). This affects only which
+  offer is cheapest and VALUE; offers are always shown in their own price and currency. A currency the ECB
+  doesn't publish is compared only with prices in that currency.
 - Thin evidence is pulled toward a neutral 50 and gets low confidence. No usable evidence → no score at all.
 - Re-captures of the same rating/review count/sentiment from the same source count once (latest wins), so
   resubmitting a page can't inflate its score. Search-interest captures are all kept for TREND.

@@ -5,7 +5,7 @@
 // (0–1) and the ids of the evidence it was computed from (Rule 3). If there is
 // no usable evidence for a dimension, NO score is produced — never a default.
 //
-// ── Formulas (methodology v1.3.0) ───────────────────────────────────────────
+// ── Formulas (methodology v1.4.0) ───────────────────────────────────────────
 //
 // Evidence weight     w = (quality / 100) × 0.5^(ageDays / 90) × sourceWeight[sourceType]
 //                     (90-day half-life; future-dated evidence is ignored). Age counts from
@@ -33,15 +33,19 @@
 // VALUE               priceScore = clamp(50 + 50 × log2(categoryMedian / bestPrice))
 //                     S = 0.5 × QUALITY + 0.5 × priceScore
 //                     bestPrice = lowest in-stock/pre-order offer seen in the last 30 days;
-//                     needs ≥ 2 priced products in the category (same currency) and a QUALITY score.
+//                     needs ≥ 2 priced products in the category and a QUALITY score.
+//                     Prices in different currencies are compared in euros at the ECB
+//                     reference rates in `input.fx` (v1.4.0); a currency the ECB doesn't
+//                     publish is compared only with prices in that same currency.
 //                     C = C_quality × min(1, (pricedPeers − 1) / 4)
 // OVERALL             weighted mean of available dimensions:
 //                     QUALITY .35, VALUE .25, DEMAND .20, SENTIMENT .10, TREND .10
 //                     C = Σ(weight × C_dim) / Σ(all weights)  — missing dimensions count as 0
 
 import type { Availability, EvidenceMetric, ScoreDimension, SourceType } from "@/generated/prisma/enums";
+import { toEur, type FxRates } from "./fx";
 
-export const METHODOLOGY_VERSION = "1.3.0";
+export const METHODOLOGY_VERSION = "1.4.0";
 
 const HALF_LIFE_DAYS = 90;
 const PRIOR = 50;
@@ -100,6 +104,8 @@ export type ScoringInput = {
   // Best current price of every product in the same category (including this
   // one), keyed by currency. Used only for VALUE.
   categoryBestPrices: { currency: string; price: number }[];
+  // Exchange rates for comparing prices across currencies.
+  fx: FxRates;
 };
 
 export type DimensionScore = {
@@ -213,25 +219,42 @@ export function scoreTrend(input: ScoringInput): DimensionScore | null {
   };
 }
 
-export function bestCurrentOffer(offers: OfferFact[], asOf: Date): OfferFact | null {
+/**
+ * The cheapest in-stock offer seen in the last 30 days. Offers in one currency are
+ * compared as-is; mixed currencies are compared in euros, skipping any currency
+ * without an ECB rate. Returns the offer in its own price and currency.
+ */
+export function bestCurrentOffer(offers: OfferFact[], asOf: Date, fx: FxRates): OfferFact | null {
   const live = offers
     .filter((o) => o.availability === "IN_STOCK" || o.availability === "PREORDER")
     .filter((o) => {
       const age = (asOf.getTime() - o.observedAt.getTime()) / DAY_MS;
       return age >= 0 && age <= OFFER_MAX_AGE_DAYS;
-    })
-    .sort((a, b) => a.price - b.price || a.sourceEvidenceId.localeCompare(b.sourceEvidenceId));
-  return live[0] ?? null;
+    });
+  const oneCurrency = live.every((o) => o.currency === live[0].currency);
+  return (
+    live
+      .flatMap((o) => {
+        const cost = oneCurrency ? o.price : toEur(o.price, o.currency, fx);
+        return cost === null ? [] : [{ o, cost }];
+      })
+      .sort((a, b) => a.cost - b.cost || a.o.sourceEvidenceId.localeCompare(b.o.sourceEvidenceId))[0]?.o ?? null
+  );
 }
 
 export function scoreValue(input: ScoringInput, quality: DimensionScore | null): DimensionScore | null {
   if (!quality) return null;
-  const best = bestCurrentOffer(input.offers, input.asOf);
+  const best = bestCurrentOffer(input.offers, input.asOf, input.fx);
   if (!best) return null;
-  const peerPrices = input.categoryBestPrices.filter((p) => p.currency === best.currency).map((p) => p.price);
+  // Compare in euros when the ECB publishes the currency; otherwise only within it.
+  const bestEur = toEur(best.price, best.currency, input.fx);
+  const peerPrices =
+    bestEur === null
+      ? input.categoryBestPrices.filter((p) => p.currency === best.currency).map((p) => p.price)
+      : input.categoryBestPrices.flatMap((p) => toEur(p.price, p.currency, input.fx) ?? []);
   if (peerPrices.length < 2) return null;
 
-  const priceScore = clamp(50 + 50 * Math.log2(median(peerPrices) / best.price));
+  const priceScore = clamp(50 + 50 * Math.log2(median(peerPrices) / (bestEur ?? best.price)));
   const value = 0.5 * quality.value + 0.5 * priceScore;
   const peerFactor = Math.min(1, (peerPrices.length - 1) / 4);
 

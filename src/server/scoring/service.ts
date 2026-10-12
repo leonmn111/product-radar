@@ -11,6 +11,8 @@ import {
   type EvidenceFact,
   type OfferFact,
 } from "./engine";
+import type { FxRates } from "./fx";
+import { LATEST_FX } from "./fx-latest";
 
 const OFFER_LOOKBACK_DAYS = 30;
 
@@ -60,9 +62,14 @@ const toOfferFacts = (rows: CategoryData[number]["offers"]): OfferFact[] =>
   rows.map((o) => ({ ...o, price: o.price.toNumber() }));
 
 /** Compute scores for one product without saving them. */
-export function computeForProduct(products: CategoryData, productId: string, asOf: Date): DimensionScore[] {
+export function computeForProduct(
+  products: CategoryData,
+  productId: string,
+  asOf: Date,
+  fx: FxRates = LATEST_FX,
+): DimensionScore[] {
   const categoryBestPrices = products.flatMap((p) => {
-    const best = bestCurrentOffer(toOfferFacts(p.offers), asOf);
+    const best = bestCurrentOffer(toOfferFacts(p.offers), asOf, fx);
     return best ? [{ currency: best.currency, price: best.price }] : [];
   });
   const product = products.find((p) => p.id === productId);
@@ -73,6 +80,7 @@ export function computeForProduct(products: CategoryData, productId: string, asO
     evidence: toEvidenceFacts(product.evidence),
     offers: toOfferFacts(product.offers),
     categoryBestPrices,
+    fx,
   });
 }
 

@@ -20,6 +20,7 @@
     "db:rescore": "tsx scripts/rescore.ts",
     "products:import": "tsx scripts/import-products.ts",
     "trends:enrich": "tsx scripts/enrich-trends.ts",
+    "fx:update": "tsx scripts/update-fx-rates.ts",
     "stripe:setup": "tsx scripts/stripe-setup.ts",
     "agent:test": "tsx scripts/test-agent-client.ts",
     "mcp:build": "npm --prefix mcp install --no-audit --no-fund && npm --prefix mcp run build"

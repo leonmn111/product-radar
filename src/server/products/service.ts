@@ -3,6 +3,7 @@
 
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { bestCurrentOffer } from "@/server/scoring/engine";
+import { LATEST_FX } from "@/server/scoring/fx-latest";
 import { minimumMatch, type SearchTerm } from "./search";
 
 const MAX_EVIDENCE_PER_PRODUCT = 50;
@@ -153,6 +154,7 @@ function toDto(p: ProductRow, asOf: Date) {
   const best = bestCurrentOffer(
     p.offers.map((o) => ({ ...o, price: o.price.toNumber() })),
     asOf,
+    LATEST_FX,
   );
   const bestOffer = best ? offers.find((o) => o.sourceEvidenceId === best.sourceEvidenceId) ?? null : null;
 
