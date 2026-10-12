@@ -83,9 +83,20 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
 | View live products | — (count shown as a teaser) | ✓ |
 | Submit product URLs (`/api/ingest`) | — (401 / 403) | ✓ |
 
-- **Sign-in:** passwordless email links (Auth.js v5, database sessions). In development, with no
-  `AUTH_RESEND_KEY`, the link is printed in the terminal running `npm run dev`. In production set
-  `AUTH_RESEND_KEY` (resend.com, free tier) and an `EMAIL_FROM` on a domain you've verified in Resend.
+- **Sign-in** (Auth.js v5, `/signin` with "Sign in" / "Create account" tabs): email + password, or a
+  one-time email link. In development, with no `AUTH_RESEND_KEY`, the link is printed in the terminal
+  running `npm run dev`. In production set `AUTH_RESEND_KEY` (resend.com, free tier) and an `EMAIL_FROM` on
+  a domain you've verified in Resend.
+  - Sessions are signed cookies (JWT, 30 days) because Auth.js needs that for passwords; the session
+    callback still reads `subscriptionTier` from the database on every request, so plan changes apply at once.
+  - Passwords: bcrypt (10 rounds), 8–72 characters (bcrypt ignores bytes past 72, so longer ones are refused).
+    Code: `src/server/auth/password.ts`; UI actions: `src/app/signin/actions.ts`.
+  - `POST /api/auth/register` `{ "email", "password" }` (JSON only) → 201, 400, 409 (email taken), 429.
+  - Registering never adds a password to an existing account. A password set while the address is
+    unverified is dropped the first time an email link for that address is used, so nobody can register a
+    stranger's address and later share the account the real owner signs into by email.
+  - Limits (per server process): 10 password attempts per email and 50 per client per 15 minutes;
+    10 registrations per client per hour.
 - **Plan checks** live in `src/server/auth/entitlements.ts` and only read `User.subscriptionTier`.
 - **Billing** (Stripe) is isolated in `src/server/billing/` and is the only code that writes the
   `stripe*` / `subscription*` fields on `User`.

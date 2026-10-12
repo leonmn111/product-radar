@@ -1,24 +1,20 @@
-// Authentication (Auth.js v5): passwordless email sign-in links.
-// Sessions live in the database, so a user's plan (subscriptionTier) is read
-// fresh on every request — an upgrade or cancellation applies immediately.
+// Authentication (Auth.js v5): email sign-in links, or email + password.
+// Sessions are signed cookies (JWT) — Auth.js requires that for passwords — but
+// the session callback reads the user's plan (subscriptionTier) from the
+// database on every request, so an upgrade or cancellation applies immediately.
 
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import NextAuth, { type DefaultSession } from "next-auth";
+import NextAuth, { CredentialsSignin, type DefaultSession } from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import Resend from "next-auth/providers/resend";
 import type { SubscriptionTier } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { authenticate, clientAddress, forgetUnprovenPassword, SignInInput, signInLimits } from "@/server/auth/password";
 
 declare module "next-auth" {
   interface Session {
     user: { id: string; tier: SubscriptionTier } & DefaultSession["user"];
-  }
-}
-
-// The adapter loads the full User row, so the plan tier is present on it.
-declare module "@auth/core/adapters" {
-  interface AdapterUser {
-    subscriptionTier: SubscriptionTier;
   }
 }
 
@@ -38,15 +34,52 @@ const emailProvider = Resend({
       }),
 });
 
+/** Too many attempts for this address or client; the sign-in form shows its own message. */
+export class SignInRateLimited extends CredentialsSignin {
+  code = "rate_limited";
+}
+
+const passwordProvider = Credentials({
+  credentials: { email: {}, password: {} },
+  async authorize(raw, request) {
+    const parsed = SignInInput.safeParse(raw);
+    if (!parsed.success) return null;
+    const client = clientAddress(request.headers);
+    // Count every attempt (both limiters), so a locked address can't be probed from elsewhere either.
+    const overClient = client !== null && signInLimits.perClient.limited(client);
+    if (signInLimits.perEmail.limited(parsed.data.email) || overClient) throw new SignInRateLimited();
+    return authenticate(db, parsed.data);
+  },
+});
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
-  session: { strategy: "database", maxAge: 30 * 24 * 60 * 60 },
-  providers: [emailProvider],
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
+  providers: [emailProvider, passwordProvider],
   pages: { signIn: "/signin", verifyRequest: "/signin/check-email", error: "/signin" },
+  logger: {
+    // A wrong password is an expected outcome, not a server error worth logging.
+    error(error) {
+      if (error instanceof CredentialsSignin) return;
+      console.error(error);
+    },
+  },
   callbacks: {
-    session({ session, user }) {
-      session.user.id = user.id;
-      session.user.tier = user.subscriptionTier;
+    async signIn({ user, account, email }) {
+      // An email link being used (not requested) proves the address: drop any password set before that.
+      if (account?.type === "email" && !email?.verificationRequest && user.email) {
+        await forgetUnprovenPassword(db, user.email);
+      }
+      return true;
+    },
+    async session({ session, token }) {
+      // Fresh from the database on every request; a deleted account reads as signed out.
+      const user = token.sub
+        ? await db.user.findUnique({ where: { id: token.sub }, select: { email: true, subscriptionTier: true } })
+        : null;
+      session.user.id = user ? token.sub! : "";
+      session.user.email = user?.email ?? "";
+      session.user.tier = user?.subscriptionTier ?? "FREE";
       return session;
     },
   },
