@@ -1,0 +1,24 @@
+[
+  {
+    "category": "gadgets",
+    "url": "https://ooni.com/products/ooni-koda-2",
+    "sources": [
+      "https://www.stewarts.co.uk/product/29167/ooni-koda-2-pizza-oven"
+    ]
+  },
+  {
+    "category": "gadgets",
+    "url": "https://ooni.com/products/ooni-halo-pro-spiral-mixer",
+    "sources": [
+      "https://markselectrical.co.uk/uu-p31500_ooni-spiral-dough-mixer",
+      "https://petertyson.co.uk/ooni-halo-pro-spiral-stand-mixer-charcoal-grey"
+    ]
+  },
+  {
+    "category": "beauty",
+    "url": "https://theinkeylist.com/products/bio-active-ceramide-moisturiser",
+    "sources": [
+      "https://www.johnlewis.com/the-inkey-list-bio-active-ceramide-repairing-&-plumping-moisturiser-50ml/p111653305"
+    ]
+  }
+]
