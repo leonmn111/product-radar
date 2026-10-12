@@ -306,12 +306,14 @@ catalog cards, in the dossier, and in both agent endpoints and the MCP tools.
   category averages, not supplier quotes, and the UI and API say so. The figures, the category → store-type
   mapping and the sources live in `src/server/margins/benchmarks.ts`. A new category falls back to all retail
   stores, so add it to `CATEGORY_STORE_TYPE` when you create one.
-- **Arbitrage rating:** only from captured offers (in stock, last 30 days, latest per store, same currency).
-  Buy at the cheapest store, resell at the median of the others, minus eBay's standard US fee (13.6% + $0.40 per
-  order). `HIGH_ARBITRAGE` needs a return of 25% or more and at least €10 per unit, `MODERATE` 10% and €3, and
-  anything else (including a single store) is `RETAIL_ONLY`.
+- **Arbitrage ratings:** only from captured offers (in stock, last 30 days, latest per store, same currency).
+  Buy at the cheapest store and resell at the median of the others, then rate the trade twice:
+  `arbitrage` after eBay's standard US fee (13.6% + $0.40 per order), and `arbitrageOwnStore` after Shopify
+  Payments card fees for your own shop (Basic plan: 2% + 25p in GBP, otherwise the US 2.9% + 30¢; advertising and
+  the plan fee are not included). `HIGH_ARBITRAGE` needs a return of 25% or more and at least €10 per unit,
+  `MODERATE` 10% and €3, and anything else (including a single store) is `RETAIL_ONLY`.
 - The calculator's starting wholesale cost, and the dossier's `profitEstimate`, use the middle of the range.
-- To refresh: re-read the Census table (published yearly) and eBay's fee page, update `benchmarks.ts`, and bump
+- To refresh: re-read the Census table (published yearly) and the eBay and Shopify fee pages, update `benchmarks.ts`, and bump
   `MARGIN_METHODOLOGY_VERSION`.
 
 ## Data model

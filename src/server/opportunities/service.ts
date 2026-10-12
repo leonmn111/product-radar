@@ -97,7 +97,8 @@ export async function getOpportunities(db: PrismaClient, q: OpportunityQuery) {
     disclaimer:
       "opportunityScore is a calculated estimate (0–100) with a confidence (0–1), derived only from the cited evidence. " +
       "margin is a rule-based estimate: the wholesale range comes from US Census store-type averages (not supplier quotes), " +
-      "and the arbitrage rating only from store prices we captured. Neither is a guarantee.",
+      "and the arbitrage ratings (reselling on eBay, or in your own shop at card fees) only from store prices we captured. " +
+      "Neither is a guarantee.",
     query: q,
     interpretedAs: { category: category ?? null, searchWords: terms.map((t) => t.word) },
     count: results.length,

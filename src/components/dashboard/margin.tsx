@@ -1,8 +1,9 @@
 // Margin spread & arbitrage, as shown on catalog cards and in the dossier.
 // The numbers come from src/server/margins: a wholesale range from US Census
-// retail gross margins, and an arbitrage rating from real captured store prices.
+// retail gross margins, and two arbitrage ratings from real captured store
+// prices: reselling on eBay, and reselling in your own shop at card fees.
 
-import type { ArbitrageRating } from "@/server/margins/engine";
+import type { ArbitrageRating, ArbitrageScenario } from "@/server/margins/engine";
 import type { ProductDto } from "@/server/products/service";
 import { formatDateTime, formatPrice } from "./format";
 
@@ -19,14 +20,16 @@ const money = (amount: number, currency: string) => formatPrice(String(amount), 
 const moneyRange = (low: number, high: number, currency: string) => `${money(low, currency)}–${money(high, currency)}`;
 const pctRange = (low: number, high: number) => `${Math.round(low)}–${Math.round(high)}%`;
 
-export function ArbitrageBadge({ arbitrage }: { arbitrage: Margin["arbitrage"] }) {
+const SHORT_CHANNEL: Record<ArbitrageScenario["channel"], string> = { MARKETPLACE: "eBay", OWN_STORE: "Own shop" };
+
+export function ArbitrageBadge({ scenario }: { scenario: ArbitrageScenario }) {
   return (
     <span
-      title={arbitrage.summary}
-      className={`inline-flex shrink-0 items-center rounded-md px-2 py-1 text-xs font-semibold ring-1 ring-inset ${BADGE_STYLE[arbitrage.rating]}`}
+      title={scenario.summary}
+      className={`inline-flex shrink-0 items-center rounded-md px-2 py-1 text-xs font-semibold ring-1 ring-inset ${BADGE_STYLE[scenario.rating]}`}
     >
       <span className="sr-only">Arbitrage rating: </span>
-      {arbitrage.label}
+      {scenario.label}
     </span>
   );
 }
@@ -36,10 +39,7 @@ export function MarginSummary({ margin }: { margin: Margin }) {
   const c = margin.currency;
   return (
     <div className="rounded-lg bg-zinc-50 p-3 ring-1 ring-zinc-900/5 ring-inset dark:bg-zinc-800/40 dark:ring-white/10">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Est. gross margin</p>
-        <ArbitrageBadge arbitrage={margin.arbitrage} />
-      </div>
+      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Est. gross margin</p>
       <p className="mt-1 text-sm font-semibold tabular-nums text-zinc-950 dark:text-white">
         {moneyRange(margin.grossSpread.low, margin.grossSpread.high, c)}{" "}
         <span className="font-normal text-zinc-600 dark:text-zinc-400">
@@ -49,6 +49,16 @@ export function MarginSummary({ margin }: { margin: Margin }) {
       <p className="mt-0.5 text-xs tabular-nums text-zinc-600 dark:text-zinc-400">
         Wholesale est. {moneyRange(margin.wholesaleEstimate.low, margin.wholesaleEstimate.high, c)}
       </p>
+      <dl className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-zinc-200 pt-2 dark:border-zinc-700/60">
+        {[margin.arbitrage, margin.arbitrageOwnStore].map((s) => (
+          <div key={s.channel} className="flex items-center gap-1.5">
+            <dt className="text-xs text-zinc-600 dark:text-zinc-400">{SHORT_CHANNEL[s.channel]}</dt>
+            <dd>
+              <ArbitrageBadge scenario={s} />
+            </dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
@@ -63,6 +73,39 @@ function StoreLink({ merchant, url }: { merchant: string; url: string }) {
       {merchant}
       <span className="sr-only"> (opens in new tab)</span>
     </a>
+  );
+}
+
+/** One resale route in the dossier: its rating, why, the trade behind it and the fee it assumes. */
+function ScenarioPanel({ scenario: s }: { scenario: ArbitrageScenario }) {
+  return (
+    <div className="rounded-lg p-3 ring-1 ring-zinc-200 ring-inset dark:ring-zinc-800">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-sm font-semibold text-zinc-950 dark:text-white">{s.channelLabel}</h4>
+        <ArbitrageBadge scenario={s} />
+      </div>
+      <p className="mt-2 text-sm text-zinc-800 dark:text-zinc-200">{s.summary}</p>
+      {s.buy && s.sell && s.resalePrice !== null && s.fees !== null && s.currency && (
+        <ul className="mt-2 space-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+          <li>
+            Buy at <StoreLink merchant={s.buy.merchant} url={s.buy.url} />: {money(s.buy.price, s.currency)}, seen{" "}
+            {formatDateTime(s.buy.observedAt)}
+          </li>
+          <li>
+            Resale price: {money(s.resalePrice, s.currency)}, like <StoreLink merchant={s.sell.merchant} url={s.sell.url} />{" "}
+            (seen {formatDateTime(s.sell.observedAt)}), less {money(s.fees, s.currency)} in fees
+          </li>
+        </ul>
+      )}
+      <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
+        Fees: {s.feeRule} (
+        <a href={s.feeSource.url} target="_blank" rel="noopener noreferrer" className={link}>
+          source
+          <span className="sr-only">: {s.feeSource.name} (opens in new tab)</span>
+        </a>
+        )
+      </p>
+    </div>
   );
 }
 
@@ -82,28 +125,16 @@ export function MarginCard({ productId, margin }: { productId: string; margin: M
     );
   }
   const c = margin.currency;
-  const { arbitrage: a, benchmark: b } = margin;
+  const b = margin.benchmark;
   return (
     <section aria-labelledby={headingId} className={card}>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h3 id={headingId} className="text-sm font-semibold text-zinc-950 dark:text-white">
-          Margin &amp; arbitrage
-        </h3>
-        <ArbitrageBadge arbitrage={a} />
+      <h3 id={headingId} className="text-sm font-semibold text-zinc-950 dark:text-white">
+        Margin &amp; arbitrage
+      </h3>
+      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+        <ScenarioPanel scenario={margin.arbitrage} />
+        <ScenarioPanel scenario={margin.arbitrageOwnStore} />
       </div>
-      <p className="mt-2 max-w-3xl text-sm text-zinc-800 dark:text-zinc-200">{a.summary}</p>
-      {a.buy && a.sell && a.resalePrice !== null && a.fees !== null && a.currency && (
-        <ul className="mt-2 space-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-          <li>
-            Buy at <StoreLink merchant={a.buy.merchant} url={a.buy.url} />: {money(a.buy.price, a.currency)}, seen{" "}
-            {formatDateTime(a.buy.observedAt)}
-          </li>
-          <li>
-            Resale price: {money(a.resalePrice, a.currency)}, like <StoreLink merchant={a.sell.merchant} url={a.sell.url} />{" "}
-            (seen {formatDateTime(a.sell.observedAt)}), less {money(a.fees, a.currency)} in marketplace fees
-          </li>
-        </ul>
-      )}
 
       <dl className="mt-4 grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg bg-zinc-100 p-3 dark:bg-zinc-800/60">
@@ -138,13 +169,9 @@ export function MarginCard({ productId, margin }: { productId: string; margin: M
         <a href={b.source.url} className={link}>
           US Census Bureau&apos;s retail gross margins (Excel)
         </a>{" "}
-        for {b.storeType.charAt(0).toLowerCase() + b.storeType.slice(1)}, {b.years} ({b.grossMarginPct.low}–{b.grossMarginPct.high}%). Resale fees
-        at{" "}
-        <a href={a.feeSource.url} target="_blank" rel="noopener noreferrer" className={link}>
-          eBay&apos;s standard US rate
-          <span className="sr-only"> (opens in new tab)</span>
-        </a>
-        , 13.6% plus a small per-order fee. Shipping, taxes, returns and brand reselling rules aren&apos;t included.
+        for {b.storeType.charAt(0).toLowerCase() + b.storeType.slice(1)}, {b.years} ({b.grossMarginPct.low}–{b.grossMarginPct.high}%).
+        Shipping, taxes, returns and brand reselling rules aren&apos;t included. Your own shop also needs advertising and a
+        monthly plan to find buyers at that price, and those aren&apos;t included either.
       </p>
     </section>
   );

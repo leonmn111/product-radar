@@ -155,7 +155,8 @@ const server = new McpServer(
       "worth a closer look. " +
       "Both are paid per call in USDC; get_payment_status is free. Scores, verdicts and margins are estimates, not guarantees: " +
       "cite the evidence sources when you report them. A margin's wholesale range is a US Census store-type average, " +
-      "not a supplier quote; its arbitrage rating comes only from store prices ProductRadar captured.",
+      "not a supplier quote; its two arbitrage ratings (reselling on eBay, or in your own shop at card fees) come only from " +
+      "store prices ProductRadar captured.",
   },
 );
 
@@ -170,8 +171,9 @@ server.registerTool(
       "category. Each result has an opportunity score (0–100, a calculated estimate) with a confidence (0–1), " +
       "quality/value/demand/sentiment/trend scores, the best current offer, the top cited evidence (source URL, timestamp, " +
       "quality score) and the query words it matched. Each also has margin insights: an estimated wholesale cost range and " +
-      "gross margin spread (amount and %) from US Census retail benchmarks, and an arbitrage rating (High Arbitrage / " +
-      "Moderate / Retail Only) from real price gaps between stores after marketplace fees, each with its sources. " +
+      "gross margin spread (amount and %) from US Census retail benchmarks, and two arbitrage ratings (High Arbitrage / " +
+      "Moderate / Retail Only) from real price gaps between stores: margin.arbitrage after eBay fees and " +
+      "margin.arbitrageOwnStore after own-shop card fees, each with its sources. " +
       "Every response lists availableCategories. Pass a result's product.id " +
       "to get_product_dossier for the full picture. Paid: one x402 micro-payment in USDC per call.",
     inputSchema: {
@@ -212,7 +214,7 @@ server.registerTool(
     description:
       "The full Opportunity Dossier for one product: a rule-based verdict (High Potential / Moderate Risk / Crowded Market) " +
       "with its confidence, every score and the evidence it used, all observed offers, the margin insights (wholesale range, " +
-      "gross margin spread, arbitrage rating), a profit estimate from the observed " +
+      "gross margin spread, arbitrage ratings for eBay and for your own shop), a profit estimate from the observed " +
       "retail price (assumptions stated), supplier search keywords and links, a draft Shopify import CSV, and up to 50 cited " +
       "sources. Paid: one x402 micro-payment in USDC per call.",
     inputSchema: {

@@ -2,7 +2,7 @@
 // Same inputs + same `asOf` date ⇒ identical output.
 //
 // Everything here is an ESTIMATE (CLAUDE.md Rule 4). It answers two separate
-// questions from two kinds of evidence (methodology v1.0.0):
+// questions from two kinds of evidence (methodology v1.1.0):
 //
 // 1. Stocking margin: if a shop bought this at wholesale and sold it at today's
 //    lowest retail price, what would it keep? ProductRadar has no supplier
@@ -14,20 +14,25 @@
 //    It describes the category, not this product: always say so where it's shown.
 //
 // 2. Arbitrage: is any store we captured selling it cheaply enough to resell at
-//    another store's price, after marketplace fees? Real captured offers only:
+//    another store's price, after selling fees? Real captured offers only:
 //      current     = in stock or pre-order, seen in the last 30 days, latest per store
 //      per currency with ≥ 2 stores:
 //        buy       = the cheapest store
 //        sell      = median price of the other stores
-//        fees      = sell × 13.6% + per-order fee         (eBay US standard rate)
+//        fees      = sell × rate + per-order fee, for two resale routes (v1.1.0):
+//                      arbitrage          eBay US standard rate, 13.6% + 0.40
+//                      arbitrageOwnStore  Shopify Payments Basic card rate,
+//                                         2% + 0.25 in GBP, otherwise 2.9% + 0.30
 //        net       = sell − buy − fees,   return = net / buy
-//      The currency with the highest net (compared in euros) is reported.
+//      Per route, the currency with the highest net (compared in euros) is reported.
 //      Prices in different currencies are never paired: VAT, duties and
 //      shipping differ across borders.
 //    HIGH_ARBITRAGE   return ≥ 25% and net ≥ €10
 //    MODERATE         return ≥ 10% and net ≥ €3
 //    RETAIL_ONLY      anything else, including a single store
 //    (A currency the ECB doesn't publish is held to the same numbers in its own units.)
+//    The own-shop route leaves out advertising, which a new shop usually needs to
+//    find buyers at that price; the UI and API say so.
 
 import type { Availability } from "@/generated/prisma/enums";
 import { bestCurrentOffer, OFFER_MAX_AGE_DAYS } from "@/server/scoring/engine";
@@ -35,13 +40,14 @@ import { toEur, type FxRates } from "@/server/scoring/fx";
 import {
   BENCHMARK_YEARS,
   CENSUS_GROSS_MARGIN_SOURCE,
-  EBAY_FEE_SOURCE,
-  RESALE_FEE,
+  MARKETPLACE_FEE,
+  ownStoreFee,
   storeTypeFor,
+  type FeeSchedule,
   type SourceRef,
 } from "./benchmarks";
 
-export const MARGIN_METHODOLOGY_VERSION = "1.0.0";
+export const MARGIN_METHODOLOGY_VERSION = "1.1.0";
 
 const DAY_MS = 86_400_000;
 const HIGH = { returnPct: 25, netEur: 10 };
@@ -64,6 +70,13 @@ export const ARBITRAGE_LABEL: Record<ArbitrageRating, string> = {
   HIGH_ARBITRAGE: "High Arbitrage",
   MODERATE: "Moderate",
   RETAIL_ONLY: "Retail Only",
+};
+
+export type ResaleChannel = "MARKETPLACE" | "OWN_STORE";
+
+export const CHANNEL_LABEL: Record<ResaleChannel, string> = {
+  MARKETPLACE: "Resell on eBay",
+  OWN_STORE: "Resell in your own shop",
 };
 
 /** A captured price, with the evidence it came from. */
@@ -90,21 +103,26 @@ export type MarginInsight = {
     grossMarginPct: { low: number; high: number };
     source: SourceRef;
   };
-  arbitrage: {
-    rating: ArbitrageRating;
-    label: string;
-    summary: string;
-    buy: OfferRef | null;
-    sell: OfferRef | null; // the store whose price sets the resale reference (median of the others)
-    resalePrice: number | null;
-    fees: number | null;
-    netProfit: number | null;
-    returnPct: number | null; // net / buy, %
-    currency: string | null;
-    feeRule: string;
-    feeSource: SourceRef;
-  };
+  arbitrage: ArbitrageScenario; // resale on eBay
+  arbitrageOwnStore: ArbitrageScenario; // resale through your own shop, at card fees
   caveats: string[];
+};
+
+export type ArbitrageScenario = {
+  channel: ResaleChannel;
+  channelLabel: string;
+  rating: ArbitrageRating;
+  label: string;
+  summary: string;
+  buy: OfferRef | null;
+  sell: OfferRef | null; // the store whose price sets the resale reference (median of the others)
+  resalePrice: number | null;
+  fees: number | null;
+  netProfit: number | null;
+  returnPct: number | null; // net / buy, %
+  currency: string | null;
+  feeRule: string;
+  feeSource: SourceRef;
 };
 
 const cents = (x: number) => Math.round(x * 100) / 100;
@@ -130,9 +148,9 @@ function ref(o: MarginOffer): OfferRef {
   };
 }
 
-export function resaleFee(salePrice: number) {
-  const perOrder = salePrice <= RESALE_FEE.smallOrderMax ? RESALE_FEE.perOrderSmall : RESALE_FEE.perOrder;
-  return cents(salePrice * RESALE_FEE.rate + perOrder);
+export function resaleFee(salePrice: number, fee: FeeSchedule = MARKETPLACE_FEE) {
+  const perOrder = salePrice <= fee.smallOrderMax ? fee.perOrderSmall : fee.perOrder;
+  return cents(salePrice * fee.rate + perOrder);
 }
 
 /** Latest in-stock/pre-order offer per store, seen in the last 30 days. */
@@ -155,10 +173,12 @@ export function currentOffersByStore(offers: MarginOffer[], asOf: Date): MarginO
   return [...latest.values()].sort((a, b) => a.merchant.localeCompare(b.merchant));
 }
 
-type Pair = { buy: MarginOffer; sell: MarginOffer; resalePrice: number; fees: number; net: number; returnPct: number; netEur: number };
+/** A buy-low / resell pair within one currency. Fees are applied per resale route. */
+type Pair = { buy: MarginOffer; sell: MarginOffer; resalePrice: number };
+type Trade = Pair & { fee: FeeSchedule; fees: number; net: number; returnPct: number; netEur: number };
 
-/** The best buy-low / resell pair within one currency, or null with fewer than 2 stores. */
-function bestPairIn(offers: MarginOffer[], fx: FxRates): Pair | null {
+/** Buy at the cheapest store, resell at the median of the others; null with fewer than 2 stores. */
+function pairIn(offers: MarginOffer[]): Pair | null {
   if (offers.length < 2) return null;
   const sorted = [...offers].sort((a, b) => a.price - b.price || a.sourceEvidenceId.localeCompare(b.sourceEvidenceId));
   const buy = sorted[0];
@@ -168,28 +188,34 @@ function bestPairIn(offers: MarginOffer[], fx: FxRates): Pair | null {
   const sell = others.reduce((best, o) =>
     Math.abs(o.price - resalePrice) < Math.abs(best.price - resalePrice) ? o : best,
   );
-  const fees = resaleFee(resalePrice);
-  const net = cents(resalePrice - buy.price - fees);
+  return { buy, sell, resalePrice };
+}
+
+function trade(pair: Pair, fee: FeeSchedule, fx: FxRates): Trade {
+  const fees = resaleFee(pair.resalePrice, fee);
+  const net = cents(pair.resalePrice - pair.buy.price - fees);
   return {
-    buy,
-    sell,
-    resalePrice,
+    ...pair,
+    fee,
     fees,
     net,
-    returnPct: oneDp((net / buy.price) * 100),
-    netEur: toEur(net, buy.currency, fx) ?? net,
+    returnPct: oneDp((net / pair.buy.price) * 100),
+    netEur: toEur(net, pair.buy.currency, fx) ?? net,
   };
 }
 
-function rate(pair: Pair | null): ArbitrageRating {
-  if (!pair) return "RETAIL_ONLY";
-  if (pair.returnPct >= HIGH.returnPct && pair.netEur >= HIGH.netEur) return "HIGH_ARBITRAGE";
-  if (pair.returnPct >= MODERATE.returnPct && pair.netEur >= MODERATE.netEur) return "MODERATE";
+function rate(t: Trade | null): ArbitrageRating {
+  if (!t) return "RETAIL_ONLY";
+  if (t.returnPct >= HIGH.returnPct && t.netEur >= HIGH.netEur) return "HIGH_ARBITRAGE";
+  if (t.returnPct >= MODERATE.returnPct && t.netEur >= MODERATE.netEur) return "MODERATE";
   return "RETAIL_ONLY";
 }
 
-function arbitrageSummary(rating: ArbitrageRating, pair: Pair | null, current: MarginOffer[]): string {
-  if (!pair) {
+const FEE_WORDS: Record<ResaleChannel, string> = { MARKETPLACE: "eBay fees", OWN_STORE: "card fees" };
+const LEFT_OUT: Record<ResaleChannel, string> = { MARKETPLACE: "shipping", OWN_STORE: "shipping and advertising" };
+
+function arbitrageSummary(channel: ResaleChannel, rating: ArbitrageRating, t: Trade | null, current: MarginOffer[]): string {
+  if (!t) {
     if (current.length <= 1) {
       return current.length === 1
         ? `Only one store's current price has been captured (${current[0].merchant}), so there's no price gap to resell.`
@@ -197,20 +223,51 @@ function arbitrageSummary(rating: ArbitrageRating, pair: Pair | null, current: M
     }
     return "The stores captured price it in different currencies. Cross-border gaps aren't counted, because tax, duties and shipping differ.";
   }
-  const c = pair.buy.currency;
-  const trade = `Buying at ${pair.buy.merchant} for ${money(pair.buy.price, c)} and reselling at ${money(pair.resalePrice, c)}`;
+  const c = t.buy.currency;
+  const deal = `Buying at ${t.buy.merchant} for ${money(t.buy.price, c)} and reselling at ${money(t.resalePrice, c)}`;
   if (rating === "RETAIL_ONLY") {
-    return pair.net < 0
-      ? `${trade} would lose ${money(-pair.net, c)} per unit after marketplace fees.`
-      : `${trade} leaves ${money(pair.net, c)} per unit after marketplace fees: too thin to be worth it.`;
+    return t.net < 0
+      ? `${deal} would lose ${money(-t.net, c)} per unit after ${FEE_WORDS[channel]}.`
+      : `${deal} leaves ${money(t.net, c)} per unit after ${FEE_WORDS[channel]}: too thin to be worth it.`;
   }
-  return `${trade} leaves about ${money(pair.net, c)} per unit (${pair.returnPct}% return) after marketplace fees, before shipping.`;
+  return `${deal} leaves about ${money(t.net, c)} per unit (${t.returnPct}% return) after ${FEE_WORDS[channel]}, before ${LEFT_OUT[channel]}.`;
+}
+
+/** One resale route: the best same-currency trade after that route's fees. */
+function scenario(
+  channel: ResaleChannel,
+  feeFor: (currency: string) => FeeSchedule,
+  pairs: Pair[],
+  current: MarginOffer[],
+  retailCurrency: string,
+  fx: FxRates,
+): ArbitrageScenario {
+  const best = pairs.map((p) => trade(p, feeFor(p.buy.currency), fx)).sort((a, b) => b.netEur - a.netEur)[0] ?? null;
+  const rating = rate(best);
+  const fee = best?.fee ?? feeFor(retailCurrency);
+  return {
+    channel,
+    channelLabel: CHANNEL_LABEL[channel],
+    rating,
+    label: ARBITRAGE_LABEL[rating],
+    summary: arbitrageSummary(channel, rating, best, current),
+    buy: best ? ref(best.buy) : null,
+    sell: best ? ref(best.sell) : null,
+    resalePrice: best?.resalePrice ?? null,
+    fees: best?.fees ?? null,
+    netProfit: best?.net ?? null,
+    returnPct: best?.returnPct ?? null,
+    currency: best?.buy.currency ?? null,
+    feeRule: fee.description,
+    feeSource: fee.source,
+  };
 }
 
 export const MARGIN_CAVEATS = [
   "The wholesale range is the US Census average gross margin for the store type that sells this category, not a supplier quote.",
   "Arbitrage only compares prices we captured from stores in the last 30 days, in the same currency.",
   "Shipping, taxes, returns and brand reselling rules are not included.",
+  "The own-shop route leaves out advertising and the shop's monthly plan, which you'll usually need to find buyers at that price.",
 ];
 
 /**
@@ -229,13 +286,10 @@ export function marginInsight(input: { category: string; offers: MarginOffer[]; 
   const current = currentOffersByStore(input.offers, input.asOf);
   const byCurrency = new Map<string, MarginOffer[]>();
   for (const o of current) byCurrency.set(o.currency, [...(byCurrency.get(o.currency) ?? []), o]);
-  const pair =
-    [...byCurrency.keys()]
-      .sort()
-      .map((c) => bestPairIn(byCurrency.get(c)!, input.fx))
-      .filter((p): p is Pair => p !== null)
-      .sort((a, b) => b.netEur - a.netEur)[0] ?? null;
-  const rating = rate(pair);
+  const pairs = [...byCurrency.keys()]
+    .sort()
+    .map((c) => pairIn(byCurrency.get(c)!))
+    .filter((p): p is Pair => p !== null);
 
   return {
     methodologyVersion: MARGIN_METHODOLOGY_VERSION,
@@ -250,20 +304,8 @@ export function marginInsight(input: { category: string; offers: MarginOffer[]; 
       grossMarginPct: { low: gmLow, high: gmHigh },
       source: CENSUS_GROSS_MARGIN_SOURCE,
     },
-    arbitrage: {
-      rating,
-      label: ARBITRAGE_LABEL[rating],
-      summary: arbitrageSummary(rating, pair, current),
-      buy: pair ? ref(pair.buy) : null,
-      sell: pair ? ref(pair.sell) : null,
-      resalePrice: pair?.resalePrice ?? null,
-      fees: pair?.fees ?? null,
-      netProfit: pair?.net ?? null,
-      returnPct: pair?.returnPct ?? null,
-      currency: pair?.buy.currency ?? null,
-      feeRule: RESALE_FEE.description,
-      feeSource: EBAY_FEE_SOURCE,
-    },
+    arbitrage: scenario("MARKETPLACE", () => MARKETPLACE_FEE, pairs, current, retail.currency, input.fx),
+    arbitrageOwnStore: scenario("OWN_STORE", ownStoreFee, pairs, current, retail.currency, input.fx),
     caveats: MARGIN_CAVEATS,
   };
 }

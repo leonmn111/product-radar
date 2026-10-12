@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FxRates } from "@/server/scoring/fx";
-import { CENSUS_GROSS_MARGIN_SOURCE, EBAY_FEE_SOURCE, STORE_TYPES } from "./benchmarks";
+import { CENSUS_GROSS_MARGIN_SOURCE, EBAY_FEE_SOURCE, MARKETPLACE_FEE, ownStoreFee, SHOPIFY_UK_FEE_SOURCE, SHOPIFY_US_FEE_SOURCE, STORE_TYPES } from "./benchmarks";
 import { currentOffersByStore, marginInsight, resaleFee, type MarginOffer } from "./engine";
 
 const asOf = new Date("2026-10-01T00:00:00Z");
@@ -55,7 +55,7 @@ describe("margin engine: wholesale range and spread", () => {
   });
 });
 
-describe("margin engine: arbitrage rating", () => {
+describe("margin engine: arbitrage rating (eBay)", () => {
   it("is Retail Only with a single store", () => {
     const a = insight("gadgets", [offer("solo.test", 50)])!.arbitrage;
     expect(a).toMatchObject({ rating: "RETAIL_ONLY", label: "Retail Only", buy: null, sell: null, netProfit: null });
@@ -76,7 +76,7 @@ describe("margin engine: arbitrage rating", () => {
     expect(a).toMatchObject({ rating: "HIGH_ARBITRAGE", label: "High Arbitrage", resalePrice: 80, fees: 11.28, netProfit: 28.72, returnPct: 71.8, currency: "USD" });
     expect(a.buy?.merchant).toBe("cheap.test");
     expect(a.sell?.merchant).toBe("dear.test");
-    expect(a.summary).toBe("Buying at cheap.test for $40.00 and reselling at $80.00 leaves about $28.72 per unit (71.8% return) after marketplace fees, before shipping.");
+    expect(a.summary).toBe("Buying at cheap.test for $40.00 and reselling at $80.00 leaves about $28.72 per unit (71.8% return) after eBay fees, before shipping.");
   });
 
   it("rates a modest gap Moderate", () => {
@@ -90,7 +90,7 @@ describe("margin engine: arbitrage rating", () => {
     const a = insight("beauty", [offer("discount.test", 15, gbp), offer("brand.test", 20, gbp)])!.arbitrage;
     // fees = 3.12; net = 1.88 (12.5% return, but only €2.35)
     expect(a).toMatchObject({ rating: "RETAIL_ONLY", netProfit: 1.88, returnPct: 12.5 });
-    expect(a.summary).toMatch(/leaves £1\.88 per unit after marketplace fees: too thin/);
+    expect(a.summary).toMatch(/leaves £1\.88 per unit after eBay fees: too thin/);
   });
 
   it("says when reselling would lose money", () => {
@@ -138,13 +138,61 @@ describe("margin engine: which offers count", () => {
     expect(a.buy).toBeNull();
   });
 
-  it("charges the smaller per-order fee on orders of 10 or less", () => {
-    expect(resaleFee(10)).toBe(1.66); // 1.36 + 0.30
-    expect(resaleFee(10.01)).toBe(1.76); // 1.36 + 0.40
+  it("charges eBay's smaller per-order fee on orders of 10 or less", () => {
+    expect(resaleFee(10, MARKETPLACE_FEE)).toBe(1.66); // 1.36 + 0.30
+    expect(resaleFee(10.01, MARKETPLACE_FEE)).toBe(1.76); // 1.36 + 0.40
+  });
+
+  it("charges own-shop card fees at the UK rate in pounds and the US rate otherwise", () => {
+    expect(resaleFee(20, ownStoreFee("GBP"))).toBe(0.65); // 2% + 0.25
+    expect(resaleFee(20, ownStoreFee("USD"))).toBe(0.88); // 2.9% + 0.30
+    expect(resaleFee(5, ownStoreFee("EUR"))).toBe(0.45); // no smaller fee on small orders
   });
 
   it("is deterministic", () => {
     const offers = [offer("a.test", 40), offer("b.test", 52), offer("c.test", 60)];
     expect(insight("gadgets", offers)).toEqual(insight("gadgets", structuredClone(offers)));
+  });
+});
+
+describe("margin engine: arbitrage rating (own shop)", () => {
+  it("rates the same price gap again at card fees, citing Shopify's rate", () => {
+    const gbp = { currency: "GBP" };
+    const m = insight("beauty", [offer("discount.test", 15, gbp), offer("brand.test", 20, gbp)])!;
+    // eBay: fees 3.12, net 1.88 ⇒ Retail Only. Own shop: fees 0.65, net 4.35 (29%, €5.44) ⇒ Moderate.
+    expect(m.arbitrage).toMatchObject({ channel: "MARKETPLACE", channelLabel: "Resell on eBay", rating: "RETAIL_ONLY" });
+    expect(m.arbitrageOwnStore).toMatchObject({
+      channel: "OWN_STORE",
+      channelLabel: "Resell in your own shop",
+      rating: "MODERATE",
+      fees: 0.65,
+      netProfit: 4.35,
+      returnPct: 29,
+      currency: "GBP",
+      feeSource: SHOPIFY_UK_FEE_SOURCE,
+    });
+    expect(m.arbitrageOwnStore.summary).toBe(
+      "Buying at discount.test for £15.00 and reselling at £20.00 leaves about £4.35 per unit (29% return) after card fees, before shipping and advertising.",
+    );
+  });
+
+  it("uses the US card rate outside pounds and the same thresholds", () => {
+    const a = insight("gadgets", [offer("cheap.test", 40), offer("dear.test", 52)])!.arbitrageOwnStore;
+    // fees = 52 × 2.9% + 0.30 = 1.81; net = 10.19 (25.5%, but only €8.15) ⇒ Moderate, not High
+    expect(a).toMatchObject({ rating: "MODERATE", fees: 1.81, netProfit: 10.19, returnPct: 25.5, feeSource: SHOPIFY_US_FEE_SOURCE });
+  });
+
+  it("still needs a 10% return: a 9.8% gap is Retail Only", () => {
+    const gbp = { currency: "GBP" };
+    const a = insight("beauty", [offer("a.test", 31, gbp), offer("b.test", 35, gbp)])!.arbitrageOwnStore;
+    expect(a).toMatchObject({ rating: "RETAIL_ONLY", netProfit: 3.05, returnPct: 9.8 });
+    expect(a.summary).toMatch(/leaves £3\.05 per unit after card fees: too thin/);
+  });
+
+  it("explains a single store the same way, and names the fee it would use", () => {
+    const m = insight("beauty", [offer("solo.test", 20, { currency: "GBP" })])!;
+    expect(m.arbitrageOwnStore).toMatchObject({ rating: "RETAIL_ONLY", buy: null, feeSource: SHOPIFY_UK_FEE_SOURCE });
+    expect(m.arbitrageOwnStore.summary).toBe(m.arbitrage.summary);
+    expect(m.arbitrage.feeSource).toEqual(EBAY_FEE_SOURCE);
   });
 });

@@ -134,7 +134,7 @@ const OPPORTUNITY_EXAMPLE = json({
   generatedAt: "2026-10-09T01:23:21.102Z",
   methodologyVersion: "1.2.0",
   disclaimer:
-    "opportunityScore is a calculated estimate (0–100) with a confidence (0–1), derived only from the cited evidence. margin is a rule-based estimate: the wholesale range comes from US Census store-type averages (not supplier quotes), and the arbitrage rating only from store prices we captured. Neither is a guarantee.",
+    "opportunityScore is a calculated estimate (0–100) with a confidence (0–1), derived only from the cited evidence. margin is a rule-based estimate: the wholesale range comes from US Census store-type averages (not supplier quotes), and the arbitrage ratings (reselling on eBay, or in your own shop at card fees) only from store prices we captured. Neither is a guarantee.",
   query: { category: "earplugs", limit: 1, includeSample: false },
   count: 1,
   opportunities: [
@@ -161,7 +161,7 @@ const OPPORTUNITY_EXAMPLE = json({
         observedAt: "2026-10-08T10:46:15.722Z",
       },
       margin: {
-        methodologyVersion: "1.0.0",
+        methodologyVersion: "1.1.0",
         currency: "EUR",
         retailPrice: { merchant: "loopearplugs.com", price: 19.95, currency: "EUR", observedAt: "2026-10-08T10:46:15.722Z", "…": "…" },
         wholesaleEstimate: { low: 13.39, high: 14.3 },
@@ -180,6 +180,8 @@ const OPPORTUNITY_EXAMPLE = json({
           },
         },
         arbitrage: {
+          channel: "MARKETPLACE",
+          channelLabel: "Resell on eBay",
           rating: "RETAIL_ONLY",
           label: "Retail Only",
           summary: "Only one store's current price has been captured (loopearplugs.com), so there's no price gap to resell.",
@@ -190,6 +192,16 @@ const OPPORTUNITY_EXAMPLE = json({
           feeRule: "13.6% of the sale plus 0.40 per order (0.30 on orders of 10.00 or less), eBay US standard rate",
           feeSource: { name: "eBay, Selling fees (US, most categories)", url: "https://www.ebay.com/help/selling/fees-credits-invoices/selling-fees?id=4822", "…": "…" },
           "…": "…",
+        },
+        arbitrageOwnStore: {
+          channel: "OWN_STORE",
+          channelLabel: "Resell in your own shop",
+          rating: "RETAIL_ONLY",
+          label: "Retail Only",
+          summary: "Only one store's current price has been captured (loopearplugs.com), so there's no price gap to resell.",
+          feeRule: "2.9% of the sale plus 0.30 per order, Shopify Payments US online card rate (Basic plan)",
+          feeSource: { name: "CraftShift, Shopify Basic plan 2026: price, fees, and what you actually pay (US card rate)", url: "https://craftshift.com/shopify-basic-plan-2026/", "…": "…" },
+          "…": "same fields as arbitrage",
         },
         caveats: ["The wholesale range is the US Census average gross margin for the store type that sells this category, not a supplier quote.", "…"],
       },
@@ -624,10 +636,11 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
           <p>
             Each result also has <C>margin</C>, a rule-based estimate with every source named. It has an estimated
             wholesale cost range and gross margin spread (amount and %), taken from US Census retail gross margins for
-            the store type that sells the category; these are averages, not supplier quotes. It also has an{" "}
-            <C>arbitrage.rating</C> of <C>HIGH_ARBITRAGE</C>, <C>MODERATE</C> or <C>RETAIL_ONLY</C>, worked out from
-            real price gaps between stores we captured in the last 30 days, in the same currency, after eBay&apos;s
-            standard selling fees. It is <C>null</C> when a product has no current price.
+            the store type that sells the category; these are averages, not supplier quotes. It also has two arbitrage
+            ratings, each <C>HIGH_ARBITRAGE</C>, <C>MODERATE</C> or <C>RETAIL_ONLY</C>, worked out from real price gaps
+            between stores we captured in the last 30 days, in the same currency: <C>arbitrage</C> after eBay&apos;s
+            standard selling fees, and <C>arbitrageOwnStore</C> after Shopify Payments card fees for reselling in your
+            own shop (advertising not included). It is <C>null</C> when a product has no current price.
           </p>
           <Table
             head={["Parameter", "Type", "Default", "Meaning"]}
@@ -699,7 +712,7 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
               <span key="p" className="whitespace-nowrap">
                 {status.priceUsdc} USDC
               </span>,
-              "Plain-words search; ranked products with scores, confidence, best offer, margin and arbitrage rating, and top evidence",
+              "Plain-words search; ranked products with scores, confidence, best offer, margin and arbitrage ratings (eBay and own shop), and top evidence",
             ],
             [
               <C key="d">get_product_dossier</C>,
