@@ -153,8 +153,9 @@ const server = new McpServer(
       "ProductRadar ranks e-commerce product opportunities using scores calculated from sourced, timestamped evidence. " +
       "Start with find_product_opportunities (search in plain words), then call get_product_dossier for the few products " +
       "worth a closer look. " +
-      "Both are paid per call in USDC; get_payment_status is free. Scores and verdicts are estimates, not guarantees: " +
-      "cite the evidence sources when you report them.",
+      "Both are paid per call in USDC; get_payment_status is free. Scores, verdicts and margins are estimates, not guarantees: " +
+      "cite the evidence sources when you report them. A margin's wholesale range is a US Census store-type average, " +
+      "not a supplier quote; its arbitrage rating comes only from store prices ProductRadar captured.",
   },
 );
 
@@ -168,7 +169,10 @@ server.registerTool(
       "Search and rank e-commerce product opportunities. Describe what you want in plain words (query), optionally within a " +
       "category. Each result has an opportunity score (0–100, a calculated estimate) with a confidence (0–1), " +
       "quality/value/demand/sentiment/trend scores, the best current offer, the top cited evidence (source URL, timestamp, " +
-      "quality score) and the query words it matched. Every response lists availableCategories. Pass a result's product.id " +
+      "quality score) and the query words it matched. Each also has margin insights: an estimated wholesale cost range and " +
+      "gross margin spread (amount and %) from US Census retail benchmarks, and an arbitrage rating (High Arbitrage / " +
+      "Moderate / Retail Only) from real price gaps between stores after marketplace fees, each with its sources. " +
+      "Every response lists availableCategories. Pass a result's product.id " +
       "to get_product_dossier for the full picture. Paid: one x402 micro-payment in USDC per call.",
     inputSchema: {
       query: z
@@ -207,7 +211,8 @@ server.registerTool(
     title: "Get product dossier",
     description:
       "The full Opportunity Dossier for one product: a rule-based verdict (High Potential / Moderate Risk / Crowded Market) " +
-      "with its confidence, every score and the evidence it used, all observed offers, a profit estimate from the observed " +
+      "with its confidence, every score and the evidence it used, all observed offers, the margin insights (wholesale range, " +
+      "gross margin spread, arbitrage rating), a profit estimate from the observed " +
       "retail price (assumptions stated), supplier search keywords and links, a draft Shopify import CSV, and up to 50 cited " +
       "sources. Paid: one x402 micro-payment in USDC per call.",
     inputSchema: {

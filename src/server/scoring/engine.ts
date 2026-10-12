@@ -54,7 +54,7 @@ const CONFIDENCE_SCALE = 2;
 const REVIEW_COUNT_REFERENCE = 50_000;
 const TREND_POINTS_PER_MONTH_TO_MAX = 20;
 const TREND_MIN_SPAN_DAYS = 7;
-const OFFER_MAX_AGE_DAYS = 30;
+export const OFFER_MAX_AGE_DAYS = 30;
 const DAY_MS = 86_400_000;
 
 export const SOURCE_WEIGHT: Record<SourceType, number> = {
@@ -224,7 +224,7 @@ export function scoreTrend(input: ScoringInput): DimensionScore | null {
  * compared as-is; mixed currencies are compared in euros, skipping any currency
  * without an ECB rate. Returns the offer in its own price and currency.
  */
-export function bestCurrentOffer(offers: OfferFact[], asOf: Date, fx: FxRates): OfferFact | null {
+export function bestCurrentOffer<T extends OfferFact>(offers: T[], asOf: Date, fx: FxRates): T | null {
   const live = offers
     .filter((o) => o.availability === "IN_STOCK" || o.availability === "PREORDER")
     .filter((o) => {

@@ -1,17 +1,16 @@
 // The Opportunity Dossier for machine consumers (AI agents): the same
-// rule-based verdict, profit maths and supplier search the dashboard shows,
-// plus every score and the evidence behind it. Pure domain code — knows
-// nothing about how the caller paid.
+// rule-based verdict, margin insight, profit maths and supplier search the
+// dashboard shows, plus every score and the evidence behind it. Pure domain
+// code — knows nothing about how the caller paid.
 
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
   cleanTitle,
-  DEFAULT_WHOLESALE_SHARE,
-  defaultWholesale,
   estimateProfit,
   opportunityVerdict,
   shopifyCsv,
   sourcingKeywords,
+  startingWholesale,
   supplierSearchUrls,
 } from "@/components/dashboard/dossier";
 import { confidenceLevel } from "@/components/dashboard/format";
@@ -27,7 +26,7 @@ export function buildDossier(p: ProductDto, now = new Date()) {
   const offer = p.bestOffer;
   const merchant = offer?.merchant ?? null;
   const price = offer ? Number(offer.price.amount) : null;
-  const wholesale = price !== null ? defaultWholesale(price) : null;
+  const wholesale = startingWholesale(p.margin);
   const verdict = opportunityVerdict(p);
   const keywords = sourcingKeywords({ ...p, merchant });
 
@@ -35,7 +34,7 @@ export function buildDossier(p: ProductDto, now = new Date()) {
     generatedAt: now.toISOString(),
     methodologyVersion: METHODOLOGY_VERSION,
     disclaimer:
-      "Scores, the verdict and the profit figures are rule-based estimates calculated only from the cited evidence. They are not guarantees.",
+      "Scores, the verdict, the margin insight and the profit figures are rule-based estimates calculated only from the cited evidence and benchmarks. They are not guarantees.",
     product: {
       id: p.id,
       name: cleanTitle(p.name, merchant),
@@ -69,8 +68,9 @@ export function buildDossier(p: ProductDto, now = new Date()) {
     ),
     bestOffer: offer,
     offers: p.offers,
+    margin: p.margin,
     profitEstimate:
-      offer && price !== null && wholesale !== null
+      offer && price !== null && wholesale !== null && p.margin
         ? {
             currency: offer.price.currency,
             retailPrice: price,
@@ -78,7 +78,7 @@ export function buildDossier(p: ProductDto, now = new Date()) {
             assumedWholesaleCost: wholesale,
             ...profitBeforeCosts(price, wholesale),
             assumptions: [
-              `Wholesale cost assumed at ${DEFAULT_WHOLESALE_SHARE * 100}% of the retail price: replace it with a real supplier quote.`,
+              `Wholesale cost assumed at the middle of the estimate in margin.wholesaleEstimate (US Census gross margin for ${p.margin.benchmark.storeType}, ${p.margin.benchmark.years}): replace it with a real supplier quote.`,
               "Advertising, shipping, platform fees and taxes are not included.",
             ],
           }

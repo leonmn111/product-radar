@@ -2,6 +2,7 @@
 // evidence behind them. Returns plain JSON-safe objects (no Prisma Decimals).
 
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
+import { marginInsight } from "@/server/margins/engine";
 import { bestCurrentOffer } from "@/server/scoring/engine";
 import { LATEST_FX } from "@/server/scoring/fx-latest";
 import { minimumMatch, type SearchTerm } from "./search";
@@ -9,7 +10,10 @@ import { minimumMatch, type SearchTerm } from "./search";
 const MAX_EVIDENCE_PER_PRODUCT = 50;
 
 const PRODUCT_INCLUDE = {
-  offers: { orderBy: [{ price: "asc" }, { observedAt: "desc" }] },
+  offers: {
+    orderBy: [{ price: "asc" }, { observedAt: "desc" }],
+    include: { sourceEvidence: { select: { qualityScore: true } } },
+  },
   // Newest evidence only — re-ingests add rows, so an unbounded list would grow forever.
   evidence: { orderBy: [{ observedAt: "desc" }, { id: "asc" }], take: MAX_EVIDENCE_PER_PRODUCT },
   _count: { select: { evidence: true } },
@@ -166,7 +170,7 @@ export async function countHiddenLiveProducts(db: PrismaClient, category?: strin
 
 type ProductRow = Prisma.ProductGetPayload<{
   include: {
-    offers: true;
+    offers: { include: { sourceEvidence: { select: { qualityScore: true } } } };
     evidence: true;
     scores: { include: { evidence: { select: { evidenceId: true } } } };
     _count: { select: { evidence: true } };
@@ -184,11 +188,12 @@ function toDto(p: ProductRow, asOf: Date, sources: SourceSummary = { sourceCount
     sourceEvidenceId: o.sourceEvidenceId,
   }));
 
-  const best = bestCurrentOffer(
-    p.offers.map((o) => ({ ...o, price: o.price.toNumber() })),
-    asOf,
-    LATEST_FX,
-  );
+  const offerFacts = p.offers.map((o) => ({
+    ...o,
+    price: o.price.toNumber(),
+    qualityScore: o.sourceEvidence.qualityScore.toNumber(),
+  }));
+  const best = bestCurrentOffer(offerFacts, asOf, LATEST_FX);
   const bestOffer = best ? offers.find((o) => o.sourceEvidenceId === best.sourceEvidenceId) ?? null : null;
 
   return {
@@ -201,6 +206,8 @@ function toDto(p: ProductRow, asOf: Date, sources: SourceSummary = { sourceCount
     imageUrl: webImage(p.imageUrl),
     isSample: p.isSample,
     bestOffer,
+    // Rule-based estimate: Census wholesale range + arbitrage from captured prices (src/server/margins).
+    margin: marginInsight({ category: p.category, offers: offerFacts, asOf, fx: LATEST_FX }),
     scores: Object.fromEntries(
       p.scores.map((s) => [
         s.dimension,

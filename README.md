@@ -270,9 +270,9 @@ npx -y @railway/cli@latest ssh --service web "npx -y tsx scripts/enrich-trends.t
 
 `GET /api/products?category=wireless-earbuds&limit=20`
 
-Products ranked by latest OVERALL score. Each includes `bestOffer`, `scores` (latest per dimension, with
-`confidence`, `methodologyVersion` and the `evidenceIds` used), `offers`, and `evidence` (source, timestamp,
-quality score, metric). `category` must be a lowercase slug; `limit` is 1–50 (default 20). Invalid input → 400.
+Products ranked by latest OVERALL score. Each includes `bestOffer`, `margin` (see "Margin engine"), `scores`
+(latest per dimension, with `confidence`, `methodologyVersion` and the `evidenceIds` used), `offers`, and
+`evidence` (source, timestamp, quality score, metric). `category` must be a lowercase slug; `limit` is 1–50 (default 20). Invalid input → 400.
 Signed-out and Free viewers get sample products only (`meta.access = "sample_only"`, with `meta.hiddenLiveCount`).
 
 ## Scoring engine
@@ -294,6 +294,25 @@ scores. Full formulas are in the file header. In short:
   resubmitting a page can't inflate its score. Search-interest captures are all kept for TREND.
 - `src/server/scoring/service.ts` loads data, runs the engine per category, and stores scores with links to
   their evidence (history is kept).
+
+## Margin engine
+
+`src/server/margins/engine.ts` (pure, like the scoring engine; formulas in the file header) adds `margin` to every
+product with a current price. It is computed when a product is read, so nothing needs rescoring. It's shown on
+catalog cards, in the dossier, and in both agent endpoints and the MCP tools.
+
+- **Wholesale range and gross margin spread:** retail price (the card's lowest current price) × the US Census
+  retail gross margin for the store type that sells the category, lowest to highest over 2018–2022. These are
+  category averages, not supplier quotes, and the UI and API say so. The figures, the category → store-type
+  mapping and the sources live in `src/server/margins/benchmarks.ts`. A new category falls back to all retail
+  stores, so add it to `CATEGORY_STORE_TYPE` when you create one.
+- **Arbitrage rating:** only from captured offers (in stock, last 30 days, latest per store, same currency).
+  Buy at the cheapest store, resell at the median of the others, minus eBay's standard US fee (13.6% + $0.40 per
+  order). `HIGH_ARBITRAGE` needs a return of 25% or more and at least €10 per unit, `MODERATE` 10% and €3, and
+  anything else (including a single store) is `RETAIL_ONLY`.
+- The calculator's starting wholesale cost, and the dossier's `profitEstimate`, use the middle of the range.
+- To refresh: re-read the Census table (published yearly) and eBay's fee page, update `benchmarks.ts`, and bump
+  `MARGIN_METHODOLOGY_VERSION`.
 
 ## Data model
 

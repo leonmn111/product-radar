@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import type { ProductDto } from "@/server/products/service";
 import { formatPrice, getScore, humanizeSlug, type Score } from "./format";
+import { MarginSummary } from "./margin";
 import { ConfidenceBadge } from "./score";
 
 const initials = (s: string) =>
@@ -199,6 +200,8 @@ export function ProductCard({
             )}
             <ValueBadge score={getScore(p, "VALUE")} />
           </div>
+
+          {p.margin && <MarginSummary margin={p.margin} />}
 
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
             <SourcesBadge product={p} />

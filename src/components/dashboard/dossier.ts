@@ -142,12 +142,11 @@ export function opportunityVerdict(p: ProductDto): Verdict | null {
 
 // ── Profit ───────────────────────────────────────────────────────────────────
 
-export const DEFAULT_WHOLESALE_SHARE = 0.3;
-
 const cents = (x: number) => Math.round(x * 100) / 100;
 
-export function defaultWholesale(price: number) {
-  return cents(price * DEFAULT_WHOLESALE_SHARE);
+/** Where the wholesale cost starts: the middle of the Census-based estimate (src/server/margins), or null without a price. */
+export function startingWholesale(margin: ProductDto["margin"]) {
+  return margin ? cents((margin.wholesaleEstimate.low + margin.wholesaleEstimate.high) / 2) : null;
 }
 
 export function estimateProfit(price: number, wholesale: number, adShipping: number) {

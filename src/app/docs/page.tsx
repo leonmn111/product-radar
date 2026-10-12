@@ -134,7 +134,7 @@ const OPPORTUNITY_EXAMPLE = json({
   generatedAt: "2026-10-09T01:23:21.102Z",
   methodologyVersion: "1.2.0",
   disclaimer:
-    "opportunityScore is a calculated estimate (0–100) with a confidence (0–1), derived only from the cited evidence. It is not a guarantee.",
+    "opportunityScore is a calculated estimate (0–100) with a confidence (0–1), derived only from the cited evidence. margin is a rule-based estimate: the wholesale range comes from US Census store-type averages (not supplier quotes), and the arbitrage rating only from store prices we captured. Neither is a guarantee.",
   query: { category: "earplugs", limit: 1, includeSample: false },
   count: 1,
   opportunities: [
@@ -159,6 +159,39 @@ const OPPORTUNITY_EXAMPLE = json({
         price: { amount: "19.95", currency: "EUR" },
         availability: "IN_STOCK",
         observedAt: "2026-10-08T10:46:15.722Z",
+      },
+      margin: {
+        methodologyVersion: "1.0.0",
+        currency: "EUR",
+        retailPrice: { merchant: "loopearplugs.com", price: 19.95, currency: "EUR", observedAt: "2026-10-08T10:46:15.722Z", "…": "…" },
+        wholesaleEstimate: { low: 13.39, high: 14.3 },
+        grossSpread: { low: 5.65, high: 6.56, lowPct: 28.3, highPct: 32.9 },
+        benchmark: {
+          storeType: "Health and personal care stores",
+          naicsCode: "4461",
+          years: "2018–2022",
+          grossMarginPct: { low: 28.3, high: 32.9 },
+          source: {
+            name: "US Census Bureau, Annual Retail Trade Survey: Gross Margin as a Percentage of Sales (1993–2022)",
+            url: "https://www2.census.gov/programs-surveys/arts/tables/2022benchmarked/gmper.xlsx",
+            publishedAt: "2026-08-31",
+            retrievedAt: "2026-10-12",
+            qualityScore: 60,
+          },
+        },
+        arbitrage: {
+          rating: "RETAIL_ONLY",
+          label: "Retail Only",
+          summary: "Only one store's current price has been captured (loopearplugs.com), so there's no price gap to resell.",
+          buy: null,
+          sell: null,
+          netProfit: null,
+          returnPct: null,
+          feeRule: "13.6% of the sale plus 0.40 per order (0.30 on orders of 10.00 or less), eBay US standard rate",
+          feeSource: { name: "eBay, Selling fees (US, most categories)", url: "https://www.ebay.com/help/selling/fees-credits-invoices/selling-fees?id=4822", "…": "…" },
+          "…": "…",
+        },
+        caveats: ["The wholesale range is the US Census average gross margin for the store type that sells this category, not a supplier quote.", "…"],
       },
       evidence: {
         count: 8,
@@ -185,7 +218,7 @@ const DOSSIER_EXAMPLE = json({
   generatedAt: "2026-10-09T01:23:21.129Z",
   methodologyVersion: "1.2.0",
   disclaimer:
-    "Scores, the verdict and the profit figures are rule-based estimates calculated only from the cited evidence. They are not guarantees.",
+    "Scores, the verdict, the margin insight and the profit figures are rule-based estimates calculated only from the cited evidence and benchmarks. They are not guarantees.",
   product: {
     id: "01a11b1e-f44e-740a-8b84-0a08f4befa7d",
     name: "Loop Quiet™ 2",
@@ -215,6 +248,7 @@ const DOSSIER_EXAMPLE = json({
     },
     "…": "value, quality, demand, sentiment, trend",
   },
+  margin: "{ … the same margin object as in the opportunity response }",
   profitEstimate: {
     currency: "EUR",
     retailPrice: 19.95,
@@ -223,11 +257,11 @@ const DOSSIER_EXAMPLE = json({
       url: "https://www.loopearplugs.com/products/quiet",
       observedAt: "2026-10-08T10:46:15.722Z",
     },
-    assumedWholesaleCost: 5.99,
-    netProfitPerUnit: 13.96,
-    marginPct: 70,
+    assumedWholesaleCost: 13.85,
+    netProfitPerUnit: 6.1,
+    marginPct: 30.6,
     assumptions: [
-      "Wholesale cost assumed at 30% of the retail price: replace it with a real supplier quote.",
+      "Wholesale cost assumed at the middle of the estimate in margin.wholesaleEstimate (US Census gross margin for Health and personal care stores, 2018–2022): replace it with a real supplier quote.",
       "Advertising, shipping, platform fees and taxes are not included.",
     ],
   },
@@ -587,6 +621,14 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
             <C>matchedWords</C>. Every response also lists <C>availableCategories</C>. A search that matches
             nothing returns <C>404</C> with <C>error: &quot;no_results&quot;</C> and a hint, and is not charged.
           </p>
+          <p>
+            Each result also has <C>margin</C>, a rule-based estimate with every source named. It has an estimated
+            wholesale cost range and gross margin spread (amount and %), taken from US Census retail gross margins for
+            the store type that sells the category; these are averages, not supplier quotes. It also has an{" "}
+            <C>arbitrage.rating</C> of <C>HIGH_ARBITRAGE</C>, <C>MODERATE</C> or <C>RETAIL_ONLY</C>, worked out from
+            real price gaps between stores we captured in the last 30 days, in the same currency, after eBay&apos;s
+            standard selling fees. It is <C>null</C> when a product has no current price.
+          </p>
           <Table
             head={["Parameter", "Type", "Default", "Meaning"]}
             rows={[
@@ -619,9 +661,9 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
           <h3 className="font-mono text-base font-semibold text-white">GET /api/agent/v1/dossier</h3>
           <p>
             The full Opportunity Dossier for one product: a rule-based verdict (High Potential, Moderate Risk or Crowded
-            Market) with its confidence, every score and the evidence it used, all observed offers, a profit estimate
-            with its assumptions spelled out, supplier search links, a draft Shopify import file, and up to 50 cited
-            sources.
+            Market) with its confidence, every score and the evidence it used, all observed offers, the{" "}
+            <C>margin</C> insight, a profit estimate with its assumptions spelled out, supplier search links, a draft
+            Shopify import file, and up to 50 cited sources.
           </p>
           <Table
             head={["Parameter", "Type", "Meaning"]}
@@ -657,14 +699,14 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
               <span key="p" className="whitespace-nowrap">
                 {status.priceUsdc} USDC
               </span>,
-              "Plain-words search; ranked products with scores, confidence, best offer and top evidence",
+              "Plain-words search; ranked products with scores, confidence, best offer, margin and arbitrage rating, and top evidence",
             ],
             [
               <C key="d">get_product_dossier</C>,
               <span key="p" className="whitespace-nowrap">
                 {status.priceUsdc} USDC
               </span>,
-              "Verdict, every score and its evidence, profit estimate, supplier search, Shopify draft",
+              "Verdict, every score and its evidence, margin and arbitrage, profit estimate, supplier search, Shopify draft",
             ],
             [<C key="s">get_payment_status</C>, "Free", "Wallet address, spending caps, payments made this session"],
           ]}

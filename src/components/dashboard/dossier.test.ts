@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { ProductDto } from "@/server/products/service";
 import {
   cleanTitle,
-  defaultWholesale,
   estimateProfit,
   opportunityVerdict,
   parseMoney,
   shopifyCsv,
   sourcingKeywords,
+  startingWholesale,
   supplierSearchUrls,
 } from "./dossier";
 
@@ -42,6 +42,7 @@ function product(scores: Record<string, ReturnType<typeof score>>, evidence = [m
     imageUrl: null,
     isSample: true,
     bestOffer: null,
+    margin: null,
     scores,
     offers: [],
     evidenceCount: evidence.length,
@@ -88,8 +89,10 @@ describe("opportunity verdict", () => {
 });
 
 describe("profit estimate", () => {
-  it("defaults wholesale to 30% and computes net profit and margin", () => {
-    expect(defaultWholesale(59)).toBe(17.7);
+  it("starts wholesale at the middle of the Census-based estimate, and computes net profit and margin", () => {
+    const margin = { wholesaleEstimate: { low: 39.28, high: 46.32 } } as ProductDto["margin"];
+    expect(startingWholesale(margin)).toBe(42.8);
+    expect(startingWholesale(null)).toBeNull();
     expect(estimateProfit(59, 17.7, 10)).toEqual({ net: 31.3, marginPct: 53.1 });
     expect(estimateProfit(20, 15, 10)).toEqual({ net: -5, marginPct: -25 });
   });

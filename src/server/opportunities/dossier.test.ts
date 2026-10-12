@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { marginInsight } from "@/server/margins/engine";
 import type { ProductDto } from "@/server/products/service";
+import { LATEST_FX } from "@/server/scoring/fx-latest";
 import { buildDossier } from "./dossier";
 
 const score = (value: number, confidence: number) => ({
@@ -43,6 +45,13 @@ const offer = {
   sourceEvidenceId: "e2",
 };
 
+const margin = marginInsight({
+  category: "wireless-earbuds",
+  offers: [{ ...offer, price: 40, currency: "GBP", observedAt: new Date(offer.observedAt), qualityScore: 80 }],
+  asOf: new Date("2026-10-09T00:00:00.000Z"),
+  fx: LATEST_FX,
+});
+
 const product = (over: Partial<ProductDto> = {}) =>
   ({
     id: "0199a0a0-0000-7000-8000-000000000001",
@@ -53,6 +62,7 @@ const product = (over: Partial<ProductDto> = {}) =>
     description: "Small buds.",
     isSample: false,
     bestOffer: offer,
+    margin,
     scores: { OVERALL: score(66, 0.72), QUALITY: score(70, 0.8), DEMAND: score(40, 0.25) },
     offers: [offer],
     evidenceCount: evidence.length,
@@ -88,11 +98,23 @@ describe("agent dossier", () => {
       currency: "GBP",
       retailPrice: 40,
       retailPriceSource: { merchant: "Shop", url: "https://shop.test/buds" },
-      assumedWholesaleCost: 12,
-      netProfitPerUnit: 28,
-      marginPct: 70,
+      // Electronics and appliance stores keep 28.8–33.4% ⇒ wholesale £26.64–£28.48, middle £27.56.
+      assumedWholesaleCost: 27.56,
+      netProfitPerUnit: 12.44,
+      marginPct: 31.1,
     });
-    expect(d.profitEstimate!.assumptions.join(" ")).toMatch(/30%.*not included/);
+    expect(d.profitEstimate!.assumptions.join(" ")).toMatch(/Census .*Electronics and appliance stores.*not included/);
+  });
+
+  it("includes the margin insight with its sources", () => {
+    expect(d.margin).toMatchObject({
+      currency: "GBP",
+      wholesaleEstimate: { low: 26.64, high: 28.48 },
+      grossSpread: { lowPct: 28.8, highPct: 33.4 },
+      arbitrage: { rating: "RETAIL_ONLY", label: "Retail Only" },
+    });
+    expect(d.margin!.benchmark.source.url).toMatch(/^https:\/\/www2\.census\.gov\//);
+    expect(d.margin!.arbitrage.feeSource.url).toMatch(/^https:\/\/www\.ebay\.com\//);
   });
 
   it("strips the store name from the title and builds supplier searches and a Shopify draft", () => {
@@ -102,7 +124,7 @@ describe("agent dossier", () => {
   });
 
   it("gives no profit estimate without a current price, and no verdict without an overall score", () => {
-    const bare = buildDossier(product({ bestOffer: null, offers: [], scores: {} }));
+    const bare = buildDossier(product({ bestOffer: null, margin: null, offers: [], scores: {} }));
     expect(bare.profitEstimate).toBeNull();
     expect(bare.verdict).toBeNull();
   });

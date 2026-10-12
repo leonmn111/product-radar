@@ -11,8 +11,8 @@ Full documentation: https://theproductradar.io/docs#mcp
 
 | Tool | Cost | What it returns |
 | --- | --- | --- |
-| `find_product_opportunities` | 1 micro-payment | Search in plain words ("wireless earbuds"), optionally within a category. Ranked products: opportunity score + confidence, dimension scores, best offer, top evidence, matched words |
-| `get_product_dossier` | 1 micro-payment | Rule-based verdict, every score and its evidence, profit estimate, supplier search, Shopify draft CSV |
+| `find_product_opportunities` | 1 micro-payment | Search in plain words ("wireless earbuds"), optionally within a category. Ranked products: opportunity score + confidence, dimension scores, best offer, margin insights (wholesale range, gross margin spread, arbitrage rating), top evidence, matched words |
+| `get_product_dossier` | 1 micro-payment | Rule-based verdict, every score and its evidence, margin insights, profit estimate, supplier search, Shopify draft CSV |
 | `get_payment_status` | free | Wallet, caps, and the payments made this session |
 
 ## Install
@@ -24,7 +24,7 @@ Claude Desktop (`claude_desktop_config.json`) or Cursor (`~/.cursor/mcp.json`):
   "mcpServers": {
     "productradar": {
       "command": "npx",
-      "args": ["-y", "https://theproductradar.io/mcp/productradar-mcp-0.1.2.tgz"],
+      "args": ["-y", "https://theproductradar.io/mcp/productradar-mcp-0.1.3.tgz"],
       "env": {
         "PRODUCTRADAR_WALLET_PRIVATE_KEY": "0x…",
         "PRODUCTRADAR_BUDGET_USDC": "1.00"
@@ -37,7 +37,7 @@ Claude Desktop (`claude_desktop_config.json`) or Cursor (`~/.cursor/mcp.json`):
 Claude Code:
 
 ```bash
-claude mcp add productradar --env PRODUCTRADAR_WALLET_PRIVATE_KEY=0x… -- npx -y https://theproductradar.io/mcp/productradar-mcp-0.1.2.tgz
+claude mcp add productradar --env PRODUCTRADAR_WALLET_PRIVATE_KEY=0x… -- npx -y https://theproductradar.io/mcp/productradar-mcp-0.1.3.tgz
 ```
 
 Needs Node.js 20 or newer.

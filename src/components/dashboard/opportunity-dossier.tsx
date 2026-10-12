@@ -4,17 +4,18 @@ import { useId, useState } from "react";
 import type { ProductDto } from "@/server/products/service";
 import {
   cleanTitle,
-  defaultWholesale,
   estimateProfit,
   opportunityVerdict,
   parseMoney,
   shopifyCsv,
   slugify,
   sourcingKeywords,
+  startingWholesale,
   supplierSearchUrls,
   type VerdictKind,
 } from "./dossier";
 import { formatPrice } from "./format";
+import { MarginCard } from "./margin";
 import { ProductDetail } from "./product-detail";
 
 export type DossierViewer = { signedIn: boolean; proTools: boolean };
@@ -25,13 +26,13 @@ const card = "rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5 da
 const cardTitle = "text-sm font-semibold text-zinc-950 dark:text-white";
 
 export function OpportunityDossier({ product, viewer }: { product: ProductDto; viewer: DossierViewer }) {
-  const price = product.bestOffer ? Number(product.bestOffer.price.amount) : null;
-  const [wholesale, setWholesale] = useState(price !== null ? defaultWholesale(price).toFixed(2) : "");
+  const [wholesale, setWholesale] = useState(startingWholesale(product.margin)?.toFixed(2) ?? "");
   const [adShipping, setAdShipping] = useState("");
 
   return (
     <div className="space-y-4">
       <VerdictCard product={product} />
+      <MarginCard productId={product.id} margin={product.margin} />
       <div className="grid gap-4 lg:grid-cols-2">
         <ProfitCalculator
           product={product}
@@ -174,7 +175,7 @@ function ProfitCalculator({
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <MoneyInput
           label="Wholesale cost"
-          hint="Starts at 30% of retail price"
+          hint="Starts mid-way through the estimate above"
           currency={currency}
           value={wholesale}
           onChange={onWholesale}
