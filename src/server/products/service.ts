@@ -112,19 +112,52 @@ export async function listCategories(db: PrismaClient, { includeSample }: { incl
 /** Full products for ranked ids, in the same order. A product deleted in between is skipped. */
 async function loadInOrder<T extends { id: string }>(db: PrismaClient, ranked: T[], asOf: Date) {
   if (ranked.length === 0) return [];
-  const rows = await db.product.findMany({ where: { id: { in: ranked.map((r) => r.id) } }, include: PRODUCT_INCLUDE });
+  const ids = ranked.map((r) => r.id);
+  const [rows, sources] = await Promise.all([
+    db.product.findMany({ where: { id: { in: ids } }, include: PRODUCT_INCLUDE }),
+    sourceSummaries(db, ids),
+  ]);
   const byId = new Map(rows.map((r) => [r.id, r]));
   return ranked.flatMap((hit) => {
     const row = byId.get(hit.id);
-    return row ? [{ hit, dto: toDto(row, asOf) }] : [];
+    return row ? [{ hit, dto: toDto(row, asOf, sources.get(hit.id)) }] : [];
   });
 }
 
 /** One product by id (sample or live), or null if it doesn't exist. */
 export async function getProduct(db: PrismaClient, id: string, asOf = new Date()) {
-  const row = await db.product.findUnique({ where: { id }, include: PRODUCT_INCLUDE });
-  return row ? toDto(row, asOf) : null;
+  const [row, sources] = await Promise.all([
+    db.product.findUnique({ where: { id }, include: PRODUCT_INCLUDE }),
+    sourceSummaries(db, [id]),
+  ]);
+  return row ? toDto(row, asOf, sources.get(id)) : null;
 }
+
+type SourceSummary = { sourceCount: number; hasSearchTrend: boolean };
+
+/**
+ * Per product, over ALL its evidence (not just the newest rows the DTO carries):
+ * how many distinct pages it comes from — a page read twice, or 11 monthly trend
+ * points from one chart, count once — and whether search-interest data exists.
+ */
+async function sourceSummaries(db: PrismaClient, productIds: string[]) {
+  const groups = await db.evidence.groupBy({
+    by: ["productId", "sourceUrl", "metric"],
+    where: { productId: { in: productIds } },
+  });
+  const urls = new Map<string, Set<string>>();
+  const trends = new Set<string>();
+  for (const g of groups) {
+    urls.set(g.productId, (urls.get(g.productId) ?? new Set()).add(g.sourceUrl));
+    if (g.metric === "SEARCH_INTEREST") trends.add(g.productId);
+  }
+  return new Map<string, SourceSummary>(
+    productIds.map((id) => [id, { sourceCount: urls.get(id)?.size ?? 0, hasSearchTrend: trends.has(id) }]),
+  );
+}
+
+/** Only web image URLs reach the page (never data:, javascript: or relative ones). */
+const webImage = (url: string | null) => (url && /^https?:\/\//i.test(url) ? url : null);
 
 /** How many live products exist that this viewer can't see (for the upgrade prompt). */
 export async function countHiddenLiveProducts(db: PrismaClient, category?: string) {
@@ -140,7 +173,7 @@ type ProductRow = Prisma.ProductGetPayload<{
   };
 }>;
 
-function toDto(p: ProductRow, asOf: Date) {
+function toDto(p: ProductRow, asOf: Date, sources: SourceSummary = { sourceCount: 0, hasSearchTrend: false }) {
   const offers = p.offers.map((o) => ({
     id: o.id,
     merchant: o.merchant,
@@ -165,6 +198,7 @@ function toDto(p: ProductRow, asOf: Date) {
     brand: p.brand,
     category: p.category,
     description: p.description,
+    imageUrl: webImage(p.imageUrl),
     isSample: p.isSample,
     bestOffer,
     scores: Object.fromEntries(
@@ -181,6 +215,7 @@ function toDto(p: ProductRow, asOf: Date) {
     ),
     offers,
     evidenceCount: p._count.evidence, // total; `evidence` holds the newest MAX_EVIDENCE_PER_PRODUCT
+    ...sources,
     evidence: p.evidence.map((e) => ({
       id: e.id,
       claim: e.claim,

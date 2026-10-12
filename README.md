@@ -48,8 +48,12 @@ Check it works: open http://localhost:3000/api/health
 
 ## Dashboard
 
-`http://localhost:3000/` — ranked product table (cards on phones). Filter by category, sort by any score or price,
-and open a product to see its score breakdown, offers and every piece of evidence with the scores it fed into.
+`http://localhost:3000/` — ranked product cards (`product-card.tsx`): square photo from `Product.imageUrl` (plain
+`<img>`, lazy, no referrer; a brand-monogram tile when there's no photo or it fails to load), brand, title, overall
+score with its confidence badge, best current price, the Value score, and "N sources" (distinct pages, over all
+evidence) plus "Trends" when Google search-interest data exists. On wide screens a Cards / Table switch keeps the
+full score table. Filter by category, sort by any score or price, and open a product's dossier (the card widens to
+the full row) to see its verdict, profit calculator, score breakdown, offers and every piece of evidence.
 Data comes from `/api/products` in the browser. Components live in `src/components/dashboard/`.
 The page is marked `noindex` (it's an app dashboard, not a marketing page).
 

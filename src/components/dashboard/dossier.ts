@@ -32,7 +32,7 @@ export type Verdict = {
   label: string;
   sentences: [string, string];
   confidence: number;
-  sourceCount: number;
+  evidenceCount: number; // evidence items behind the OVERALL score (not distinct pages)
 };
 
 type Facts = { rating?: { value: number; sources: number }; reviews?: number; searchInterest?: number };
@@ -136,7 +136,7 @@ export function opportunityVerdict(p: ProductDto): Verdict | null {
     label: VERDICT_LABEL[kind],
     sentences: [factsSentence(evidenceFacts(p.evidence), trend), why],
     confidence: overall.confidence,
-    sourceCount: overall.evidenceIds.length,
+    evidenceCount: overall.evidenceIds.length,
   };
 }
 

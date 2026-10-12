@@ -68,7 +68,7 @@ export function ProductDetail({ product }: { product: ProductDto }) {
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
                     <ConfidenceBadge confidence={s.confidence} />
                     <span>
-                      {DIMENSION_HELP[d]} · {s.evidenceIds.length} source{s.evidenceIds.length === 1 ? "" : "s"}
+                      {DIMENSION_HELP[d]} · {s.evidenceIds.length} evidence item{s.evidenceIds.length === 1 ? "" : "s"}
                     </span>
                   </div>
                 </li>

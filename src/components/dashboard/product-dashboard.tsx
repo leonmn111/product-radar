@@ -13,6 +13,7 @@ import {
 } from "./format";
 import { IngestForm } from "./ingest-form";
 import { OpportunityDossier, type DossierViewer } from "./opportunity-dossier";
+import { CardGridSkeleton, ProductCard } from "./product-card";
 import { ScoreCell } from "./score";
 import { UpgradeCard } from "./upgrade-card";
 
@@ -111,6 +112,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [knownCategories, setKnownCategories] = useState<string[]>([]);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [view, setView] = useState<"cards" | "table">("cards"); // the table is a wide-screen option
   const { data, error, loading, refreshing, refresh } = useProducts(category);
 
   // Remember categories from the unfiltered list so the tabs stay put while filtering.
@@ -197,6 +199,20 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
             );
           })}
         </div>
+        <div className="flex items-center gap-3">
+        <div role="group" aria-label="Layout" className="hidden rounded-lg bg-zinc-100 p-0.5 md:flex dark:bg-zinc-800">
+          {(["cards", "table"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={view === v}
+              onClick={() => setView(v)}
+              className={`rounded-md px-2.5 py-1 text-sm font-medium text-zinc-600 hover:text-zinc-900 aria-pressed:bg-white aria-pressed:text-zinc-950 aria-pressed:shadow-sm dark:text-zinc-400 dark:hover:text-zinc-100 dark:aria-pressed:bg-zinc-950 dark:aria-pressed:text-white ${focusRing}`}
+            >
+              {v === "cards" ? "Cards" : "Table"}
+            </button>
+          ))}
+        </div>
         <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
           <span className="shrink-0">Sort by</span>
           <select
@@ -211,6 +227,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
             ))}
           </select>
         </label>
+        </div>
       </div>
 
       <div aria-live="polite" className="sr-only">
@@ -235,7 +252,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
           </button>
         </div>
       ) : loading ? (
-        <LoadingSkeleton />
+        <CardGridSkeleton />
       ) : products.length === 0 ? (
         <div className="rounded-lg border border-dashed border-zinc-300 p-10 text-center dark:border-zinc-700">
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">No products yet.</p>
@@ -261,8 +278,17 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
               </a>
             </p>
           )}
-          <ProductTable products={products} expanded={expanded} onToggle={toggle} highlightId={highlightId} dossierViewer={dossierViewer} />
-          <ProductCards products={products} expanded={expanded} onToggle={toggle} highlightId={highlightId} dossierViewer={dossierViewer} />
+          {view === "table" && (
+            <ProductTable products={products} expanded={expanded} onToggle={toggle} highlightId={highlightId} dossierViewer={dossierViewer} />
+          )}
+          <ProductGrid
+            className={view === "table" ? "md:hidden" : ""}
+            products={products}
+            expanded={expanded}
+            onToggle={toggle}
+            highlightId={highlightId}
+            dossierViewer={dossierViewer}
+          />
         </>
       )}
 
@@ -370,56 +396,28 @@ function ProductTable({ products, expanded, onToggle, highlightId, dossierViewer
   );
 }
 
-// ── Mobile cards ─────────────────────────────────────────────────────────────
+// ── Card grid (all screen sizes; the table is an extra wide-screen layout) ──
 
-function ProductCards({ products, expanded, onToggle, highlightId, dossierViewer }: ListProps) {
+function ProductGrid({ products, expanded, onToggle, highlightId, dossierViewer, className = "" }: ListProps & { className?: string }) {
   return (
-    <ol className="space-y-3 md:hidden">
+    <ol className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${className}`}>
       {products.map((p, i) => {
         const open = expanded.has(p.id);
         const panelId = `detail-card-${p.id}`;
-        const overall = getScore(p, "OVERALL");
         return (
-          <li
+          <ProductCard
             key={p.id}
-            data-product-id={p.id}
-            className={`rounded-xl border border-zinc-200 p-4 shadow-sm transition-colors duration-700 dark:border-zinc-800 ${
-              p.id === highlightId ? HIGHLIGHT : "bg-white dark:bg-zinc-900"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 gap-3">
-                <span className="pt-0.5 text-sm tabular-nums text-zinc-500 dark:text-zinc-400">{i + 1}</span>
-                <ProductName product={p} />
-              </div>
-              <div className="shrink-0 text-right">
-                <span className="sr-only">Overall score</span>
-                <ScoreCell score={overall} emphasis />
-              </div>
-            </div>
-
-            <dl className="mt-4 grid grid-cols-3 gap-x-3 gap-y-3 sm:grid-cols-5">
-              {SUB_DIMENSIONS.map((d) => (
-                <div key={d}>
-                  <dt className="text-xs text-zinc-600 dark:text-zinc-400">{DIMENSION_LABEL[d]}</dt>
-                  <dd className="mt-0.5">
-                    <ScoreCell score={getScore(p, d)} />
-                  </dd>
-                </div>
-              ))}
-            </dl>
-
-            <div className="mt-4 flex items-center justify-between gap-3 border-t border-zinc-200 pt-3 dark:border-zinc-800">
-              <BestPrice product={p} />
-              <ToggleButton open={open} controls={panelId} name={p.name} onClick={() => onToggle(p.id)} />
-            </div>
-
-            {open && (
-              <div id={panelId} className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+            product={p}
+            rank={i + 1}
+            open={open}
+            highlighted={p.id === highlightId}
+            toggle={<ToggleButton open={open} controls={panelId} name={p.name} onClick={() => onToggle(p.id)} />}
+            dossier={
+              <div id={panelId}>
                 <OpportunityDossier product={p} viewer={dossierViewer} />
               </div>
-            )}
-          </li>
+            }
+          />
         );
       })}
     </ol>
@@ -500,15 +498,5 @@ function ToggleButton({
         />
       </svg>
     </button>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div aria-hidden="true" className="space-y-3">
-      {Array.from({ length: 5 }, (_, i) => (
-        <div key={i} className="h-20 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
-      ))}
-    </div>
   );
 }

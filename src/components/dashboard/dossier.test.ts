@@ -39,11 +39,14 @@ function product(scores: Record<string, ReturnType<typeof score>>, evidence = [m
     brand: "Kestrel (sample)",
     category: "wireless-earbuds",
     description: null,
+    imageUrl: null,
     isSample: true,
     bestOffer: null,
     scores,
     offers: [],
     evidenceCount: evidence.length,
+    sourceCount: evidence.length,
+    hasSearchTrend: false,
     evidence,
   } as ProductDto;
 }

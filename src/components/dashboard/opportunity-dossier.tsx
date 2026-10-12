@@ -49,7 +49,7 @@ export function OpportunityDossier({ product, viewer }: { product: ProductDto; v
           <span>
             Score breakdown &amp; evidence{" "}
             <span className="font-normal text-zinc-500 dark:text-zinc-400">
-              ({product.evidenceCount} source{product.evidenceCount === 1 ? "" : "s"})
+              ({product.evidenceCount} evidence item{product.evidenceCount === 1 ? "" : "s"} from {product.sourceCount} source{product.sourceCount === 1 ? "" : "s"})
             </span>
           </span>
           <Chevron className="size-4 shrink-0 text-zinc-500 transition-transform group-open:rotate-180" />
@@ -111,7 +111,7 @@ function VerdictCard({ product }: { product: ProductDto }) {
         {verdict.sentences[0]} {verdict.sentences[1]}
       </p>
       <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
-        Rule-based estimate from {verdict.sourceCount} source{verdict.sourceCount === 1 ? "" : "s"} ·{" "}
+        Rule-based estimate from {verdict.evidenceCount} evidence item{verdict.evidenceCount === 1 ? "" : "s"} ·{" "}
         {Math.round(verdict.confidence * 100)}% confidence · not a guarantee. See the evidence below.
       </p>
     </section>

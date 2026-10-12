@@ -51,7 +51,7 @@ export function buildDossier(p: ProductDto, now = new Date()) {
       summary: verdict.sentences.join(" "),
       confidence: verdict.confidence,
       confidenceLevel: confidenceLevel(verdict.confidence),
-      sourceCount: verdict.sourceCount,
+      sourceCount: verdict.evidenceCount, // public API name kept; it counts evidence items behind the verdict
       method: "rule-based",
     },
     scores: Object.fromEntries(
