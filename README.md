@@ -100,7 +100,16 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
     unverified is dropped the first time an email link for that address is used, so nobody can register a
     stranger's address and later share the account the real owner signs into by email.
   - Limits (per server process): 10 password attempts per email and 50 per client per 15 minutes;
-    10 registrations per client per hour.
+    10 registrations per client per hour; 3 reset emails per address and 10 per client per 15 minutes.
+  - **Forgot password** (`/signin/forgot` → email → `/signin/reset?token=…`): a one-time link, valid for
+    1 hour, sent through Resend (`src/lib/email.ts`; printed to the terminal in development without
+    `AUTH_RESEND_KEY`). Only a SHA-256 hash of the link's token is stored (`PasswordResetToken`). The reply
+    is the same whether or not the address has an account. Using a link sets the password, marks the address
+    verified, voids the account's other links, lifts any wrong-password lockout and signs in. It also works
+    for email-link-only accounts (it's how they set a first password). Links use `APP_URL` when set, so set
+    it in production. Code: `src/server/auth/password-reset.ts`.
+  - **Ending sessions:** sessions are cookies, so `User.passwordChangedAt` does the job of revoking them. Any
+    session that signed in before the password was last set, reset or cleared reads as signed out.
 - **Plan checks** live in `src/server/auth/entitlements.ts` and only read `User.subscriptionTier`.
 - **Billing** (Stripe) is isolated in `src/server/billing/` and is the only code that writes the
   `stripe*` / `subscription*` fields on `User`.

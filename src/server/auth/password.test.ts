@@ -84,10 +84,12 @@ describe("authenticate", () => {
 describe("forgetUnprovenPassword", () => {
   it("clears a password only while the address is unverified", async () => {
     const { db, user } = fakeDb();
-    await forgetUnprovenPassword(db, " Victim@Example.com ");
+    const now = new Date("2026-10-12T12:00:00Z");
+    await forgetUnprovenPassword(db, " Victim@Example.com ", now);
+    // Clearing also stamps passwordChangedAt, which ends sessions signed in with that password.
     expect(user.updateMany).toHaveBeenCalledWith({
       where: { email: "victim@example.com", emailVerified: null, passwordHash: { not: null } },
-      data: { passwordHash: null },
+      data: { passwordHash: null, passwordChangedAt: now },
     });
   });
 });

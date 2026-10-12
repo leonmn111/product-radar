@@ -2,7 +2,8 @@ import { connection, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getViewer } from "@/server/auth/entitlements";
 import { createPortalUrl } from "@/server/billing/checkout";
-import { appUrl, BillingNotConfiguredError } from "@/server/billing/stripe";
+import { appUrl } from "@/lib/app-url";
+import { BillingNotConfiguredError } from "@/server/billing/stripe";
 
 // GET /billing/manage — Stripe customer portal (update card, invoices, cancel).
 export async function GET(request: NextRequest) {

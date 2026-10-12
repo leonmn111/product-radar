@@ -40,17 +40,20 @@ enum SubscriptionStatus {
 // written exclusively by the billing module (src/server/billing) from Stripe
 // webhooks — payment logic stays isolated from business logic (CLAUDE.md Rule 2).
 model User {
-  id               String           @id @default(uuid(7)) @db.Uuid
-  email            String           @unique
-  emailVerified    DateTime?        @db.Timestamptz(3)
-  name             String?
-  image            String?
+  id                String           @id @default(uuid(7)) @db.Uuid
+  email             String           @unique
+  emailVerified     DateTime?        @db.Timestamptz(3)
+  name              String?
+  image             String?
   // bcrypt hash for email + password sign-in; null for email-link-only accounts.
   // Cleared on the first email-link sign-in while emailVerified is still null.
-  passwordHash     String?
-  subscriptionTier SubscriptionTier @default(FREE)
-  createdAt        DateTime         @default(now()) @db.Timestamptz(3)
-  updatedAt        DateTime         @updatedAt @db.Timestamptz(3)
+  passwordHash      String?
+  // When the password was last set, reset or cleared. Sessions signed in before
+  // this are treated as signed out (sessions are cookies, so this is how they end).
+  passwordChangedAt DateTime?        @db.Timestamptz(3)
+  subscriptionTier  SubscriptionTier @default(FREE)
+  createdAt         DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime         @updatedAt @db.Timestamptz(3)
 
   // ── Billing (Stripe) — billing module only ──
   stripeCustomerId              String?             @unique
@@ -60,10 +63,26 @@ model User {
   subscriptionCancelAtPeriodEnd Boolean             @default(false)
   subscriptionSyncedAt          DateTime?           @db.Timestamptz(3) // Stripe event time last applied (ignores out-of-order events)
 
-  accounts Account[]
-  sessions Session[]
+  accounts            Account[]
+  sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([subscriptionTier])
+}
+
+// One "reset your password" email link. Only a SHA-256 hash of the link's
+// random token is stored; a link works once, for a short time.
+model PasswordResetToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
+  usedAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // ─── Auth.js (NextAuth) tables — shapes required by @auth/prisma-adapter ─────

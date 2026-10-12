@@ -10,11 +10,24 @@ import Resend from "next-auth/providers/resend";
 import type { SubscriptionTier } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
-import { authenticate, clientAddress, forgetUnprovenPassword, SignInInput, signInLimits } from "@/server/auth/password";
+import {
+  authenticate,
+  clientAddress,
+  forgetUnprovenPassword,
+  sessionStillValid,
+  SignInInput,
+  signInLimits,
+} from "@/server/auth/password";
 
 declare module "next-auth" {
   interface Session {
     user: { id: string; tier: SubscriptionTier } & DefaultSession["user"];
+  }
+}
+
+declare module "@auth/core/jwt" {
+  interface JWT {
+    signedInAt?: number; // ms; a password change after this ends the session
   }
 }
 
@@ -72,11 +85,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true;
     },
+    jwt({ token, user }) {
+      if (user) token.signedInAt = Date.now(); // only at sign-in; kept as the cookie is refreshed
+      return token;
+    },
     async session({ session, token }) {
-      // Fresh from the database on every request; a deleted account reads as signed out.
-      const user = token.sub
-        ? await db.user.findUnique({ where: { id: token.sub }, select: { email: true, subscriptionTier: true } })
+      // Fresh from the database on every request. A deleted account, or a session that
+      // signed in before the password last changed (reset, or an unproven one dropped),
+      // reads as signed out.
+      const found = token.sub
+        ? await db.user.findUnique({
+            where: { id: token.sub },
+            select: { email: true, subscriptionTier: true, passwordChangedAt: true },
+          })
         : null;
+      const user = found && sessionStillValid(token.signedInAt, found.passwordChangedAt) ? found : null;
       session.user.id = user ? token.sub! : "";
       session.user.email = user?.email ?? "";
       session.user.tier = user?.subscriptionTier ?? "FREE";

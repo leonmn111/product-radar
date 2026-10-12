@@ -21,12 +21,13 @@ const email = z
   .toLowerCase()
   .pipe(z.email({ message: "Enter a valid email address." }).max(254, { message: "That email address is too long." }));
 
-const password = z
+export const newPassword = z
   .string()
   .min(MIN_LENGTH, { message: `Use at least ${MIN_LENGTH} characters.` })
   .refine((p) => Buffer.byteLength(p, "utf8") <= MAX_BYTES, { message: "Use at most 72 characters." });
 
-export const RegisterInput = z.object({ email, password });
+export const RegisterInput = z.object({ email, password: newPassword });
+export const EmailInput = email;
 export const SignInInput = z.object({ email, password: z.string().min(1).max(1024) });
 
 export const hashPassword = (plain: string) => bcrypt.hash(plain, SALT_ROUNDS);
@@ -73,13 +74,19 @@ export async function authenticate(db: Db, input: z.infer<typeof SignInInput>) {
 
 /**
  * Called when an email sign-in link is used, before Auth.js marks the address
- * verified: drops a password that was set while the address was still unproven.
+ * verified: drops a password that was set while the address was still unproven,
+ * and (via passwordChangedAt) ends every session signed in with it.
  */
-export async function forgetUnprovenPassword(db: Db, address: string) {
+export async function forgetUnprovenPassword(db: Db, address: string, now = new Date()) {
   await db.user.updateMany({
     where: { email: address.trim().toLowerCase(), emailVerified: null, passwordHash: { not: null } },
-    data: { passwordHash: null },
+    data: { passwordHash: null, passwordChangedAt: now },
   });
+}
+
+/** False when the session signed in before the account's password last changed (it has ended). */
+export function sessionStillValid(signedInAt: number | undefined, passwordChangedAt: Date | null) {
+  return !passwordChangedAt || (signedInAt ?? 0) >= passwordChangedAt.getTime();
 }
 
 // Brute-force guards (per server process; see lib/rate-limit.ts).

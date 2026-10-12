@@ -26,10 +26,6 @@ export function stripe(): Stripe {
   return client;
 }
 
-export function appUrl(requestOrigin: string) {
-  return (env.APP_URL ?? requestOrigin).replace(/\/+$/, "");
-}
-
 let cachedPriceId: string | null = null;
 export async function proPriceId(): Promise<string> {
   if (cachedPriceId) return cachedPriceId;

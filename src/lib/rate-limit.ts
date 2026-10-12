@@ -14,5 +14,9 @@ export function createRateLimiter({ windowMs, max, maxKeys = 10_000 }: { windowM
       }
       return recent.length > max;
     },
+    /** Forgets every hit for `key` (e.g. after the person proves who they are another way). */
+    reset(key: string) {
+      hits.delete(key);
+    },
   };
 }

@@ -4,9 +4,20 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
+import { appUrl, originFromHeaders } from "@/lib/app-url";
 import { db } from "@/lib/db";
+import { sendEmail } from "@/lib/email";
 import { createRateLimiter } from "@/lib/rate-limit";
-import { clientAddress, RegisterInput, registerLimits, registerUser } from "@/server/auth/password";
+import {
+  clientAddress,
+  EmailInput,
+  newPassword,
+  RegisterInput,
+  registerLimits,
+  registerUser,
+  signInLimits,
+} from "@/server/auth/password";
+import { requestPasswordReset, resetLimits, resetPassword } from "@/server/auth/password-reset";
 import { safeCallback } from "./callback-url";
 
 export type AuthFormState = {
@@ -78,3 +89,39 @@ export async function sendLink(formData: FormData) {
   const error = typeof next === "string" ? new URL(next, "http://x").searchParams.get("error") : null;
   redirect(error ? back(error) : "/signin/check-email");
 }
+
+export type ResetRequestState = { sentTo?: string; error?: string; fieldError?: string };
+
+/** "Forgot password": emails a reset link. The reply is the same whether or not the account exists. */
+export async function requestReset(_prev: ResetRequestState, formData: FormData): Promise<ResetRequestState> {
+  const parsed = EmailInput.safeParse(String(formData.get("email") ?? ""));
+  if (!parsed.success) return { fieldError: "Enter a valid email address." };
+  const email = parsed.data;
+  const h = await headers();
+  const client = clientAddress(h);
+  if ((client && resetLimits.perClient.limited(client)) || resetLimits.perEmail.limited(email)) {
+    return { error: "Too many reset emails requested. Please wait 15 minutes and try again." };
+  }
+  const baseUrl = appUrl(originFromHeaders(h) ?? "");
+  try {
+    if (!baseUrl) throw new Error("No site address: set APP_URL.");
+    await requestPasswordReset(db, email, { baseUrl, send: sendEmail });
+  } catch (e) {
+    console.error("[auth] password reset email failed", e);
+    return { error: "We couldn't send the email just now. Please try again in a few minutes." };
+  }
+  return { sentTo: email };
+}
+
+/** Sets the password from a reset link, then signs in with it. */
+export async function setNewPassword(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const token = String(formData.get("token") ?? "");
+  const parsed = newPassword.safeParse(String(formData.get("password") ?? ""));
+  if (!parsed.success) return { fieldErrors: { password: parsed.error.issues[0].message } };
+  const result = await resetPassword(db, token, parsed.data);
+  if (!result.ok) return { error: "This link has expired or was already used. Request a new one below." };
+  // The link proved the address, so earlier wrong-password attempts no longer lock it.
+  signInLimits.perEmail.reset(result.email);
+  return signInWithPassword(result.email, parsed.data, "/");
+}
+

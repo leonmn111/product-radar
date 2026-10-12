@@ -2,7 +2,8 @@ import { connection, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getViewer } from "@/server/auth/entitlements";
 import { createCheckoutUrl } from "@/server/billing/checkout";
-import { appUrl, BillingNotConfiguredError } from "@/server/billing/stripe";
+import { appUrl } from "@/lib/app-url";
+import { BillingNotConfiguredError } from "@/server/billing/stripe";
 
 // GET /upgrade — the single destination for every "Upgrade to Pro" button.
 //   signed out → sign in, then come straight back here

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getViewer } from "@/server/auth/entitlements";
+import { AuthCard } from "./auth-card";
 import { AuthPanel } from "./auth-panel";
 import { safeCallback } from "./callback-url";
 
@@ -56,20 +56,10 @@ async function SignInForm({ searchParams }: { searchParams: Promise<Record<strin
 
 export default function SignInPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   return (
-    <main className="flex min-h-full flex-1 items-center justify-center bg-zinc-50 px-4 py-12 dark:bg-zinc-950">
-      <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <Link
-          href="/"
-          className="text-sm font-semibold text-indigo-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-indigo-300"
-        >
-          ← ProductRadar
-        </Link>
-        <div className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />}>
-            <SignInForm searchParams={props.searchParams} />
-          </Suspense>
-        </div>
-      </div>
-    </main>
+    <AuthCard>
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />}>
+        <SignInForm searchParams={props.searchParams} />
+      </Suspense>
+    </AuthCard>
   );
 }
