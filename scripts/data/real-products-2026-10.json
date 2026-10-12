@@ -3,7 +3,11 @@
   { "category": "tech-accessories", "url": "https://spigen.com/products/iphone-17-series-case-classic-ls-magfit" },
   { "category": "tech-accessories", "url": "https://spigen.com/products/iphone-16-series-case-ultra-hybrid-t-magfit" },
   { "category": "tech-accessories", "url": "https://gonimble.com/products/champ-portable-charger-1" },
-  { "category": "tech-accessories", "url": "https://gonimble.com/products/champ-lite-portable-charger" },
+  {
+    "category": "tech-accessories",
+    "url": "https://gonimble.com/products/champ-lite-portable-charger",
+    "sources": ["https://www.staples.com/nimble-champ-lite-usb-type-c-power-bank-for-most-smartphones-5200mah-stone-nb-cpc-5k-wht/product_24499854"]
+  },
   { "category": "tech-accessories", "url": "https://gonimble.com/products/iphone-clear-case" },
   { "category": "tech-accessories", "url": "https://gonimble.com/products/apollo-wireless-pad" },
   { "category": "tech-accessories", "url": "https://nativeunion.com/products/reclear-case-for-iphone-18" },
@@ -27,18 +31,33 @@
       "https://www.cultbeauty.co.uk/p/the-inkey-list-bio-active-ceramide-repairing-and-plumping-moisturiser-50ml/14992375/"
     ]
   },
-  { "category": "beauty", "url": "https://theinkeylist.com/products/caffeine-eye-cream" },
+  {
+    "category": "beauty",
+    "url": "https://theinkeylist.com/products/caffeine-eye-cream",
+    "sources": [
+      "https://www.cultbeauty.co.uk/p/the-inkey-list-caffeine-eye-cream-15ml/14272888/",
+      "https://www.lookfantastic.com/p/the-inkey-list-caffeine-eye-cream-15ml/14272888/"
+    ]
+  },
   {
     "category": "beauty",
     "url": "https://glowrecipe.com/products/banana-cream",
     "sources": ["https://www.cultbeauty.co.uk/p/13310733/"]
   },
-  { "category": "beauty", "url": "https://tower28beauty.com/products/swipe-foundation" },
+  {
+    "category": "beauty",
+    "url": "https://tower28beauty.com/products/swipe-foundation",
+    "sources": ["https://www.mecca.com/en-au/tower-28/swipe-serum-foundation-V-085494/"]
+  },
   { "category": "beauty", "url": "https://rarebeauty.com/products/rare-eau-de-parfum" },
   { "category": "beauty", "url": "https://supergoop.com/products/mineral-mattescreen-spf-40-untinted-duo" },
   { "category": "beauty", "url": "https://rhodeskin.com/products/spotwear-strawberry" },
 
-  { "category": "gadgets", "url": "https://loftie.com/products/loftie" },
+  {
+    "category": "gadgets",
+    "url": "https://loftie.com/products/loftie",
+    "sources": ["https://gimmethegoodstuff.org/products/loftie-clock-us"]
+  },
   { "category": "gadgets", "url": "https://loftie.com/products/loftie-lamp" },
   { "category": "gadgets", "url": "https://skullcandy.com/products/crusher-evo-sensory-bass-headphones-with-personal-sound" },
   {
@@ -75,5 +94,9 @@
       "https://www.t3.com/home-living/appliances/ooni-halo-pro"
     ]
   },
-  { "category": "gadgets", "url": "https://lifx.com/products/lifx-string-lights" }
+  {
+    "category": "gadgets",
+    "url": "https://lifx.com/products/lifx-string-lights",
+    "sources": ["https://www.pcworld.com/article/2279774/lifx-string-light-review.html"]
+  }
 ]
