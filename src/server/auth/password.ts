@@ -84,6 +84,37 @@ export async function forgetUnprovenPassword(db: Db, address: string, now = new 
   });
 }
 
+export type SetPasswordResult =
+  | { ok: true; email: string; firstPassword: boolean }
+  | { ok: false; reason: "no_account" | "current_password_required" | "wrong_current_password" | "changed_meanwhile" };
+
+/**
+ * Sets or changes a signed-in user's password from the account page. A first
+ * password (an email-link account) needs no current password; changing one does.
+ * Sessions are left signed in, unless `endSessionsAt` is given: then every
+ * session signed in before it ends, and the caller signs this device back in.
+ * The update applies only if the password hasn't changed since it was checked.
+ */
+export async function setAccountPassword(
+  db: Db,
+  userId: string,
+  input: { currentPassword?: string; password: string },
+  opts: { endSessionsAt?: Date } = {},
+): Promise<SetPasswordResult> {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { email: true, passwordHash: true } });
+  if (!user) return { ok: false, reason: "no_account" };
+  if (user.passwordHash) {
+    if (!input.currentPassword) return { ok: false, reason: "current_password_required" };
+    if (!(await verifyPassword(input.currentPassword, user.passwordHash))) return { ok: false, reason: "wrong_current_password" };
+  }
+  const { count } = await db.user.updateMany({
+    where: { id: userId, passwordHash: user.passwordHash },
+    data: { passwordHash: await hashPassword(input.password), ...(opts.endSessionsAt ? { passwordChangedAt: opts.endSessionsAt } : {}) },
+  });
+  if (count === 0) return { ok: false, reason: "changed_meanwhile" };
+  return { ok: true, email: user.email, firstPassword: user.passwordHash === null };
+}
+
 /** False when the session signed in before the account's password last changed (it has ended). */
 export function sessionStillValid(signedInAt: number | undefined, passwordChangedAt: Date | null) {
   return !passwordChangedAt || (signedInAt ?? 0) >= passwordChangedAt.getTime();

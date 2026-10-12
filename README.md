@@ -108,13 +108,24 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
     verified, voids the account's other links, lifts any wrong-password lockout and signs in. It also works
     for email-link-only accounts (it's how they set a first password). Links use `APP_URL` when set, so set
     it in production. Code: `src/server/auth/password-reset.ts`.
+  - **Account page** (`/account`, signed in only): profile, plan and billing, and a password card. An
+    email-link account can set a first password there (no current password needed); an account with one must
+    enter it to change it, and wrong attempts count toward the sign-in limit. Saving there signs nobody out,
+    unless the user ticks "Also sign out my other devices": then every session ends and this device signs
+    straight back in. Code: `setAccountPassword` in `src/server/auth/password.ts`, `src/app/account/`.
   - **Ending sessions:** sessions are cookies, so `User.passwordChangedAt` does the job of revoking them. Any
-    session that signed in before the password was last set, reset or cleared reads as signed out.
+    session that signed in before it reads as signed out. A reset, a dropped unproven password, and the
+    account page's "sign out other devices" set it; an ordinary set or change on the account page doesn't.
 - **Plan checks** live in `src/server/auth/entitlements.ts` and only read `User.subscriptionTier`.
 - **Billing** (Stripe) is isolated in `src/server/billing/` and is the only code that writes the
   `stripe*` / `subscription*` fields on `User`.
   - `/upgrade` → sign in if needed → Stripe Checkout (or the billing portal if already Pro)
-  - `/billing/manage` → Stripe customer portal (card, invoices, cancel)
+  - `/account` → plan status (renewal, cancellation, failed payment) with "Manage Subscription & Billing",
+    shown once the user has a Stripe customer; Free users see the upgrade instead. Header "Billing" links here.
+  - `POST /api/billing/portal` → `{ "url" }` for a Stripe customer portal session that returns to `/account`.
+    Signed-in, same-site requests only; 10 per minute per account; 409 `no_billing_account` if the user has
+    never checked out (it never creates a Stripe customer); 503 if billing isn't configured.
+  - `/billing/manage` → redirects to the same portal (the account page's no-JavaScript fallback)
   - `/billing/success` → confirms the checkout with Stripe and unlocks Pro immediately
   - `POST /api/billing/webhook` → signature-verified; applies `customer.subscription.*` events,
     ignores out-of-order (older) events. `active`, `trialing`, `past_due` ⇒ Pro; anything else ⇒ Free.
@@ -128,7 +139,7 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
    `checkout.session.completed`; copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
    Locally you can skip this — the success page confirms the payment directly — or use the Stripe CLI
    (`stripe listen --forward-to localhost:3000/api/billing/webhook`).
-4. Stripe → Settings → Billing → Customer portal: click **Save** once so the "Billing" button works.
+4. Stripe → Settings → Billing → Customer portal: click **Save** once so "Manage Subscription & Billing" works.
 5. Test card: `4242 4242 4242 4242`, any future date, any CVC.
 
 ## Agent API (x402)
@@ -378,6 +389,7 @@ src/app/docs/               public API + MCP docs page (/docs)
 mcp/                        MCP server package (own deps; bundled by npm run mcp:build)
 src/app/signin/             sign-in pages
 src/app/upgrade, billing/   upgrade, manage-billing and success routes
+src/app/account/            account page: profile, plan & billing, password
 src/app/api/ingest/         ingestion endpoint
 prisma/seed.ts              sample data
 src/app/api/health/route.ts health check

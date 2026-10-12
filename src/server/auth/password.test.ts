@@ -1,6 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { Prisma } from "@/generated/prisma/client";
-import { authenticate, forgetUnprovenPassword, hashPassword, RegisterInput, registerUser, SignInInput, verifyPassword } from "./password";
+import {
+  authenticate,
+  forgetUnprovenPassword,
+  hashPassword,
+  RegisterInput,
+  registerUser,
+  setAccountPassword,
+  SignInInput,
+  verifyPassword,
+} from "./password";
 
 type Row = { id: string; email: string; name: string | null; image: string | null; passwordHash: string | null };
 
@@ -91,5 +100,62 @@ describe("forgetUnprovenPassword", () => {
       where: { email: "victim@example.com", emailVerified: null, passwordHash: { not: null } },
       data: { passwordHash: null, passwordChangedAt: now },
     });
+  });
+});
+
+describe("setAccountPassword (account page)", () => {
+  type UserRow = { id: string; email: string; passwordHash: string | null };
+  function accountDb(row: UserRow | null, updated = 1) {
+    const user = {
+      findUnique: vi.fn(async () => (row ? { email: row.email, passwordHash: row.passwordHash } : null)),
+      updateMany: vi.fn<(args: { where: Record<string, unknown>; data: Record<string, unknown> }) => Promise<{ count: number }>>(async () => ({
+        count: updated,
+      })),
+    };
+    return { db: { user } as never, user };
+  }
+
+  it("sets a first password with no current password, leaving every session signed in", async () => {
+    const { db, user } = accountDb({ id: "u1", email: "link@example.com", passwordHash: null });
+    expect(await setAccountPassword(db, "u1", { password: "brand new pass" })).toEqual({ ok: true, email: "link@example.com", firstPassword: true });
+    const { where, data } = user.updateMany.mock.calls[0][0];
+    expect(where).toEqual({ id: "u1", passwordHash: null }); // only if still unset
+    expect(await verifyPassword("brand new pass", data.passwordHash as string)).toBe(true);
+    expect(data.passwordHash).toMatch(/^\$2[aby]\$10\$/);
+    expect(data).not.toHaveProperty("passwordChangedAt"); // no session ends
+  });
+
+  it("needs the right current password to change one", async () => {
+    const hash = await hashPassword("old password");
+    const { db, user } = accountDb({ id: "u1", email: "pw@example.com", passwordHash: hash });
+    expect(await setAccountPassword(db, "u1", { password: "new password" })).toEqual({ ok: false, reason: "current_password_required" });
+    expect(await setAccountPassword(db, "u1", { currentPassword: "wrong one", password: "new password" })).toEqual({
+      ok: false,
+      reason: "wrong_current_password",
+    });
+    expect(user.updateMany).not.toHaveBeenCalled();
+    expect(await setAccountPassword(db, "u1", { currentPassword: "old password", password: "new password" })).toEqual({
+      ok: true,
+      email: "pw@example.com",
+      firstPassword: false,
+    });
+    const { where, data } = user.updateMany.mock.calls[0][0];
+    expect(where).toEqual({ id: "u1", passwordHash: hash }); // only if unchanged since it was checked
+    expect(data).not.toHaveProperty("passwordChangedAt");
+  });
+
+  it("ends every older session only when asked to", async () => {
+    const { db, user } = accountDb({ id: "u1", email: "pw@example.com", passwordHash: await hashPassword("old password") });
+    const at = new Date("2026-10-12T20:00:00Z");
+    await setAccountPassword(db, "u1", { currentPassword: "old password", password: "new password" }, { endSessionsAt: at });
+    expect(user.updateMany.mock.calls[0][0].data.passwordChangedAt).toBe(at);
+  });
+
+  it("reports a password changed elsewhere in between, and a missing account", async () => {
+    expect(await setAccountPassword(accountDb({ id: "u1", email: "a@example.com", passwordHash: null }, 0).db, "u1", { password: "new password" })).toEqual({
+      ok: false,
+      reason: "changed_meanwhile",
+    });
+    expect(await setAccountPassword(accountDb(null).db, "gone", { password: "new password" })).toEqual({ ok: false, reason: "no_account" });
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-// Form building blocks shared by the sign-in, forgot-password and reset-password screens.
+// Form building blocks shared by the sign-in, forgot-password, reset-password and account screens.
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
@@ -72,13 +72,25 @@ export function FormError({ message }: { message?: string | null }) {
   ) : null;
 }
 
-export function PasswordInput({ id, autoComplete, invalid, describedBy }: { id: string; autoComplete: string; invalid?: boolean; describedBy?: string }) {
+export function PasswordInput({
+  id,
+  name = "password",
+  autoComplete,
+  invalid,
+  describedBy,
+}: {
+  id: string;
+  name?: string;
+  autoComplete: string;
+  invalid?: boolean;
+  describedBy?: string;
+}) {
   const [shown, setShown] = useState(false);
   return (
     <div className="relative">
       <input
         id={id}
-        name="password"
+        name={name}
         type={shown ? "text" : "password"}
         required
         autoComplete={autoComplete}

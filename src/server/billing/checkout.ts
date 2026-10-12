@@ -43,10 +43,21 @@ export async function createCheckoutUrl(db: PrismaClient, userId: string, baseUr
   return session.url;
 }
 
+/** Stripe's customer portal (card, invoices, cancel), returning to the account page afterwards. */
+async function portalSession(customer: string, baseUrl: string) {
+  const portal = await stripe().billingPortal.sessions.create({ customer, return_url: `${baseUrl}/account` });
+  return portal.url;
+}
+
 export async function createPortalUrl(db: PrismaClient, userId: string, baseUrl: string): Promise<string> {
   const user = await ensureCustomer(db, userId);
-  const portal = await stripe().billingPortal.sessions.create({ customer: user.stripeCustomerId, return_url: `${baseUrl}/` });
-  return portal.url;
+  return portalSession(user.stripeCustomerId, baseUrl);
+}
+
+/** The portal for someone who already has a Stripe customer (has checked out before), or null. Never creates one. */
+export async function existingCustomerPortalUrl(db: PrismaClient, userId: string, baseUrl: string): Promise<string | null> {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { stripeCustomerId: true } });
+  return user?.stripeCustomerId ? portalSession(user.stripeCustomerId, baseUrl) : null;
 }
 
 /**

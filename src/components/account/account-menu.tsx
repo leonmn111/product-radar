@@ -49,13 +49,19 @@ export async function AccountMenu() {
           {isPro ? "Pro" : "Free"}
         </span>
       </span>
+      <Link
+        href="/account"
+        className={`rounded-md px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-300 ring-inset hover:bg-zinc-100 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-800 ${focusRing}`}
+      >
+        Account
+      </Link>
       {isPro ? (
-        <a
-          href="/billing/manage"
+        <Link
+          href="/account#billing"
           className={`rounded-md px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-300 ring-inset hover:bg-zinc-100 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-800 ${focusRing}`}
         >
           Billing
-        </a>
+        </Link>
       ) : (
         <a
           href="/upgrade"

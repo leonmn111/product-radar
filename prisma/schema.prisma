@@ -48,8 +48,11 @@ model User {
   // bcrypt hash for email + password sign-in; null for email-link-only accounts.
   // Cleared on the first email-link sign-in while emailVerified is still null.
   passwordHash      String?
-  // When the password was last set, reset or cleared. Sessions signed in before
-  // this are treated as signed out (sessions are cookies, so this is how they end).
+  // Sessions signed in before this are treated as signed out (sessions are
+  // cookies, so this is how they end). Set by a password reset, by dropping an
+  // unproven password, and by an account-page change that signs out other
+  // devices; setting or changing a password on the account page otherwise
+  // leaves it alone, so nobody is signed out.
   passwordChangedAt DateTime?        @db.Timestamptz(3)
   subscriptionTier  SubscriptionTier @default(FREE)
   createdAt         DateTime         @default(now()) @db.Timestamptz(3)
