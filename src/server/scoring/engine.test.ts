@@ -103,6 +103,18 @@ describe("scoring engine", () => {
     expect(down.value).toBeLessThan(50);
   });
 
+  it("DEMAND ignores search interest, which is relative to each keyword's own peak", () => {
+    const reviews = ev({ metric: "REVIEW_COUNT", metricValue: 1200 });
+    const interest = [90, 95, 100].map((v, i) =>
+      ev({ metric: "SEARCH_INTEREST", metricValue: v, sourceUrl: "https://trends.test/x", observedAt: daysAgo(60 - i * 30) }),
+    );
+    const without = byDim({ asOf, evidence: [reviews], offers: [], categoryBestPrices: [] });
+    const withInterest = byDim({ asOf, evidence: [reviews, ...interest], offers: [], categoryBestPrices: [] });
+    expect(withInterest.DEMAND).toEqual(without.DEMAND);
+    expect(withInterest.TREND).toBeDefined(); // it still drives TREND
+    expect(byDim({ asOf, evidence: interest, offers: [], categoryBestPrices: [] }).DEMAND).toBeUndefined();
+  });
+
   it("TREND needs at least two points spanning a week", () => {
     const evidence = [
       ev({ metric: "SEARCH_INTEREST", metricValue: 40, observedAt: daysAgo(3) }),

@@ -228,10 +228,14 @@ the same chart on Google Trends. Demo products are never enriched.
 - Start with `--dry-run`: it shows the searches left and what would be fetched, and uses none.
 - Monthly points, not weekly: one lookup can't count as 52 pieces of evidence. Google scales each lookup to
   its own busiest week, so a month added by a later run can sit on a slightly different scale.
-- Effect: SEARCH_INTEREST feeds DEMAND and TREND, adding about +0.13 OVERALL confidence (e.g. 0.17 → 0.30
-  for a one-store product). Keywords with too little search volume get no data, and use a search anyway.
+- Effect: SEARCH_INTEREST feeds TREND only (methodology v1.3.0). Google Trends scales every keyword to its
+  own busiest week, so the index says which way interest is moving, not how big it is, and DEMAND would be
+  misleading. A full TREND adds up to +0.10 OVERALL confidence; 11 monthly points add about +0.05 (e.g.
+  0.17 → 0.22 for a one-store product). Keywords with too little search volume get no data, and use a search
+  anyway.
 
-On production (`SERPAPI_API_KEY` set on the `web` service):
+On production (`SERPAPI_API_KEY` set on the `web` service), after a methodology change run
+`npx -y tsx scripts/rescore.ts` once so every category, including the demo ones, uses the new rules:
 
 ```bash
 npx -y @railway/cli@latest ssh --service web "npx -y tsx scripts/enrich-trends.ts scripts/data/trend-keywords-2026-10.json --dry-run"
@@ -254,7 +258,7 @@ scores. Full formulas are in the file header. In short:
 - Each piece of evidence is weighted by its quality score, its age (halves every 90 days) and its source type.
   Age counts from the source's publication date when it has one (an expert review from 2024 is old even if we
   read it today), otherwise from when we captured it.
-- QUALITY (star ratings), SENTIMENT, DEMAND (review counts + search interest), TREND (search-interest slope),
+- QUALITY (star ratings), SENTIMENT, DEMAND (review counts), TREND (search-interest slope),
   VALUE (quality vs. price relative to the category median), OVERALL (weighted blend).
 - Thin evidence is pulled toward a neutral 50 and gets low confidence. No usable evidence → no score at all.
 - Re-captures of the same rating/review count/sentiment from the same source count once (latest wins), so

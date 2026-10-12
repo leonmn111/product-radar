@@ -20,7 +20,7 @@ export const DIMENSION_HELP: Record<Dimension, string> = {
   OVERALL: "Weighted blend of the other scores",
   QUALITY: "From star ratings",
   VALUE: "Quality vs. price compared with the category",
-  DEMAND: "From review counts and search interest",
+  DEMAND: "From review counts",
   SENTIMENT: "From discussion tone",
   TREND: "Direction of search interest over time",
 };

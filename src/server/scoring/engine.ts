@@ -5,7 +5,7 @@
 // (0–1) and the ids of the evidence it was computed from (Rule 3). If there is
 // no usable evidence for a dimension, NO score is produced — never a default.
 //
-// ── Formulas (methodology v1.2.0) ───────────────────────────────────────────
+// ── Formulas (methodology v1.3.0) ───────────────────────────────────────────
 //
 // Evidence weight     w = (quality / 100) × 0.5^(ageDays / 90) × sourceWeight[sourceType]
 //                     (90-day half-life; future-dated evidence is ignored). Age counts from
@@ -25,7 +25,8 @@
 // QUALITY             x = rating / 5 × 100                         over RATING evidence
 // SENTIMENT           x = (sentiment + 1) / 2 × 100                over SENTIMENT evidence
 // DEMAND              x = min(100, 100 × log10(1+n) / log10(1+50 000))  for REVIEW_COUNT n
-//                     x = index                                    for SEARCH_INTEREST
+//                     (Not search interest: Google Trends scales every keyword to its own
+//                     busiest week = 100, so the index shows direction, not size. v1.3.0)
 // TREND               weighted least-squares slope of SEARCH_INTEREST vs time,
 //                     S = clamp(50 + 2.5 × slopePer30Days)         (+20 pts/month ⇒ 100)
 //                     Needs ≥ 2 points spanning ≥ 7 days.
@@ -40,7 +41,7 @@
 
 import type { Availability, EvidenceMetric, ScoreDimension, SourceType } from "@/generated/prisma/enums";
 
-export const METHODOLOGY_VERSION = "1.2.0";
+export const METHODOLOGY_VERSION = "1.3.0";
 
 const HALF_LIFE_DAYS = 90;
 const PRIOR = 50;
@@ -184,11 +185,10 @@ export function scoreSentiment(input: ScoringInput) {
 }
 
 export function scoreDemand(input: ScoringInput) {
-  const reviewPts = points(input, "REVIEW_COUNT", (n) =>
-    Math.min(100, (100 * Math.log10(1 + n)) / Math.log10(1 + REVIEW_COUNT_REFERENCE)),
+  return shrunkScore(
+    "DEMAND",
+    points(input, "REVIEW_COUNT", (n) => Math.min(100, (100 * Math.log10(1 + n)) / Math.log10(1 + REVIEW_COUNT_REFERENCE))),
   );
-  const searchPts = points(input, "SEARCH_INTEREST", (v) => v);
-  return shrunkScore("DEMAND", [...reviewPts, ...searchPts]);
 }
 
 export function scoreTrend(input: ScoringInput): DimensionScore | null {
