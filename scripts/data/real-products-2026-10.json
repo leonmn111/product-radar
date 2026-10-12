@@ -3,11 +3,7 @@
   { "category": "tech-accessories", "url": "https://spigen.com/products/iphone-17-series-case-classic-ls-magfit" },
   { "category": "tech-accessories", "url": "https://spigen.com/products/iphone-16-series-case-ultra-hybrid-t-magfit" },
   { "category": "tech-accessories", "url": "https://gonimble.com/products/champ-portable-charger-1" },
-  {
-    "category": "tech-accessories",
-    "url": "https://gonimble.com/products/champ-lite-portable-charger",
-    "sources": ["https://www.staples.com/nimble-champ-lite-usb-type-c-power-bank-for-most-smartphones-5200mah-stone-nb-cpc-5k-wht/product_24499854"]
-  },
+  { "category": "tech-accessories", "url": "https://gonimble.com/products/champ-lite-portable-charger" },
   { "category": "tech-accessories", "url": "https://gonimble.com/products/iphone-clear-case" },
   { "category": "tech-accessories", "url": "https://gonimble.com/products/apollo-wireless-pad" },
   { "category": "tech-accessories", "url": "https://nativeunion.com/products/reclear-case-for-iphone-18" },
