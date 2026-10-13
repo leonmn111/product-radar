@@ -4,12 +4,11 @@ import {
   DIMENSION_HELP,
   DIMENSION_LABEL,
   SOURCE_TYPE_LABEL,
-  formatDateTime,
   formatMetric,
   formatPrice,
-  formatRelative,
   type Dimension,
 } from "./format";
+import { RelativeTime } from "./relative-time";
 import { ConfidenceBadge, ScoreBar } from "./score";
 
 const DIM_ORDER: Dimension[] = ["OVERALL", "QUALITY", "VALUE", "DEMAND", "SENTIMENT", "TREND"];
@@ -98,9 +97,7 @@ export function ProductDetail({ product }: { product: ProductDto }) {
                       <span className="sr-only"> (opens in new tab)</span>
                     </a>
                     <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-                      <time dateTime={o.observedAt} title={formatDateTime(o.observedAt)}>
-                        Seen {formatRelative(o.observedAt)}
-                      </time>
+                      <RelativeTime iso={o.observedAt} prefix="Seen " />
                       {product.bestOffer?.id === o.id && " · Best current price"}
                     </p>
                   </div>
@@ -158,9 +155,7 @@ export function ProductDetail({ product }: { product: ProductDto }) {
                   <div className="flex gap-1">
                     <dt>Observed</dt>
                     <dd>
-                      <time dateTime={e.observedAt} title={formatDateTime(e.observedAt)}>
-                        {formatRelative(e.observedAt)}
-                      </time>
+                      <RelativeTime iso={e.observedAt} />
                     </dd>
                   </div>
                   <div className="flex gap-1">

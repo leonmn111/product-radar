@@ -63,8 +63,10 @@ export function formatRelative(iso: string, now = Date.now()) {
   return rtf.format(Math.round(days / 30), "month");
 }
 
+// Always UTC: these are rendered on the server and again in the visitor's browser, and both must agree.
+const DATE_TIME_UTC = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
 export function formatDateTime(iso: string) {
-  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso));
+  return `${DATE_TIME_UTC.format(new Date(iso))} UTC`;
 }
 
 export function formatMetric(m: NonNullable<Evidence["metric"]>) {
