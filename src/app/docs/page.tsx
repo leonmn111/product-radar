@@ -334,7 +334,7 @@ export default function DocsPage() {
             </span>
           </div>
           <Link
-            href="/"
+            href="/dashboard"
             className={`rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap text-zinc-200 ring-1 ring-zinc-700 hover:bg-zinc-800 ${focusRing}`}
           >
             Dashboard
@@ -874,7 +874,7 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
         </ul>
         <p>
           Prefer a dashboard? The same data is in the{" "}
-          <Link href="/" className={link}>
+          <Link href="/dashboard" className={link}>
             ProductRadar app
           </Link>
           .

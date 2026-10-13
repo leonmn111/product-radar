@@ -21,3 +21,13 @@ export const canIngest = (v: Viewer) => v !== null && PAID_TIERS.includes(v.tier
 
 /** See live (ingested) products. Everyone else sees the seeded sample data only. */
 export const canViewLiveData = (v: Viewer) => v !== null && PAID_TIERS.includes(v.tier);
+
+/** Browse the full multi-product catalog (/dashboard and /api/products). */
+export const canViewCatalog = (v: Viewer) => v !== null && PAID_TIERS.includes(v.tier);
+
+/**
+ * Open one product's dossier page. Pro sees any product; everyone else sees the
+ * sample products and the live products featured on the public landing page.
+ */
+export const canViewDossier = (v: Viewer, product: { isSample: boolean; showcased: boolean }) =>
+  product.isSample || product.showcased || canViewLiveData(v);

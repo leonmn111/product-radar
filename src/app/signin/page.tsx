@@ -37,18 +37,19 @@ async function SignInForm({ searchParams }: { searchParams: Promise<Record<strin
         ? (LINK_ERRORS[errorKey] ?? "Sign-in failed. Please try again.")
         : null;
   const upgrading = callbackUrl === "/upgrade";
+  const registering = params.tab === "register";
 
   return (
     <>
       <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">
-        {upgrading ? "Sign in to upgrade to Pro" : "Welcome to ProductRadar"}
+        {upgrading ? (registering ? "Create your account to start Pro" : "Sign in to upgrade to Pro") : "Welcome to ProductRadar"}
       </h1>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
         Sign in or create a free account with a password, or get a one-time link by email.
         {upgrading && " You'll go straight to secure checkout afterwards."}
       </p>
       <div className="mt-6">
-        <AuthPanel callbackUrl={callbackUrl} initialTab={params.tab === "register" ? "register" : "signin"} linkError={linkError} />
+        <AuthPanel callbackUrl={callbackUrl} initialTab={registering ? "register" : "signin"} linkError={linkError} />
       </div>
     </>
   );

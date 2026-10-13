@@ -37,7 +37,7 @@ export async function createCheckoutUrl(db: PrismaClient, userId: string, baseUr
     allow_promotion_codes: true,
     subscription_data: { metadata: { userId: user.id } },
     success_url: `${baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${baseUrl}/?checkout=cancelled`,
+    cancel_url: `${baseUrl}/dashboard?checkout=cancelled`,
   });
   if (!session.url) throw new Error("Stripe did not return a checkout URL.");
   return session.url;

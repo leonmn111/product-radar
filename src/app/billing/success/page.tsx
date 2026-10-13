@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 async function Confirmation({ searchParams }: { searchParams: Promise<{ session_id?: string }> }) {
   const { session_id } = await searchParams;
   const viewer = await getViewer();
-  if (!viewer) redirect("/signin?callbackUrl=/");
-  if (!session_id || !/^cs_[A-Za-z0-9_]+$/.test(session_id)) redirect("/");
+  if (!viewer) redirect("/signin?callbackUrl=%2Fdashboard");
+  if (!session_id || !/^cs_[A-Za-z0-9_]+$/.test(session_id)) redirect("/dashboard");
 
   let result: Awaited<ReturnType<typeof confirmCheckout>>;
   try {
@@ -54,7 +54,7 @@ export default function BillingSuccessPage(props: { searchParams: Promise<{ sess
           <Confirmation searchParams={props.searchParams} />
         </Suspense>
         <Link
-          href="/"
+          href="/dashboard"
           className="mt-6 inline-flex rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:text-zinc-950"
         >
           Go to dashboard

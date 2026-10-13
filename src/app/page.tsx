@@ -1,81 +1,551 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
-import { AccountMenu } from "@/components/account/account-menu";
-import { ProductDashboard } from "@/components/dashboard/product-dashboard";
-import { canIngest, getViewer } from "@/server/auth/entitlements";
+import { connection } from "next/server";
+import { Suspense, type ReactNode } from "react";
+import { LiveStats, LiveStatsSkeleton } from "@/components/landing/live-stats";
+import { Showcase } from "@/components/landing/showcase";
+import { SITE_URL } from "@/lib/site";
+import { PRO_PLAN } from "@/server/billing/stripe";
+import { getShowcase } from "@/server/products/showcase-cache";
 
-type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+// The public landing page. Signed-in visitors never see it: src/proxy.ts sends them
+// to /dashboard. Everything here is static except the live counts and the showcase,
+// which stream in from the database (cached for about an hour).
 
-const BILLING_NOTICE: Record<string, { tone: "info" | "error"; text: string }> = {
-  cancelled: { tone: "info", text: "Checkout cancelled — you haven't been charged." },
-  unavailable: { tone: "error", text: "Upgrades aren't available yet: billing hasn't been set up on this server." },
-  error: { tone: "error", text: "We couldn't reach the payment provider. Please try again in a moment." },
+const TITLE = "ProductRadar — Evidence-backed product research for e-commerce";
+const DESCRIPTION =
+  "Score products from sourced, timestamped evidence and see real price gaps between stores after eBay and Shopify fees. For e-commerce operators and buyer agents.";
+
+export const metadata: Metadata = {
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: SITE_URL },
+  robots: { index: true, follow: true },
+  openGraph: { type: "website", siteName: "ProductRadar", title: TITLE, description: DESCRIPTION, url: SITE_URL, locale: "en_GB" },
+  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
 };
 
-async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
-  const [viewer, params] = await Promise.all([getViewer(), searchParams]);
-  const key = params.checkout === "cancelled" ? "cancelled" : typeof params.billing === "string" ? params.billing : null;
-  const notice = key ? BILLING_NOTICE[key] : undefined;
+// Sign up, then straight to Stripe Checkout: /upgrade sends signed-out visitors through sign-in first.
+const GET_STARTED = "/signin?tab=register&callbackUrl=%2Fupgrade";
+const PRO_PRICE = new Intl.NumberFormat("en-GB", {
+  style: "currency",
+  currency: PRO_PLAN.currency.toUpperCase(),
+  minimumFractionDigits: 0,
+}).format(PRO_PLAN.unitAmount / 100);
 
+const focusRing =
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:focus-visible:outline-indigo-400";
+const primaryButton = `inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-base font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 hover:shadow-md active:scale-[0.98] motion-reduce:transition-none dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400 ${focusRing}`;
+const secondaryButton = `inline-flex items-center justify-center gap-2 rounded-lg bg-white px-5 py-3 text-base font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 transition ring-inset hover:bg-zinc-50 active:scale-[0.98] motion-reduce:transition-none dark:bg-zinc-900 dark:text-white dark:ring-zinc-700 dark:hover:bg-zinc-800 ${focusRing}`;
+const sectionTitle = "text-3xl font-semibold tracking-tight text-balance text-zinc-950 sm:text-4xl dark:text-white";
+const eyebrow = "text-sm font-semibold text-indigo-700 dark:text-indigo-300";
+
+// ── Small pieces ─────────────────────────────────────────────────────────────
+
+function Logo() {
   return (
-    <>
-      {notice && (
-        <p
-          role={notice.tone === "error" ? "alert" : "status"}
-          className={`mb-4 rounded-lg px-4 py-3 text-sm ring-1 ring-inset ${
-            notice.tone === "error"
-              ? "bg-red-50 text-red-900 ring-red-600/20 dark:bg-red-950/30 dark:text-red-200 dark:ring-red-400/30"
-              : "bg-zinc-100 text-zinc-800 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-400/20"
-          }`}
-        >
-          {notice.text}
-        </p>
-      )}
-      <ProductDashboard viewer={{ signedIn: viewer !== null, canIngest: canIngest(viewer) }} />
-    </>
+    <span aria-hidden="true" className="flex size-8 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm dark:bg-indigo-500 dark:text-zinc-950">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-5">
+        <circle cx="12" cy="12" r="8.5" />
+        <circle cx="12" cy="12" r="4.5" />
+        <path d="M12 12 18 6" />
+      </svg>
+    </span>
   );
 }
 
-export default function Home({ searchParams }: { searchParams: SearchParams }) {
+function Arrow() {
   return (
-    <div className="min-h-full bg-zinc-50 dark:bg-zinc-950">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 md:flex-row md:items-start md:justify-between lg:px-8">
-          <div className="flex flex-col gap-1">
-            <p className="text-sm font-semibold tracking-tight text-indigo-700 dark:text-indigo-300">ProductRadar</p>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl dark:text-white">
-              Product intelligence
-            </h1>
-            <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-              Every score is calculated from sourced, timestamped evidence. Open a product to see exactly which
-              evidence each score is based on.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 md:justify-end">
-            <Link
-              href="/docs"
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:focus-visible:outline-indigo-400"
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none">
+      <path
+        fillRule="evenodd"
+        d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+function Check() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 size-5 shrink-0 text-indigo-600 dark:text-indigo-400">
+      <path
+        fillRule="evenodd"
+        d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+function CallToAction({ className = "" }: { className?: string }) {
+  return (
+    <div className={`flex flex-col gap-3 sm:flex-row sm:justify-center ${className}`}>
+      <Link href={GET_STARTED} className={`group ${primaryButton}`}>
+        Get started
+        <Arrow />
+      </Link>
+      <Link href="/signin" className={secondaryButton}>
+        Sign in
+      </Link>
+    </div>
+  );
+}
+
+// ── Header ───────────────────────────────────────────────────────────────────
+
+const NAV = [
+  ["#showcase", "Showcase"],
+  ["#how-it-works", "How it works"],
+  ["#agents", "For agents"],
+  ["#pricing", "Pricing"],
+] as const;
+
+function SiteHeader() {
+  return (
+    <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/85 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-950/85">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <Link href="/" className={`flex items-center gap-2.5 rounded-md font-semibold tracking-tight text-zinc-950 dark:text-white ${focusRing}`}>
+          <Logo />
+          ProductRadar
+        </Link>
+        <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+          {NAV.map(([href, label]) => (
+            <a
+              key={href}
+              href={href}
+              className={`rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white ${focusRing}`}
             >
-              API for agents
-            </Link>
-            <Suspense fallback={<div className="h-8 w-40 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />}>
-              <AccountMenu />
-            </Suspense>
-          </div>
+              {label}
+            </a>
+          ))}
+          <Link
+            href="/docs"
+            className={`rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white ${focusRing}`}
+          >
+            API docs
+          </Link>
+        </nav>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Link
+            href="/signin"
+            className={`rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white ${focusRing}`}
+          >
+            Sign in
+          </Link>
+          <Link
+            href={GET_STARTED}
+            className={`rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-semibold whitespace-nowrap text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.98] motion-reduce:transition-none dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400 ${focusRing}`}
+          >
+            Get started
+          </Link>
         </div>
-      </header>
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <Suspense
-          fallback={
-            <div aria-hidden="true" className="space-y-3">
-              <div className="h-40 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
-              <div className="h-96 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
+      </div>
+    </header>
+  );
+}
+
+// ── Streamed sections ────────────────────────────────────────────────────────
+
+async function HeroStats() {
+  await connection(); // per request (cached ~1h), never during the build
+  const { stats } = await getShowcase();
+  return <LiveStats stats={stats} />;
+}
+
+async function ShowcaseContent() {
+  await connection();
+  const { products } = await getShowcase();
+  if (products.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+        No two stores are selling the same product at different prices right now, so there&apos;s no live price gap to
+        show. Pro members see the full catalog either way.
+      </p>
+    );
+  }
+  return <Showcase products={products} />;
+}
+
+function ShowcaseSkeleton() {
+  return (
+    <div aria-hidden="true" className="grid gap-6 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:gap-8">
+      <div className="h-[30rem] animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
+      <div className="space-y-4">
+        <div className="h-6 w-3/4 animate-pulse rounded bg-zinc-200/70 dark:bg-zinc-800/70" />
+        <div className="h-24 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="h-56 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
+          <div className="h-56 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Static content ───────────────────────────────────────────────────────────
+
+const STEPS = [
+  {
+    title: "Add a product page",
+    body: "Paste a link to any product in a store. ProductRadar reads the price, star rating and review count from the page itself, and adds other stores and reviews as evidence.",
+    icon: "M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244",
+  },
+  {
+    title: "Every number gets a source",
+    body: "Each score is calculated from evidence with its link, the time it was read and a quality rating. Thin evidence lowers the confidence, and the dossier says so.",
+    icon: "M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z",
+  },
+  {
+    title: "Decide with both fee routes",
+    body: "See what a price gap between stores is worth after eBay fees and after Shopify card fees. Then find suppliers and export a draft Shopify listing.",
+    icon: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z",
+  },
+];
+
+const TRUST = [
+  ["Rule-based, not a black box", "Scores come from fixed formulas over captured evidence. The same evidence always gives the same score."],
+  ["Public benchmarks you can check", "Wholesale ranges come from US Census retail margins, and every fee rule links to its published source."],
+  ["Estimates, clearly labelled", "Every score shows how confident it is. Nothing is padded to look certain, and nothing is a guarantee."],
+] as const;
+
+const PRO_FEATURES = [
+  "The full catalog: every live product we track, ranked",
+  "Add any product page and get it scored in seconds",
+  "Price gaps after eBay and Shopify fees, every source linked",
+  "Profit calculator, supplier search and a Shopify import file",
+  "Cancel any time from your account page",
+];
+
+const AGENT_FEATURES = [
+  "No account and no API key: pay per request with x402",
+  "Searches that find nothing are free",
+  "MCP server for Claude, Cursor and other agents",
+];
+
+const FAQ: { q: string; a: ReactNode }[] = [
+  {
+    q: "Is this AI?",
+    a: "No. Scores are rule-based estimates: fixed formulas applied to evidence captured from real pages. The same evidence always gives the same result, and every dossier lists the evidence behind it.",
+  },
+  {
+    q: "Where do the numbers come from?",
+    a: "Prices, ratings and review counts come from store and review pages, each saved with its link, the time it was read and a quality rating. Search interest comes from Google Trends. The wholesale range comes from US Census retail gross margins for the kind of shop that sells the product.",
+  },
+  {
+    q: "What are the two fee routes?",
+    a: "When two stores sell the same product at different prices, ProductRadar works out what you'd keep reselling it on eBay, and what you'd keep in your own Shopify shop after card fees. Each fee rule links to its source. Shipping, VAT and advertising aren't included.",
+  },
+  {
+    q: "Can I cancel?",
+    a: `Yes. Pro is ${PRO_PRICE} a month, and you can cancel any time from your account page through Stripe's secure billing portal.`,
+  },
+];
+
+// ── Page ─────────────────────────────────────────────────────────────────────
+
+export default function Home() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      { "@type": "Organization", "@id": `${SITE_URL}/#org`, name: "ProductRadar", url: SITE_URL },
+      {
+        "@type": "SoftwareApplication",
+        name: "ProductRadar",
+        url: SITE_URL,
+        description: DESCRIPTION,
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "Web",
+        publisher: { "@id": `${SITE_URL}/#org` },
+        offers: {
+          "@type": "Offer",
+          name: PRO_PLAN.productName,
+          price: (PRO_PLAN.unitAmount / 100).toFixed(2),
+          priceCurrency: PRO_PLAN.currency.toUpperCase(),
+        },
+      },
+    ],
+  };
+
+  return (
+    <div className="flex-1 bg-white dark:bg-zinc-950">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-indigo-600 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+      >
+        Skip to content
+      </a>
+      <SiteHeader />
+
+      <main id="main">
+        {/* Hero */}
+        <section className="relative isolate overflow-hidden">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+            <div className="absolute top-[-18rem] left-1/2 h-[36rem] w-[64rem] -translate-x-1/2 rounded-full bg-gradient-to-tr from-indigo-200 via-sky-100 to-violet-200 opacity-60 blur-3xl dark:from-indigo-900 dark:via-sky-950 dark:to-violet-950 dark:opacity-50" />
+          </div>
+          <div className="mx-auto max-w-7xl px-4 pt-14 pb-12 sm:px-6 sm:pt-20 lg:px-8 lg:pt-24">
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-indigo-800 ring-1 ring-indigo-200 ring-inset sm:text-sm dark:bg-zinc-900/80 dark:text-indigo-200 dark:ring-indigo-500/30">
+                Product intelligence for e-commerce operators and buyer agents
+              </p>
+              <h1 className="mt-6 text-4xl font-semibold tracking-tight text-balance text-zinc-950 sm:text-6xl dark:text-white">
+                Know if a product is worth selling before you stock it.
+              </h1>
+              <p className="mx-auto mt-6 max-w-2xl text-lg/8 text-pretty text-zinc-600 dark:text-zinc-300">
+                ProductRadar reads real store pages, scores every product from sourced, timestamped evidence, and works
+                out what you&apos;d keep after eBay or Shopify fees.
+              </p>
+              <CallToAction className="mt-8" />
+              <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
+                Pro is {PRO_PRICE}/month · cancel any time · secure checkout by Stripe
+              </p>
             </div>
-          }
-        >
-          <Dashboard searchParams={searchParams} />
-        </Suspense>
+            <div className="mx-auto mt-12 max-w-4xl">
+              <Suspense fallback={<LiveStatsSkeleton />}>
+                <HeroStats />
+              </Suspense>
+            </div>
+          </div>
+        </section>
+
+        {/* Showcase */}
+        <section id="showcase" aria-labelledby="showcase-title" className="scroll-mt-16 py-16 sm:py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl">
+              <p className={eyebrow}>Live showcase</p>
+              <h2 id="showcase-title" className={`mt-2 ${sectionTitle}`}>
+                The margin engine, on real products
+              </h2>
+              <p className="mt-4 text-lg/8 text-zinc-600 dark:text-zinc-300">
+                Real prices captured from real stores. See what the same price gap is worth on eBay and in your own
+                shop, after each route&apos;s fees. Click the card for the full dossier.
+              </p>
+            </div>
+            <div className="mt-10 rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4 shadow-xl shadow-zinc-900/5 sm:p-6 lg:p-8 dark:border-zinc-800 dark:bg-zinc-900/50 dark:shadow-black/30">
+              <Suspense fallback={<ShowcaseSkeleton />}>
+                <ShowcaseContent />
+              </Suspense>
+            </div>
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section id="how-it-works" aria-labelledby="how-title" className="scroll-mt-16 border-t border-zinc-200 bg-zinc-50 py-16 sm:py-20 dark:border-zinc-800 dark:bg-zinc-900/40">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className={eyebrow}>How it works</p>
+              <h2 id="how-title" className={`mt-2 ${sectionTitle}`}>
+                From store page to decision in three steps
+              </h2>
+            </div>
+            <ol className="mt-12 grid gap-6 md:grid-cols-3">
+              {STEPS.map((s, i) => (
+                <li key={s.title} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/10 ring-inset dark:bg-indigo-950/60 dark:text-indigo-300 dark:ring-indigo-400/20">
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-5">
+                        <path d={s.icon} />
+                      </svg>
+                    </span>
+                    <span className="text-sm font-semibold text-zinc-500 tabular-nums dark:text-zinc-400">Step {i + 1}</span>
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold text-zinc-950 dark:text-white">{s.title}</h3>
+                  <p className="mt-2 text-sm/6 text-zinc-600 dark:text-zinc-400">{s.body}</p>
+                </li>
+              ))}
+            </ol>
+            <dl className="mt-12 grid gap-x-8 gap-y-6 border-t border-zinc-200 pt-10 md:grid-cols-3 dark:border-zinc-800">
+              {TRUST.map(([title, body]) => (
+                <div key={title} className="flex gap-3">
+                  <Check />
+                  <div>
+                    <dt className="font-semibold text-zinc-950 dark:text-white">{title}</dt>
+                    <dd className="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400">{body}</dd>
+                  </div>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        {/* For agents */}
+        <section id="agents" aria-labelledby="agents-title" className="scroll-mt-16 bg-zinc-950 py-16 text-zinc-300 sm:py-20 [color-scheme:dark]">
+          <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
+            <div>
+              <p className="text-sm font-semibold text-indigo-300">For buyer agents</p>
+              <h2 id="agents-title" className="mt-2 text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">
+                Your agents can buy the same intelligence, one request at a time.
+              </h2>
+              <p className="mt-4 text-lg/8 text-zinc-400">
+                Agents call the ProductRadar API and pay a small fee in USDC per request, using the open x402 payment
+                standard. Every answer carries the same scores, margins and cited evidence as the dashboard.
+              </p>
+              <ul className="mt-6 space-y-2">
+                {AGENT_FEATURES.map((f) => (
+                  <li key={f} className="flex gap-3 text-zinc-300">
+                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 size-5 shrink-0 text-indigo-400">
+                      <path fillRule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z" clipRule="evenodd" />
+                    </svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/docs"
+                className="group mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 text-base font-semibold text-zinc-950 shadow-sm transition hover:bg-zinc-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 motion-reduce:transition-none"
+              >
+                Read the API docs
+                <Arrow />
+              </Link>
+            </div>
+            <figure className="min-w-0 overflow-hidden rounded-2xl bg-zinc-900 ring-1 ring-white/10">
+              <figcaption className="flex items-center gap-2 border-b border-white/10 px-4 py-3 text-xs text-zinc-400">
+                <span aria-hidden="true" className="flex gap-1.5">
+                  <span className="size-2.5 rounded-full bg-zinc-700" />
+                  <span className="size-2.5 rounded-full bg-zinc-700" />
+                  <span className="size-2.5 rounded-full bg-zinc-700" />
+                </span>
+                How an agent pays for one answer
+              </figcaption>
+              <pre className="overflow-x-auto p-4 font-mono text-[0.8rem]/6 text-zinc-300 sm:p-5">
+                <code>
+                  <span className="text-zinc-500"># 1. Ask, without paying</span>
+                  {"\n"}
+                  <span className="text-sky-300">GET</span> /api/agent/v1/opportunity?q=pizza+oven
+                  {"\n"}
+                  <span className="text-amber-300">← 402 Payment Required</span> <span className="text-zinc-500">(the price, in USDC)</span>
+                  {"\n\n"}
+                  <span className="text-zinc-500"># 2. Sign a USDC payment and ask again</span>
+                  {"\n"}
+                  <span className="text-sky-300">GET</span> /api/agent/v1/opportunity?q=pizza+oven
+                  {"\n"}
+                  <span className="text-zinc-400">PAYMENT-SIGNATURE:</span> eyJ4NDAyVmVyc2lvbiI6Mi…
+                  {"\n"}
+                  <span className="text-emerald-300">← 200 OK</span> <span className="text-zinc-500">{"{ verdict, margin, evidence… }"}</span>
+                </code>
+              </pre>
+            </figure>
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section id="pricing" aria-labelledby="pricing-title" className="scroll-mt-16 py-16 sm:py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className={eyebrow}>Pricing</p>
+              <h2 id="pricing-title" className={`mt-2 ${sectionTitle}`}>
+                One plan for people, pay-per-request for agents
+              </h2>
+            </div>
+            <div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-5">
+              <div className="flex flex-col rounded-2xl bg-white p-6 shadow-xl ring-2 shadow-indigo-900/10 ring-indigo-600 sm:p-8 lg:col-span-3 dark:bg-zinc-900 dark:shadow-black/30 dark:ring-indigo-400">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-lg font-semibold text-zinc-950 dark:text-white">Pro</h3>
+                  <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-600/20 ring-inset dark:bg-indigo-950/60 dark:text-indigo-300 dark:ring-indigo-400/30">
+                    For operators
+                  </span>
+                </div>
+                <p className="mt-4 flex items-baseline gap-1">
+                  <span className="text-5xl font-semibold tracking-tight text-zinc-950 dark:text-white">{PRO_PRICE}</span>
+                  <span className="text-sm text-zinc-600 dark:text-zinc-400">/ month</span>
+                </p>
+                <ul className="mt-6 space-y-3 text-sm text-zinc-700 dark:text-zinc-300">
+                  {PRO_FEATURES.map((f) => (
+                    <li key={f} className="flex gap-3">
+                      <Check />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link href={GET_STARTED} className={`group mt-8 w-full ${primaryButton}`}>
+                  Get started
+                  <Arrow />
+                </Link>
+                <p className="mt-3 text-center text-xs text-zinc-600 dark:text-zinc-400">Secure checkout by Stripe</p>
+              </div>
+              <div className="flex flex-col rounded-2xl bg-zinc-50 p-6 ring-1 ring-zinc-200 sm:p-8 lg:col-span-2 dark:bg-zinc-900/50 dark:ring-zinc-800">
+                <h3 className="text-lg font-semibold text-zinc-950 dark:text-white">Agent API</h3>
+                <p className="mt-4 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Pay per request</p>
+                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">in USDC, with no subscription</p>
+                <ul className="mt-6 space-y-3 text-sm text-zinc-700 dark:text-zinc-300">
+                  {AGENT_FEATURES.map((f) => (
+                    <li key={f} className="flex gap-3">
+                      <Check />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-auto pt-8">
+                  <Link href="/docs" className={`w-full ${secondaryButton}`}>
+                    See the price in the docs
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section id="faq" aria-labelledby="faq-title" className="scroll-mt-16 border-t border-zinc-200 bg-zinc-50 py-16 sm:py-20 dark:border-zinc-800 dark:bg-zinc-900/40">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+            <h2 id="faq-title" className={`text-center ${sectionTitle}`}>
+              Questions
+            </h2>
+            <div className="mt-10 divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+              {FAQ.map(({ q, a }) => (
+                <details key={q} className="group">
+                  <summary
+                    className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-medium text-zinc-950 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-indigo-600 sm:px-6 dark:text-white dark:hover:bg-zinc-800/50 dark:focus-visible:outline-indigo-400 [&::-webkit-details-marker]:hidden"
+                  >
+                    {q}
+                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-5 shrink-0 text-zinc-500 transition-transform group-open:rotate-180 motion-reduce:transition-none">
+                      <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                    </svg>
+                  </summary>
+                  <p className="px-5 pb-5 text-sm/6 text-zinc-600 sm:px-6 dark:text-zinc-400">{a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Closing call to action */}
+        <section aria-labelledby="cta-title" className="py-16 sm:py-24">
+          <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+            <h2 id="cta-title" className={sectionTitle}>
+              Check your next product before you stock it.
+            </h2>
+            <p className="mt-4 text-lg/8 text-zinc-600 dark:text-zinc-300">
+              Real prices, real fees and every source linked, for {PRO_PRICE} a month.
+            </p>
+            <CallToAction className="mt-8" />
+          </div>
+        </section>
       </main>
+
+      <footer className="border-t border-zinc-200 dark:border-zinc-800">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 text-sm text-zinc-600 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 dark:text-zinc-400">
+          <p className="flex items-center gap-2 font-medium text-zinc-950 dark:text-white">
+            <Logo />
+            ProductRadar
+          </p>
+          <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link href="/docs" className={`rounded-sm hover:text-zinc-950 dark:hover:text-white ${focusRing}`}>
+              API docs
+            </Link>
+            <Link href="/signin" className={`rounded-sm hover:text-zinc-950 dark:hover:text-white ${focusRing}`}>
+              Sign in
+            </Link>
+            <Link href={GET_STARTED} className={`rounded-sm hover:text-zinc-950 dark:hover:text-white ${focusRing}`}>
+              Get started
+            </Link>
+          </nav>
+        </div>
+        <p className="mx-auto max-w-7xl px-4 pb-8 text-xs text-zinc-500 sm:px-6 lg:px-8 dark:text-zinc-400">
+          Scores and margins are calculated estimates from cited evidence, not guarantees.
+        </p>
+      </footer>
     </div>
   );
 }

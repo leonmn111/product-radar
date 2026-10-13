@@ -1,8 +1,8 @@
 import { connection, type NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { canViewLiveData, getViewer } from "@/server/auth/entitlements";
-import { countHiddenLiveProducts, listProducts } from "@/server/products/service";
+import { canViewCatalog, getViewer } from "@/server/auth/entitlements";
+import { listProducts } from "@/server/products/service";
 import { METHODOLOGY_VERSION } from "@/server/scoring/engine";
 
 const Query = z.object({
@@ -14,8 +14,8 @@ const Query = z.object({
 });
 
 // GET /api/products?category=wireless-earbuds&limit=20
-// Read endpoint (sample data for everyone; live data for Pro): products ranked by latest OVERALL score, with the
-// offers, evidence and per-dimension scores behind each one.
+// The Pro catalog behind /dashboard: products (live and sample) ranked by latest OVERALL score, with the
+// offers, evidence and per-dimension scores behind each one. Signed-out → 401, Free → 403.
 export async function GET(request: NextRequest) {
   await connection(); // request-time only, never prerendered
 
@@ -27,19 +27,20 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Free and signed-out viewers see the seeded sample data only; live data is Pro.
-  let includeLive: boolean;
+  const headers = { "Cache-Control": "private, no-store" };
   let products: Awaited<ReturnType<typeof listProducts>>;
-  let hiddenLiveCount: number;
   try {
-    includeLive = canViewLiveData(await getViewer());
-    [products, hiddenLiveCount] = await Promise.all([
-      listProducts(db, { ...parsed.data, includeLive }),
-      includeLive ? 0 : countHiddenLiveProducts(db, parsed.data.category),
-    ]);
+    const viewer = await getViewer();
+    if (!viewer) {
+      return Response.json({ error: "unauthorized", message: "Sign in with a Pro account to see the catalog." }, { status: 401, headers });
+    }
+    if (!canViewCatalog(viewer)) {
+      return Response.json({ error: "pro_required", message: "The product catalog is part of Pro." }, { status: 403, headers });
+    }
+    products = await listProducts(db, { ...parsed.data, includeLive: true });
   } catch (e) {
     console.error("[products] query failed", e);
-    return Response.json({ error: "internal_error", message: "Couldn't load products." }, { status: 500 });
+    return Response.json({ error: "internal_error", message: "Couldn't load products." }, { status: 500, headers });
   }
 
   return Response.json(
@@ -48,13 +49,11 @@ export async function GET(request: NextRequest) {
       meta: {
         count: products.length,
         category: parsed.data.category ?? null,
-        access: includeLive ? "full" : "sample_only",
-        hiddenLiveCount,
         methodologyVersion: METHODOLOGY_VERSION,
         disclaimer:
           "Scores are calculated estimates (0–100) with a confidence (0–1), derived only from the linked evidence. They are not guarantees.",
       },
     },
-    { headers: { "Cache-Control": "private, no-store" } },
+    { headers },
   );
 }

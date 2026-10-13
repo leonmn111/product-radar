@@ -19,6 +19,6 @@ export async function GET(request: NextRequest) {
   } catch (e) {
     if (!(e instanceof BillingNotConfiguredError)) console.error("[billing] checkout failed", e);
     const reason = e instanceof BillingNotConfiguredError ? "unavailable" : "error";
-    return Response.redirect(`${base}/?billing=${reason}`, 303);
+    return Response.redirect(`${base}/dashboard?billing=${reason}`, 303);
   }
 }

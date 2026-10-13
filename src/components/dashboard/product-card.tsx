@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import Link from "next/link";
+import { useState } from "react";
 import type { ProductDto } from "@/server/products/service";
 import { formatPrice, getScore, humanizeSlug, type Score } from "./format";
 import { MarginSummary } from "./margin";
@@ -37,7 +38,7 @@ export function ProductImage({ src, alt, label, className = "" }: { src: string 
           decoding="async"
           referrerPolicy="no-referrer"
           onError={() => setFailed(true)}
-          className="size-full object-contain p-5 mix-blend-multiply"
+          className="size-full object-contain p-5 mix-blend-multiply transition-transform duration-300 ease-out group-hover/card:scale-105 motion-reduce:transition-none motion-reduce:group-hover/card:scale-100"
         />
       ) : (
         <div aria-hidden="true" className="flex size-full flex-col items-center justify-center gap-3">
@@ -130,42 +131,39 @@ function StatusChip({ sample }: { sample: boolean }) {
 }
 
 /**
- * One product in the catalog grid. Opening its dossier widens the card to the full
- * row (photo beside the summary on larger screens) with the dossier underneath.
+ * One product in a card grid. The whole card is one link to the product's dossier:
+ * the title's link stretches over the card, so screen readers hear a single link
+ * named after the product. Hovering lifts the card; pressing settles it back down.
  */
 export function ProductCard({
   product: p,
+  href,
   rank,
-  open,
-  highlighted,
-  toggle,
-  dossier,
+  highlighted = false,
 }: {
   product: ProductDto;
-  rank: number;
-  open: boolean;
-  highlighted: boolean;
-  toggle: ReactNode;
-  dossier: ReactNode;
+  href: string;
+  rank?: number;
+  highlighted?: boolean;
 }) {
   const overall = getScore(p, "OVERALL");
   return (
     <li
       data-product-id={p.id}
-      className={`flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-[box-shadow,background-color] duration-700 hover:shadow-md dark:bg-zinc-900 ${
-        open ? "col-span-full" : ""
-      } ${
+      className={`group/card relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition duration-200 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-zinc-900/10 active:translate-y-0 active:shadow-md active:duration-75 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-indigo-600 has-[a:focus-visible]:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:bg-zinc-900 dark:hover:shadow-black/40 dark:has-[a:focus-visible]:ring-indigo-400 dark:has-[a:focus-visible]:ring-offset-zinc-950 ${
         highlighted
           ? "border-indigo-500 ring-2 ring-indigo-500 dark:border-indigo-400 dark:ring-indigo-400"
-          : "border-zinc-200 dark:border-zinc-800"
+          : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700"
       }`}
     >
-      <article className={`flex flex-1 flex-col ${open ? "sm:flex-row" : ""}`}>
-        <div className={`relative ${open ? "sm:w-56 sm:shrink-0 lg:w-64" : ""}`}>
+      <article className="flex flex-1 flex-col">
+        <div className="relative">
           <ProductImage src={p.imageUrl} alt={p.name} label={p.brand ?? p.name} key={p.imageUrl ?? "none"} />
-          <span className="absolute top-2 left-2 rounded-md bg-white/95 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-zinc-700 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900/90 dark:text-zinc-200">
-            <span className="sr-only">Rank </span>#{rank}
-          </span>
+          {rank !== undefined && (
+            <span className="absolute top-2 left-2 rounded-md bg-white/95 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-zinc-700 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900/90 dark:text-zinc-200">
+              <span className="sr-only">Rank </span>#{rank}
+            </span>
+          )}
           <span className="absolute top-2 right-2">
             <StatusChip sample={p.isSample} />
           </span>
@@ -177,7 +175,9 @@ export function ProductCard({
               <p className="truncate text-xs font-semibold tracking-wide text-indigo-700 uppercase dark:text-indigo-300">{p.brand}</p>
             )}
             <h3 className="mt-0.5 line-clamp-2 font-semibold text-zinc-950 dark:text-white" title={p.name}>
-              {p.name}
+              <Link href={href} className="after:absolute after:inset-0 after:z-10 after:content-[''] focus:outline-none">
+                {p.name}
+              </Link>
             </h3>
             <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{humanizeSlug(p.category)}</p>
           </div>
@@ -205,12 +205,26 @@ export function ProductCard({
 
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
             <SourcesBadge product={p} />
-            {toggle}
+            <span
+              aria-hidden="true"
+              className="inline-flex items-center gap-1 text-sm font-medium text-indigo-700 transition-colors group-hover/card:text-indigo-900 dark:text-indigo-300 dark:group-hover/card:text-indigo-200"
+            >
+              View dossier
+              <svg
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="size-4 transition-transform duration-200 ease-out group-hover/card:translate-x-0.5 motion-reduce:transition-none"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </span>
           </div>
         </div>
       </article>
-
-      {open && <div className="border-t border-zinc-200 bg-zinc-50 p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-950/60">{dossier}</div>}
     </li>
   );
 }

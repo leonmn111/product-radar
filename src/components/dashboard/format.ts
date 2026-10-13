@@ -27,6 +27,9 @@ export const DIMENSION_HELP: Record<Dimension, string> = {
 
 export const getScore = (p: ProductDto, d: Dimension): Score | undefined => p.scores[d];
 
+/** The product's full-page dossier. */
+export const dossierHref = (p: Pick<ProductDto, "slug">) => `/dossier/${encodeURIComponent(p.slug)}`;
+
 export function humanizeSlug(slug: string) {
   return slug
     .split("-")

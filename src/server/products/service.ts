@@ -6,6 +6,7 @@ import { marginInsight } from "@/server/margins/engine";
 import { bestCurrentOffer } from "@/server/scoring/engine";
 import { LATEST_FX } from "@/server/scoring/fx-latest";
 import { minimumMatch, type SearchTerm } from "./search";
+import { hasPriceGap, pickShowcase } from "./showcase";
 
 const MAX_EVIDENCE_PER_PRODUCT = 50;
 
@@ -137,6 +138,61 @@ export async function getProduct(db: PrismaClient, id: string, asOf = new Date()
   return row ? toDto(row, asOf, sources.get(id)) : null;
 }
 
+/** One product by its URL slug (sample or live), or null if it doesn't exist. */
+export async function getProductBySlug(db: PrismaClient, slug: string, asOf = new Date()) {
+  const row = await db.product.findUnique({ where: { slug }, include: PRODUCT_INCLUDE });
+  if (!row) return null;
+  const sources = await sourceSummaries(db, [row.id]);
+  return toDto(row, asOf, sources.get(row.id));
+}
+
+export type CatalogStats = {
+  products: number;
+  stores: number; // distinct merchants with a captured price
+  prices: number; // captured offers
+  evidence: number;
+  priceGaps: number; // products two or more stores sell right now, in one currency, at different prices
+  lastObservedAt: string | null; // newest evidence capture
+};
+
+export type ShowcaseSnapshot = { products: ProductDto[]; stats: CatalogStats };
+
+/**
+ * The public landing page's view of the live (non-sample) catalog: headline counts
+ * taken straight from the database, and up to two products that best show the
+ * margin engine at work (see pickShowcase). Only products sold by two or more
+ * stores can have a price gap, so only those are loaded in full.
+ */
+export async function showcaseSnapshot(db: PrismaClient, asOf = new Date()): Promise<ShowcaseSnapshot> {
+  const live = { product: { isSample: false } } satisfies Prisma.OfferWhereInput;
+  const [products, merchants, prices, evidence, newest, multiStore] = await Promise.all([
+    db.product.count({ where: { isSample: false } }),
+    db.offer.groupBy({ by: ["merchant"], where: live }),
+    db.offer.count({ where: live }),
+    db.evidence.count({ where: live }),
+    db.evidence.aggregate({ where: live, _max: { observedAt: true } }),
+    db.$queryRaw<{ id: string }[]>`
+      SELECT o."productId" AS id
+      FROM "Offer" o
+      JOIN "Product" p ON p.id = o."productId"
+      WHERE NOT p."isSample"
+      GROUP BY o."productId"
+      HAVING count(DISTINCT lower(o.merchant)) >= 2`,
+  ]);
+  const candidates = (await loadInOrder(db, multiStore, asOf)).map(({ dto }) => dto);
+  return {
+    products: pickShowcase(candidates),
+    stats: {
+      products,
+      stores: new Set(merchants.map((m) => m.merchant.toLowerCase())).size,
+      prices,
+      evidence,
+      priceGaps: candidates.filter(hasPriceGap).length,
+      lastObservedAt: newest._max.observedAt?.toISOString() ?? null,
+    },
+  };
+}
+
 type SourceSummary = { sourceCount: number; hasSearchTrend: boolean };
 
 /**
@@ -162,11 +218,6 @@ async function sourceSummaries(db: PrismaClient, productIds: string[]) {
 
 /** Only web image URLs reach the page (never data:, javascript: or relative ones). */
 const webImage = (url: string | null) => (url && /^https?:\/\//i.test(url) ? url : null);
-
-/** How many live products exist that this viewer can't see (for the upgrade prompt). */
-export async function countHiddenLiveProducts(db: PrismaClient, category?: string) {
-  return db.product.count({ where: { isSample: false, ...(category ? { category } : {}) } });
-}
 
 type ProductRow = Prisma.ProductGetPayload<{
   include: {

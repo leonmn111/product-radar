@@ -16,6 +16,6 @@ export async function GET(request: NextRequest) {
     return Response.redirect(await createPortalUrl(db, viewer.id, base), 303);
   } catch (e) {
     if (!(e instanceof BillingNotConfiguredError)) console.error("[billing] portal failed", e);
-    return Response.redirect(`${base}/?billing=${e instanceof BillingNotConfiguredError ? "unavailable" : "error"}`, 303);
+    return Response.redirect(`${base}/dashboard?billing=${e instanceof BillingNotConfiguredError ? "unavailable" : "error"}`, 303);
   }
 }

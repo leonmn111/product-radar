@@ -1,23 +1,26 @@
 const BENEFITS = [
+  "The full catalog: every live product we track, ranked",
   "Paste any product link and get it scored in seconds",
-  "See every live product in the radar, not just sample data",
-  "Each score shows its sources, timestamps and confidence",
-  "Cancel any time from your billing page",
+  "Price gaps after eBay and Shopify fees, every source linked",
+  "Supplier search and a Shopify import file for each product",
 ];
 
-export function UpgradeCard({ signedIn }: { signedIn: boolean }) {
+/** The Pro offer, shown where a Free account would otherwise see the catalog. */
+export function UpgradeCard({ signedIn, liveProducts }: { signedIn: boolean; liveProducts?: number }) {
   return (
     <section
       aria-labelledby="upgrade-title"
-      className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-5 shadow-sm dark:border-indigo-500/30 dark:from-indigo-950/40 dark:to-zinc-900"
+      className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-5 shadow-sm sm:p-6 dark:border-indigo-500/30 dark:from-indigo-950/40 dark:to-zinc-900"
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="max-w-2xl">
-          <h2 id="upgrade-title" className="text-base font-semibold text-zinc-950 dark:text-white">
-            Analyze live products with Pro
+          <h2 id="upgrade-title" className="text-lg font-semibold text-zinc-950 dark:text-white">
+            Unlock the full catalog with Pro
           </h2>
           <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
-            Free accounts can explore the sample data. Pro unlocks live ingestion and the full product radar.
+            {liveProducts
+              ? `Pro opens all ${liveProducts.toLocaleString("en-GB")} live products we track, each with its scores, sourced evidence and both resale fee routes.`
+              : "Pro opens every live product we track, each with its scores, sourced evidence and both resale fee routes."}
           </p>
           <ul className="mt-3 grid gap-1.5 text-sm text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
             {BENEFITS.map((b) => (
@@ -41,11 +44,11 @@ export function UpgradeCard({ signedIn }: { signedIn: boolean }) {
           </p>
           <a
             href="/upgrade"
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400"
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 motion-reduce:transition-none dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400"
           >
             {signedIn ? "Upgrade to Pro" : "Sign in & upgrade"}
           </a>
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">Secure checkout by Stripe</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">Secure checkout by Stripe · cancel any time</p>
         </div>
       </div>
     </section>

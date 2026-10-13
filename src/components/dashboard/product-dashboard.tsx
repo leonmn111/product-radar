@@ -1,18 +1,19 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import type { IngestResult } from "@/server/ingest/ingest";
 import type { ProductDto } from "@/server/products/service";
 import {
   DIMENSION_LABEL,
   SUB_DIMENSIONS,
+  dossierHref,
   formatPrice,
   getScore,
   humanizeSlug,
   type Dimension,
 } from "./format";
 import { IngestForm } from "./ingest-form";
-import { OpportunityDossier, type DossierViewer } from "./opportunity-dossier";
 import { CardGridSkeleton, ProductCard } from "./product-card";
 import { ScoreCell } from "./score";
 import { UpgradeCard } from "./upgrade-card";
@@ -22,8 +23,6 @@ type ApiResponse = {
   meta: {
     count: number;
     category: string | null;
-    access: "full" | "sample_only";
-    hiddenLiveCount: number;
     methodologyVersion: string;
     disclaimer: string;
   };
@@ -109,7 +108,6 @@ export type DashboardViewer = { signedIn: boolean; canIngest: boolean };
 export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
   const [category, setCategory] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("OVERALL");
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [knownCategories, setKnownCategories] = useState<string[]>([]);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [view, setView] = useState<"cards" | "table">("cards"); // the table is a wide-screen option
@@ -121,12 +119,10 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
 
   const products = useMemo(() => (data ? sortProducts(data.data, sortKey) : []), [data, sortKey]);
   const hasSample = products.some((p) => p.isSample);
-  const dossierViewer: DossierViewer = { signedIn: viewer.signedIn, proTools: viewer.canIngest };
 
   function handleIngested(result: IngestResult) {
-    // Show the new/updated product: unfiltered list, opened, highlighted.
+    // Show the new/updated product: unfiltered list, highlighted.
     setCategory(null);
-    setExpanded((prev) => new Set(prev).add(result.product.id));
     setHighlightId(result.product.id);
     refresh();
     window.setTimeout(() => setHighlightId((id) => (id === result.product.id ? null : id)), 6000);
@@ -141,14 +137,6 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [highlightId, data]);
 
-  const toggle = (id: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
   return (
     <div className="space-y-4">
       {viewer.canIngest ? (
@@ -162,18 +150,9 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
           role="note"
           className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200"
         >
-          {data?.meta.access === "sample_only" ? (
-            <>
-              <strong className="font-semibold">You&apos;re viewing sample data.</strong> These products use fictional
-              brands and example.com sources to show how ProductRadar works.
-            </>
-          ) : (
-            <>
-              <strong className="font-semibold">Includes sample data.</strong> Products marked &ldquo;Sample&rdquo; use
-              fictional brands and example.com sources for demonstration. Products marked &ldquo;Live&rdquo; come from
-              real store pages.
-            </>
-          )}
+          <strong className="font-semibold">Includes sample data.</strong> Products marked &ldquo;Sample&rdquo; use
+          fictional brands and example.com sources for demonstration. Products marked &ldquo;Live&rdquo; come from real
+          store pages.
         </div>
       )}
 
@@ -263,32 +242,8 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
         </div>
       ) : (
         <>
-          {data && data.meta.hiddenLiveCount > 0 && (
-            <p className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-              <span>
-                <strong className="font-semibold text-zinc-950 dark:text-white">{data.meta.hiddenLiveCount}</strong> live
-                product{data.meta.hiddenLiveCount === 1 ? "" : "s"} from real stores{" "}
-                {data.meta.hiddenLiveCount === 1 ? "is" : "are"} hidden on your plan.
-              </span>
-              <a
-                href="/upgrade"
-                className={`font-semibold text-indigo-700 underline underline-offset-2 hover:no-underline dark:text-indigo-300 ${focusRing}`}
-              >
-                Unlock with Pro
-              </a>
-            </p>
-          )}
-          {view === "table" && (
-            <ProductTable products={products} expanded={expanded} onToggle={toggle} highlightId={highlightId} dossierViewer={dossierViewer} />
-          )}
-          <ProductGrid
-            className={view === "table" ? "md:hidden" : ""}
-            products={products}
-            expanded={expanded}
-            onToggle={toggle}
-            highlightId={highlightId}
-            dossierViewer={dossierViewer}
-          />
+          {view === "table" && <ProductTable products={products} highlightId={highlightId} />}
+          <ProductGrid className={view === "table" ? "md:hidden" : ""} products={products} highlightId={highlightId} />
         </>
       )}
 
@@ -306,15 +261,12 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
 
 type ListProps = {
   products: ProductDto[];
-  expanded: Set<string>;
-  onToggle: (id: string) => void;
   highlightId: string | null;
-  dossierViewer: DossierViewer;
 };
 
 const HIGHLIGHT = "bg-indigo-50 ring-2 ring-indigo-500 ring-inset dark:bg-indigo-950/40 dark:ring-indigo-400";
 
-function ProductTable({ products, expanded, onToggle, highlightId, dossierViewer }: ListProps) {
+function ProductTable({ products, highlightId }: ListProps) {
   return (
     <div className="hidden overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm md:block dark:border-zinc-800 dark:bg-zinc-900">
       <div className="overflow-x-auto">
@@ -340,55 +292,44 @@ function ProductTable({ products, expanded, onToggle, highlightId, dossierViewer
                 Best price
               </th>
               <th scope="col" className="py-3 pr-4 text-right">
-                <span className="sr-only">Details</span>
+                <span className="sr-only">Dossier</span>
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {products.map((p, i) => {
-              const open = expanded.has(p.id);
-              const panelId = `detail-table-${p.id}`;
-              return (
-                <Fragment key={p.id}>
-                  <tr
-                    data-product-id={p.id}
-                    className={`transition-colors duration-700 ${
-                      p.id === highlightId
-                        ? HIGHLIGHT
-                        : open
-                          ? "bg-zinc-50 dark:bg-zinc-950/60"
-                          : "hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
-                    }`}
+            {products.map((p, i) => (
+              <tr
+                key={p.id}
+                data-product-id={p.id}
+                className={`transition-colors duration-700 ${p.id === highlightId ? HIGHLIGHT : "hover:bg-zinc-50 dark:hover:bg-zinc-800/40"}`}
+              >
+                <td className="py-4 pl-4 align-top text-sm tabular-nums text-zinc-500 dark:text-zinc-400">{i + 1}</td>
+                <td className="px-3 py-4 align-top">
+                  <ProductName product={p} />
+                </td>
+                <td className="px-3 py-4 align-top">
+                  <ScoreCell score={getScore(p, "OVERALL")} emphasis />
+                </td>
+                {SUB_DIMENSIONS.map((d) => (
+                  <td key={d} className="hidden px-3 py-4 align-top lg:table-cell">
+                    <ScoreCell score={getScore(p, d)} />
+                  </td>
+                ))}
+                <td className="px-3 py-4 align-top">
+                  <BestPrice product={p} />
+                </td>
+                <td className="py-4 pr-4 text-right align-top">
+                  <Link
+                    href={dossierHref(p)}
+                    className={`group inline-flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/40 ${focusRing}`}
                   >
-                    <td className="py-4 pl-4 align-top text-sm tabular-nums text-zinc-500 dark:text-zinc-400">{i + 1}</td>
-                    <td className="px-3 py-4 align-top">
-                      <ProductName product={p} />
-                    </td>
-                    <td className="px-3 py-4 align-top">
-                      <ScoreCell score={getScore(p, "OVERALL")} emphasis />
-                    </td>
-                    {SUB_DIMENSIONS.map((d) => (
-                      <td key={d} className="hidden px-3 py-4 align-top lg:table-cell">
-                        <ScoreCell score={getScore(p, d)} />
-                      </td>
-                    ))}
-                    <td className="px-3 py-4 align-top">
-                      <BestPrice product={p} />
-                    </td>
-                    <td className="py-4 pr-4 text-right align-top">
-                      <ToggleButton open={open} controls={panelId} name={p.name} onClick={() => onToggle(p.id)} />
-                    </td>
-                  </tr>
-                  {open && (
-                    <tr id={panelId} className="bg-zinc-50 dark:bg-zinc-950/60">
-                      <td colSpan={4 + SUB_DIMENSIONS.length + 1} className="px-4 pt-1 pb-6">
-                        <OpportunityDossier product={p} viewer={dossierViewer} />
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
+                    Dossier
+                    <span className="sr-only"> for {p.name}</span>
+                    <ArrowIcon className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+                  </Link>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -398,28 +339,12 @@ function ProductTable({ products, expanded, onToggle, highlightId, dossierViewer
 
 // ── Card grid (all screen sizes; the table is an extra wide-screen layout) ──
 
-function ProductGrid({ products, expanded, onToggle, highlightId, dossierViewer, className = "" }: ListProps & { className?: string }) {
+function ProductGrid({ products, highlightId, className = "" }: ListProps & { className?: string }) {
   return (
     <ol className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${className}`}>
-      {products.map((p, i) => {
-        const open = expanded.has(p.id);
-        const panelId = `detail-card-${p.id}`;
-        return (
-          <ProductCard
-            key={p.id}
-            product={p}
-            rank={i + 1}
-            open={open}
-            highlighted={p.id === highlightId}
-            toggle={<ToggleButton open={open} controls={panelId} name={p.name} onClick={() => onToggle(p.id)} />}
-            dossier={
-              <div id={panelId}>
-                <OpportunityDossier product={p} viewer={dossierViewer} />
-              </div>
-            }
-          />
-        );
-      })}
+      {products.map((p, i) => (
+        <ProductCard key={p.id} product={p} href={dossierHref(p)} rank={i + 1} highlighted={p.id === highlightId} />
+      ))}
     </ol>
   );
 }
@@ -430,7 +355,12 @@ function ProductName({ product: p }: { product: ProductDto }) {
   return (
     <div className="min-w-0">
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-zinc-950 dark:text-white">
-        <span>{p.name}</span>
+        <Link
+          href={dossierHref(p)}
+          className={`rounded-sm hover:text-indigo-700 hover:underline hover:underline-offset-2 dark:hover:text-indigo-300 ${focusRing}`}
+        >
+          {p.name}
+        </Link>
         {p.isSample ? (
           <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-600/20 ring-inset dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-400/20">
             Sample
@@ -464,39 +394,14 @@ function BestPrice({ product: p }: { product: ProductDto }) {
   );
 }
 
-function ToggleButton({
-  open,
-  controls,
-  name,
-  onClick,
-}: {
-  open: boolean;
-  controls: string;
-  name: string;
-  onClick: () => void;
-}) {
+function ArrowIcon({ className }: { className: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-expanded={open}
-      aria-controls={controls}
-      className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/40 ${focusRing}`}
-    >
-      {open ? "Hide" : "Dossier"}
-      <span className="sr-only"> for {name}</span>
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-        className={`size-4 transition-transform ${open ? "rotate-180" : ""}`}
-      >
-        <path
-          fillRule="evenodd"
-          d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
-          clipRule="evenodd"
-        />
-      </svg>
-    </button>
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path
+        fillRule="evenodd"
+        d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z"
+        clipRule="evenodd"
+      />
+    </svg>
   );
 }

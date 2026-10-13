@@ -46,16 +46,32 @@ Check it works: open http://localhost:3000/api/health
 - **503** `{"status":"degraded"}` — database reachable but migrations not run or one failed.
 - **503** `{"status":"error"}` — database unreachable. (Error detail is shown only outside production.)
 
-## Dashboard
+## Landing page, dashboard and dossiers
 
-`http://localhost:3000/` — ranked product cards (`product-card.tsx`): square photo from `Product.imageUrl` (plain
-`<img>`, lazy, no referrer; a brand-monogram tile when there's no photo or it fails to load), brand, title, overall
-score with its confidence badge, best current price, the Value score, and "N sources" (distinct pages, over all
-evidence) plus "Trends" when Google search-interest data exists. On wide screens a Cards / Table switch keeps the
-full score table. Filter by category, sort by any score or price, and open a product's dossier (the card widens to
-the full row) to see its verdict, profit calculator, score breakdown, offers and every piece of evidence.
-Data comes from `/api/products` in the browser. Components live in `src/components/dashboard/`.
-The page is marked `noindex` (it's an app dashboard, not a marketing page).
+`/` is the public landing page (`src/app/page.tsx`): hero, live counts (stores tracked, live products, current
+price gaps, evidence items), a showcase of up to two live products with a real price gap between stores
+(`src/server/products/showcase.ts` picks them; nothing is padded), how it works, the agent API, pricing and FAQ.
+The counts and showcase come from `getShowcase()` (`showcase-cache.ts`), cached as one snapshot per hour and only
+read at request time, never during the build. "Get started" goes to sign-up, then straight to Stripe Checkout
+(`/signin?tab=register&callbackUrl=/upgrade`). It's the only indexed page besides `/docs` (see `robots.ts`,
+`sitemap.ts`, `opengraph-image.tsx`). Signed-in visitors never see it: `src/proxy.ts` sends anyone with a session
+cookie to `/dashboard`.
+
+`/dashboard` — the catalog, **Pro only**. Signed out → sign-in; Free → the Pro offer plus the showcase dossiers.
+Ranked product cards (`product-card.tsx`): square photo from `Product.imageUrl` (plain `<img>`, lazy, no referrer;
+a brand-monogram tile when there's no photo or it fails to load), brand, title, overall score with its confidence
+badge, best current price, the Value score, the margin summary, and "N sources" plus "Trends" when Google
+search-interest data exists. Each card is one link (a stretched title link) to the product's dossier, and lifts
+on hover. On wide screens a Cards / Table switch keeps the full score table. Filter by category and sort by any
+score or price. Data comes from `/api/products` in the browser. Components live in `src/components/dashboard/`.
+
+`/dossier/[slug]` — one product's full dossier: verdict, margin & arbitrage on both resale routes, profit
+calculator, supplier search and Shopify export (Pro), score breakdown and every piece of evidence. Pro can open
+any product; everyone else can open sample products and the products featured on the landing page
+(`canViewDossier` in `src/server/auth/entitlements.ts`). A Free account opening another live product gets the Pro
+offer; a signed-out visitor is sent to sign in.
+
+Everything except `/` and `/docs` is `noindex`.
 
 ## Deploying (Railway)
 
@@ -284,7 +300,7 @@ npx -y @railway/cli@latest ssh --service web "npx -y tsx scripts/enrich-trends.t
 Products ranked by latest OVERALL score. Each includes `bestOffer`, `margin` (see "Margin engine"), `scores`
 (latest per dimension, with `confidence`, `methodologyVersion` and the `evidenceIds` used), `offers`, and
 `evidence` (source, timestamp, quality score, metric). `category` must be a lowercase slug; `limit` is 1–50 (default 20). Invalid input → 400.
-Signed-out and Free viewers get sample products only (`meta.access = "sample_only"`, with `meta.hiddenLiveCount`).
+This is the Pro catalog: signed-out → 401 `unauthorized`, Free → 403 `pro_required`. Pro and Business get live and sample products.
 
 ## Scoring engine
 
@@ -374,9 +390,14 @@ src/lib/env.ts              validated environment
 src/lib/db.ts               shared Prisma client
 src/lib/validation/         Zod input validators
 src/server/scoring/         scoring engine (pure) + service (DB) + tests
-src/server/products/        product read model for the API
-src/app/api/products/       products endpoint
+src/server/products/        product read model for the API, landing showcase
+src/app/api/products/       products endpoint (Pro catalog)
+src/app/page.tsx            public landing page (/)
+src/app/dashboard/          catalog (/dashboard, Pro only)
+src/app/dossier/[slug]/     full-page product dossier
+src/proxy.ts                sends signed-in visitors from / to /dashboard
 src/components/dashboard/   dashboard UI (URL bar, table, cards, evidence panel)
+src/components/landing/     landing page showcase and live counts
 src/server/ingest/          live URL ingestion (safe fetch, extraction, storage)
 src/auth.ts                 Auth.js config (email sign-in links)
 src/server/auth/            plan checks (entitlements)
