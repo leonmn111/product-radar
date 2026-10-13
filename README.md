@@ -99,8 +99,9 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
 
 | | Signed out / Free | Pro (£39/month) |
 | --- | --- | --- |
-| View sample data | ✓ | ✓ |
-| View live products | — (count shown as a teaser) | ✓ |
+| Landing page showcase and its dossiers | ✓ | ✓ |
+| Catalog (`/dashboard`, `/api/products`) | — (sign-in / Pro offer; API 401 / 403) | ✓ |
+| Any product's dossier (`/dossier/[slug]`) | samples and showcased products only | ✓ |
 | Submit product URLs (`/api/ingest`) | — (401 / 403) | ✓ |
 
 - **Sign-in** (Auth.js v5, `/signin` with "Sign in" / "Create account" tabs): email + password, or a
