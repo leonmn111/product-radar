@@ -463,7 +463,7 @@ export default function Home() {
                   Get started
                   <Arrow />
                 </Link>
-                <p className="mt-3 text-center text-xs text-zinc-600 dark:text-zinc-400">Secure checkout by Stripe</p>
+                <p className="mt-3 text-center text-xs text-zinc-600 dark:text-zinc-400">Free to create · upgrade any time</p>
               </div>
               <div className="flex flex-col rounded-2xl bg-zinc-50 p-6 ring-1 ring-zinc-200 sm:p-8 lg:col-span-2 dark:bg-zinc-900/50 dark:ring-zinc-800">
                 <h3 className="text-lg font-semibold text-zinc-950 dark:text-white">Agent API</h3>
