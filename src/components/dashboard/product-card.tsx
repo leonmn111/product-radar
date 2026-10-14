@@ -134,27 +134,34 @@ function StatusChip({ sample }: { sample: boolean }) {
  * One product in a card grid. The whole card is one link to the product's dossier:
  * the title's link stretches over the card, so screen readers hear a single link
  * named after the product. Hovering lifts the card; pressing settles it back down.
+ * The "bento" frame is the landing page's: a hairline ring that lights up purple on hover.
  */
 export function ProductCard({
   product: p,
   href,
   rank,
   highlighted = false,
+  frame = "default",
 }: {
   product: ProductDto;
   href: string;
   rank?: number;
   highlighted?: boolean;
+  frame?: "default" | "bento";
 }) {
   const overall = getScore(p, "OVERALL");
+  const frameClass =
+    frame === "bento"
+      ? "h-full rounded-2xl bg-white ring-1 ring-zinc-200 duration-300 hover:shadow-purple-900/10 hover:ring-purple-500/50 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-purple-600 dark:ring-white/10 dark:hover:shadow-purple-950/50 dark:hover:ring-purple-500/50 dark:has-[a:focus-visible]:ring-purple-400"
+      : `rounded-xl border duration-200 hover:shadow-zinc-900/10 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-indigo-600 has-[a:focus-visible]:ring-offset-2 dark:hover:shadow-black/40 dark:has-[a:focus-visible]:ring-indigo-400 dark:has-[a:focus-visible]:ring-offset-zinc-950 ${
+          highlighted
+            ? "border-indigo-500 ring-2 ring-indigo-500 dark:border-indigo-400 dark:ring-indigo-400"
+            : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700"
+        }`;
   return (
     <li
       data-product-id={p.id}
-      className={`group/card relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition duration-200 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-zinc-900/10 active:translate-y-0 active:shadow-md active:duration-75 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-indigo-600 has-[a:focus-visible]:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:bg-zinc-900 dark:hover:shadow-black/40 dark:has-[a:focus-visible]:ring-indigo-400 dark:has-[a:focus-visible]:ring-offset-zinc-950 ${
-        highlighted
-          ? "border-indigo-500 ring-2 ring-indigo-500 dark:border-indigo-400 dark:ring-indigo-400"
-          : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700"
-      }`}
+      className={`group/card relative flex flex-col overflow-hidden bg-white shadow-sm transition ease-out hover:-translate-y-1 hover:shadow-xl active:translate-y-0 active:shadow-md active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:bg-zinc-900 ${frameClass}`}
     >
       <article className="flex flex-1 flex-col">
         <div className="relative">

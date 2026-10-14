@@ -15,11 +15,17 @@ export function LiveStats({ stats }: { stats: CatalogStats }) {
 
   return (
     <div>
-      <dl className={`grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-zinc-200 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:ring-zinc-800 ${cols}`}>
+      {/* One bar: hairline dividers are the 1px gaps showing the bar's own background through. */}
+      <dl
+        className={`grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 shadow-sm dark:border-white/10 dark:bg-white/10 dark:shadow-none ${cols}`}
+      >
         {items.map((i) => (
-          <div key={i.label} className="flex flex-col-reverse gap-1 bg-white px-4 py-5 text-center last:odd:col-span-2 sm:last:odd:col-span-1 dark:bg-zinc-900">
+          <div
+            key={i.label}
+            className="flex flex-col-reverse gap-1 bg-white px-4 py-5 text-center last:odd:col-span-2 sm:px-6 sm:last:odd:col-span-1 dark:bg-zinc-950"
+          >
             <dt className="text-xs text-zinc-600 sm:text-sm dark:text-zinc-400">{i.label}</dt>
-            <dd className="text-2xl font-semibold tracking-tight tabular-nums text-zinc-950 sm:text-3xl dark:text-white">{count(i.value)}</dd>
+            <dd className="text-3xl font-bold tracking-tight tabular-nums text-zinc-950 sm:text-4xl dark:text-zinc-50">{count(i.value)}</dd>
           </div>
         ))}
       </dl>
@@ -37,15 +43,15 @@ export function LiveStats({ stats }: { stats: CatalogStats }) {
 export function LiveStatsSkeleton() {
   return (
     <div aria-hidden="true">
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-zinc-200 ring-1 ring-zinc-200 sm:grid-cols-4 dark:bg-zinc-800 dark:ring-zinc-800">
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 sm:grid-cols-4 dark:border-white/10 dark:bg-white/10">
         {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="flex flex-col items-center gap-2 bg-white px-4 py-5 dark:bg-zinc-900">
-            <div className="h-8 w-14 animate-pulse rounded bg-zinc-200/70 dark:bg-zinc-800/70" />
-            <div className="h-3 w-24 animate-pulse rounded bg-zinc-200/70 dark:bg-zinc-800/70" />
+          <div key={i} className="flex flex-col items-center gap-2 bg-white px-4 py-5 dark:bg-zinc-950">
+            <div className="h-9 w-16 animate-pulse rounded bg-zinc-200/70 sm:h-10 dark:bg-white/10" />
+            <div className="h-3 w-24 animate-pulse rounded bg-zinc-200/70 dark:bg-white/10" />
           </div>
         ))}
       </div>
-      <div className="mx-auto mt-3 h-4 w-64 animate-pulse rounded bg-zinc-200/70 dark:bg-zinc-800/70" />
+      <div className="mx-auto mt-3 h-4 w-64 animate-pulse rounded bg-zinc-200/70 dark:bg-white/10" />
     </div>
   );
 }

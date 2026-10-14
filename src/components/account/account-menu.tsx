@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signOut } from "@/auth";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { getViewer } from "@/server/auth/entitlements";
 
 const focusRing =
@@ -16,6 +17,7 @@ export async function AccountMenu() {
   if (!viewer) {
     return (
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         <Link
           href="/signin"
           className={`rounded-md px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 ${focusRing}`}
@@ -35,6 +37,7 @@ export async function AccountMenu() {
   const isPro = viewer.tier !== "FREE";
   return (
     <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+      <ThemeToggle />
       <span className="flex min-w-0 items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
         <span className="max-w-[16ch] truncate sm:max-w-[28ch]" title={viewer.email}>
           {viewer.email}

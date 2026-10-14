@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 import { LiveStats, LiveStatsSkeleton } from "@/components/landing/live-stats";
 import { Showcase } from "@/components/landing/showcase";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SITE_URL } from "@/lib/site";
 import { PRO_PLAN } from "@/server/billing/stripe";
 import { getShowcase } from "@/server/products/showcase-cache";
@@ -35,17 +36,19 @@ const PRO_PRICE = new Intl.NumberFormat("en-GB", {
 }).format(PRO_PLAN.unitAmount / 100);
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:focus-visible:outline-indigo-400";
-const primaryButton = `inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-base font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 hover:shadow-md active:scale-[0.98] motion-reduce:transition-none dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400 ${focusRing}`;
-const secondaryButton = `inline-flex items-center justify-center gap-2 rounded-lg bg-white px-5 py-3 text-base font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 transition ring-inset hover:bg-zinc-50 active:scale-[0.98] motion-reduce:transition-none dark:bg-zinc-900 dark:text-white dark:ring-zinc-700 dark:hover:bg-zinc-800 ${focusRing}`;
-const sectionTitle = "text-3xl font-semibold tracking-tight text-balance text-zinc-950 sm:text-4xl dark:text-white";
-const eyebrow = "text-sm font-semibold text-indigo-700 dark:text-indigo-300";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
+// Rich purple with white text passes WCAG AA in both themes; it glows and grows on hover.
+const primaryButton = `inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-6 py-3.5 text-base font-semibold text-white shadow-lg ring-1 shadow-purple-600/30 ring-white/15 transition duration-200 ease-out ring-inset hover:scale-[1.03] hover:bg-purple-700 hover:shadow-xl hover:shadow-purple-600/40 active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 dark:shadow-purple-500/20 dark:hover:bg-purple-600 dark:hover:shadow-purple-500/40 ${focusRing}`;
+const secondaryButton = `inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-base font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 transition ring-inset hover:bg-zinc-50 active:scale-[0.98] motion-reduce:transition-none dark:bg-white/5 dark:text-zinc-50 dark:ring-white/15 dark:hover:bg-white/10 ${focusRing}`;
+const sectionTitle = "text-3xl font-bold tracking-tight text-balance text-zinc-950 sm:text-4xl dark:text-zinc-50";
+const eyebrow = "text-sm font-semibold text-purple-700 dark:text-purple-300";
+const navLink = `rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white ${focusRing}`;
 
 // ── Small pieces ─────────────────────────────────────────────────────────────
 
 function Logo() {
   return (
-    <span aria-hidden="true" className="flex size-8 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm dark:bg-indigo-500 dark:text-zinc-950">
+    <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-purple-600 text-white shadow-sm shadow-purple-600/30">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-5">
         <circle cx="12" cy="12" r="8.5" />
         <circle cx="12" cy="12" r="4.5" />
@@ -69,7 +72,7 @@ function Arrow() {
 
 function Check() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 size-5 shrink-0 text-indigo-600 dark:text-indigo-400">
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 size-5 shrink-0 text-purple-600 dark:text-purple-400">
       <path
         fillRule="evenodd"
         d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z"
@@ -104,39 +107,31 @@ const NAV = [
 
 function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/85 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-950/85">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className={`flex items-center gap-2.5 rounded-md font-semibold tracking-tight text-zinc-950 dark:text-white ${focusRing}`}>
+    <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/80 backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/70">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+        <Link href="/" className={`flex items-center gap-2.5 rounded-md font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 ${focusRing}`}>
           <Logo />
           ProductRadar
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
           {NAV.map(([href, label]) => (
-            <a
-              key={href}
-              href={href}
-              className={`rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white ${focusRing}`}
-            >
+            <a key={href} href={href} className={navLink}>
               {label}
             </a>
           ))}
-          <Link
-            href="/docs"
-            className={`rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white ${focusRing}`}
-          >
+          <Link href="/docs" className={navLink}>
             API docs
           </Link>
         </nav>
-        <div className="flex items-center gap-1 sm:gap-2">
-          <Link
-            href="/signin"
-            className={`rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white ${focusRing}`}
-          >
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <ThemeToggle />
+          {/* On narrow phones the hero's full-width Sign in button sits right below. */}
+          <Link href="/signin" className={`max-[420px]:hidden ${navLink}`}>
             Sign in
           </Link>
           <Link
             href={GET_STARTED}
-            className={`rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-semibold whitespace-nowrap text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.98] motion-reduce:transition-none dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400 ${focusRing}`}
+            className={`rounded-lg bg-purple-600 px-3.5 py-2 text-sm font-semibold whitespace-nowrap text-white shadow-md shadow-purple-600/25 transition duration-200 hover:scale-[1.03] hover:bg-purple-700 active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 dark:hover:bg-purple-600 dark:hover:shadow-purple-500/40 ${focusRing}`}
           >
             Get started
           </Link>
@@ -169,17 +164,13 @@ async function ShowcaseContent() {
 }
 
 function ShowcaseSkeleton() {
+  const block = "animate-pulse rounded-2xl bg-zinc-200/70 dark:bg-white/5";
   return (
-    <div aria-hidden="true" className="grid gap-6 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:gap-8">
-      <div className="h-[30rem] animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
-      <div className="space-y-4">
-        <div className="h-6 w-3/4 animate-pulse rounded bg-zinc-200/70 dark:bg-zinc-800/70" />
-        <div className="h-24 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="h-56 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
-          <div className="h-56 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
-        </div>
-      </div>
+    <div aria-hidden="true" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className={`h-[30rem] sm:row-span-3 lg:row-span-2 ${block}`} />
+      <div className={`h-44 lg:col-span-2 ${block}`} />
+      <div className={`h-60 ${block}`} />
+      <div className={`h-60 ${block}`} />
     </div>
   );
 }
@@ -269,11 +260,11 @@ export default function Home() {
   };
 
   return (
-    <div className="flex-1 bg-white dark:bg-zinc-950">
+    <div className="flex-1 bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-indigo-600 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-purple-600 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
       >
         Skip to content
       </a>
@@ -283,26 +274,29 @@ export default function Home() {
         {/* Hero */}
         <section className="relative isolate overflow-hidden">
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-            <div className="absolute top-[-18rem] left-1/2 h-[36rem] w-[64rem] -translate-x-1/2 rounded-full bg-gradient-to-tr from-indigo-200 via-sky-100 to-violet-200 opacity-60 blur-3xl dark:from-indigo-900 dark:via-sky-950 dark:to-violet-950 dark:opacity-50" />
+            <div className="hero-grid absolute inset-0" />
+            <div className="absolute top-[-16rem] left-1/2 h-[34rem] w-[60rem] max-w-[200vw] -translate-x-1/2 rounded-full bg-purple-400/25 blur-3xl dark:bg-purple-600/20" />
           </div>
-          <div className="mx-auto max-w-7xl px-4 pt-14 pb-12 sm:px-6 sm:pt-20 lg:px-8 lg:pt-24">
-            <div className="mx-auto max-w-3xl text-center">
-              <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-indigo-800 ring-1 ring-indigo-200 ring-inset sm:text-sm dark:bg-zinc-900/80 dark:text-indigo-200 dark:ring-indigo-500/30">
+          <div className="mx-auto max-w-7xl px-4 pt-16 pb-16 sm:px-6 sm:pt-24 sm:pb-20 lg:px-8 lg:pt-32">
+            <div className="mx-auto max-w-4xl text-center">
+              <p className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-zinc-700 ring-1 ring-zinc-200 backdrop-blur ring-inset sm:text-sm dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10">
+                <span aria-hidden="true" className="size-1.5 rounded-full bg-purple-600 dark:bg-purple-400" />
                 Product intelligence for e-commerce operators and buyer agents
               </p>
-              <h1 className="mt-6 text-4xl font-semibold tracking-tight text-balance text-zinc-950 sm:text-6xl dark:text-white">
-                Know if a product is worth selling before you stock it.
+              {/* Each sentence wraps as a unit; the smallest phones get a touch less than text-5xl so it fits. */}
+              <h1 className="mt-8 text-5xl leading-[1.05] font-extrabold tracking-tighter text-zinc-950 max-[400px]:text-[2.75rem] md:text-7xl dark:text-zinc-50">
+                <span className="inline-block">Find the spread.</span> <span className="inline-block">Ignore the noise.</span>
               </h1>
-              <p className="mx-auto mt-6 max-w-2xl text-lg/8 text-pretty text-zinc-600 dark:text-zinc-300">
-                ProductRadar reads real store pages, scores every product from sourced, timestamped evidence, and works
-                out what you&apos;d keep after eBay or Shopify fees.
+              <p className="mx-auto mt-6 max-w-2xl text-lg/8 text-balance text-zinc-600 sm:text-xl/8 dark:text-zinc-400">
+                Rule-based product intelligence and dual-margin analytics for serious{" "}
+                <span className="whitespace-nowrap">e-commerce</span> operators.
               </p>
-              <CallToAction className="mt-8" />
-              <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
+              <CallToAction className="mt-10" />
+              <p className="mt-5 text-sm text-zinc-600 dark:text-zinc-400">
                 Pro is {PRO_PRICE}/month · cancel any time · secure checkout by Stripe
               </p>
             </div>
-            <div className="mx-auto mt-12 max-w-4xl">
+            <div className="mx-auto mt-14 max-w-5xl">
               <Suspense fallback={<LiveStatsSkeleton />}>
                 <HeroStats />
               </Suspense>
@@ -311,19 +305,19 @@ export default function Home() {
         </section>
 
         {/* Showcase */}
-        <section id="showcase" aria-labelledby="showcase-title" className="scroll-mt-16 py-16 sm:py-20">
+        <section id="showcase" aria-labelledby="showcase-title" className="scroll-mt-16 border-t border-zinc-200 bg-zinc-50 py-16 sm:py-24 dark:border-white/10 dark:bg-zinc-950">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
               <p className={eyebrow}>Live showcase</p>
               <h2 id="showcase-title" className={`mt-2 ${sectionTitle}`}>
                 The margin engine, on real products
               </h2>
-              <p className="mt-4 text-lg/8 text-zinc-600 dark:text-zinc-300">
+              <p className="mt-4 text-lg/8 text-zinc-600 dark:text-zinc-400">
                 Real prices captured from real stores. See what the same price gap is worth on eBay and in your own
                 shop, after each route&apos;s fees. Click the card for the full dossier.
               </p>
             </div>
-            <div className="mt-10 rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4 shadow-xl shadow-zinc-900/5 sm:p-6 lg:p-8 dark:border-zinc-800 dark:bg-zinc-900/50 dark:shadow-black/30">
+            <div className="mt-10">
               <Suspense fallback={<ShowcaseSkeleton />}>
                 <ShowcaseContent />
               </Suspense>
@@ -332,7 +326,7 @@ export default function Home() {
         </section>
 
         {/* How it works */}
-        <section id="how-it-works" aria-labelledby="how-title" className="scroll-mt-16 border-t border-zinc-200 bg-zinc-50 py-16 sm:py-20 dark:border-zinc-800 dark:bg-zinc-900/40">
+        <section id="how-it-works" aria-labelledby="how-title" className="scroll-mt-16 border-t border-zinc-200 bg-white py-16 sm:py-20 dark:border-white/10 dark:bg-zinc-900/40">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center">
               <p className={eyebrow}>How it works</p>
@@ -342,9 +336,9 @@ export default function Home() {
             </div>
             <ol className="mt-12 grid gap-6 md:grid-cols-3">
               {STEPS.map((s, i) => (
-                <li key={s.title} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <li key={s.title} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900">
                   <div className="flex items-center gap-3">
-                    <span className="flex size-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/10 ring-inset dark:bg-indigo-950/60 dark:text-indigo-300 dark:ring-indigo-400/20">
+                    <span className="flex size-10 items-center justify-center rounded-lg bg-purple-50 text-purple-700 ring-1 ring-purple-600/10 ring-inset dark:bg-purple-950/60 dark:text-purple-300 dark:ring-purple-400/20">
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-5">
                         <path d={s.icon} />
                       </svg>
@@ -356,7 +350,7 @@ export default function Home() {
                 </li>
               ))}
             </ol>
-            <dl className="mt-12 grid gap-x-8 gap-y-6 border-t border-zinc-200 pt-10 md:grid-cols-3 dark:border-zinc-800">
+            <dl className="mt-12 grid gap-x-8 gap-y-6 border-t border-zinc-200 pt-10 md:grid-cols-3 dark:border-white/10">
               {TRUST.map(([title, body]) => (
                 <div key={title} className="flex gap-3">
                   <Check />
@@ -371,10 +365,10 @@ export default function Home() {
         </section>
 
         {/* For agents */}
-        <section id="agents" aria-labelledby="agents-title" className="scroll-mt-16 bg-zinc-950 py-16 text-zinc-300 sm:py-20 [color-scheme:dark]">
+        <section id="agents" aria-labelledby="agents-title" className="scroll-mt-16 bg-zinc-950 py-16 text-zinc-300 sm:py-20 [color-scheme:dark] dark:border-y dark:border-white/10 dark:bg-black">
           <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
             <div>
-              <p className="text-sm font-semibold text-indigo-300">For buyer agents</p>
+              <p className="text-sm font-semibold text-purple-300">For buyer agents</p>
               <h2 id="agents-title" className="mt-2 text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">
                 Your agents can buy the same intelligence, one request at a time.
               </h2>
@@ -385,7 +379,7 @@ export default function Home() {
               <ul className="mt-6 space-y-2">
                 {AGENT_FEATURES.map((f) => (
                   <li key={f} className="flex gap-3 text-zinc-300">
-                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 size-5 shrink-0 text-indigo-400">
+                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 size-5 shrink-0 text-purple-400">
                       <path fillRule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z" clipRule="evenodd" />
                     </svg>
                     {f}
@@ -394,7 +388,7 @@ export default function Home() {
               </ul>
               <Link
                 href="/docs"
-                className="group mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 text-base font-semibold text-zinc-950 shadow-sm transition hover:bg-zinc-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 motion-reduce:transition-none"
+                className="group mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 text-base font-semibold text-zinc-950 shadow-sm transition hover:bg-zinc-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400 motion-reduce:transition-none"
               >
                 Read the API docs
                 <Arrow />
@@ -440,10 +434,10 @@ export default function Home() {
               </h2>
             </div>
             <div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-5">
-              <div className="flex flex-col rounded-2xl bg-white p-6 shadow-xl ring-2 shadow-indigo-900/10 ring-indigo-600 sm:p-8 lg:col-span-3 dark:bg-zinc-900 dark:shadow-black/30 dark:ring-indigo-400">
+              <div className="flex flex-col rounded-2xl bg-white p-6 shadow-xl ring-2 shadow-purple-900/10 ring-purple-600 sm:p-8 lg:col-span-3 dark:bg-zinc-900 dark:shadow-black/30 dark:ring-purple-400">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-lg font-semibold text-zinc-950 dark:text-white">Pro</h3>
-                  <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-600/20 ring-inset dark:bg-indigo-950/60 dark:text-indigo-300 dark:ring-indigo-400/30">
+                  <span className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-semibold text-purple-700 ring-1 ring-purple-600/20 ring-inset dark:bg-purple-950/60 dark:text-purple-300 dark:ring-purple-400/30">
                     For operators
                   </span>
                 </div>
@@ -465,7 +459,7 @@ export default function Home() {
                 </Link>
                 <p className="mt-3 text-center text-xs text-zinc-600 dark:text-zinc-400">Free to create · upgrade any time</p>
               </div>
-              <div className="flex flex-col rounded-2xl bg-zinc-50 p-6 ring-1 ring-zinc-200 sm:p-8 lg:col-span-2 dark:bg-zinc-900/50 dark:ring-zinc-800">
+              <div className="flex flex-col rounded-2xl bg-zinc-50 p-6 ring-1 ring-zinc-200 sm:p-8 lg:col-span-2 dark:bg-white/[0.03] dark:ring-white/10">
                 <h3 className="text-lg font-semibold text-zinc-950 dark:text-white">Agent API</h3>
                 <p className="mt-4 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Pay per request</p>
                 <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">in USDC, with no subscription</p>
@@ -488,16 +482,16 @@ export default function Home() {
         </section>
 
         {/* FAQ */}
-        <section id="faq" aria-labelledby="faq-title" className="scroll-mt-16 border-t border-zinc-200 bg-zinc-50 py-16 sm:py-20 dark:border-zinc-800 dark:bg-zinc-900/40">
+        <section id="faq" aria-labelledby="faq-title" className="scroll-mt-16 border-t border-zinc-200 bg-zinc-50 py-16 sm:py-20 dark:border-white/10 dark:bg-zinc-900/40">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <h2 id="faq-title" className={`text-center ${sectionTitle}`}>
               Questions
             </h2>
-            <div className="mt-10 divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="mt-10 divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:divide-white/10 dark:border-white/10 dark:bg-zinc-900">
               {FAQ.map(({ q, a }) => (
                 <details key={q} className="group">
                   <summary
-                    className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-medium text-zinc-950 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-indigo-600 sm:px-6 dark:text-white dark:hover:bg-zinc-800/50 dark:focus-visible:outline-indigo-400 [&::-webkit-details-marker]:hidden"
+                    className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-medium text-zinc-950 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-purple-600 sm:px-6 dark:text-white dark:hover:bg-zinc-800/50 dark:focus-visible:outline-purple-400 [&::-webkit-details-marker]:hidden"
                   >
                     {q}
                     <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-5 shrink-0 text-zinc-500 transition-transform group-open:rotate-180 motion-reduce:transition-none">
@@ -525,7 +519,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-zinc-200 dark:border-zinc-800">
+      <footer className="border-t border-zinc-200 dark:border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 text-sm text-zinc-600 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 dark:text-zinc-400">
           <p className="flex items-center gap-2 font-medium text-zinc-950 dark:text-white">
             <Logo />

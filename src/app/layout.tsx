@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { themeScript, type Theme } from "@/components/theme/theme";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -22,13 +24,23 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// New visitors see dark first; the theme toggle saves Light, Dark or System per browser.
+const DEFAULT_THEME: Theme = "dark";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // The inline script may change the `dark` class before React hydrates, hence suppressHydrationWarning.
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased motion-safe:scroll-smooth`}
+      suppressHydrationWarning
+      className={`${DEFAULT_THEME === "dark" ? "dark " : ""}${geistSans.variable} ${geistMono.variable} h-full antialiased motion-safe:scroll-smooth`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript(DEFAULT_THEME) }} />
+      </head>
+      <body className="min-h-full flex flex-col">
+        <ThemeProvider defaultTheme={DEFAULT_THEME}>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }
