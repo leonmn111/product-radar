@@ -3,12 +3,10 @@
 import { useId, useState } from "react";
 import type { ProductDto } from "@/server/products/service";
 import {
-  cleanTitle,
   estimateProfit,
   opportunityVerdict,
   parseMoney,
-  shopifyCsv,
-  slugify,
+  shopifyPrices,
   sourcingKeywords,
   startingWholesale,
   supplierSearchUrls,
@@ -282,22 +280,10 @@ function SupplierAndExport({
   const keywords = sourcingKeywords({ ...product, merchant });
   const urls = supplierSearchUrls(keywords);
   const [exported, setExported] = useState(false);
-
-  function exportCsv() {
-    const csv = shopifyCsv(
-      { ...product, merchant },
-      { price: product.bestOffer ? Number(product.bestOffer.price.amount) : null, costPerItem },
-    );
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${slugify(cleanTitle(product.name, merchant))}-shopify.csv`;
-    document.body.append(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    setExported(true);
-  }
+  const prices = shopifyPrices(product);
+  const money = (x: number) => formatPrice(String(x), prices.currency ?? "GBP");
+  // Built on the server, which checks for Pro; the cost is whatever the profit calculator holds.
+  const csvHref = `/api/products/${encodeURIComponent(product.id)}/shopify-csv${costPerItem !== null && costPerItem > 0 ? `?cost=${costPerItem}` : ""}`;
 
   const supplierBtn = `inline-flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold shadow-sm ${focusRing}`;
 
@@ -329,21 +315,34 @@ function SupplierAndExport({
       <div className="border-t border-zinc-200 pt-4 dark:border-zinc-800">
         <h3 className={cardTitle}>Sell it on Shopify</h3>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          A ready-to-import file with the title, price, description and your wholesale cost. It imports as a draft, so
-          nothing goes live until you publish it.
+          A ready-to-import file with the title, description, photo, prices and your wholesale cost. It imports as a
+          draft, so nothing goes live until you publish it.
         </p>
+        {prices.price !== null && (
+          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+            <dt className="font-medium text-zinc-900 dark:text-zinc-100">Price {money(prices.price)}</dt>
+            <dd>{prices.compareAtPrice !== null ? "the going price at other stores" : "the best price found"}</dd>
+            {prices.compareAtPrice !== null && (
+              <>
+                <dt className="font-medium text-zinc-900 dark:text-zinc-100">Compare-at {money(prices.compareAtPrice)}</dt>
+                <dd>the best price found</dd>
+              </>
+            )}
+          </dl>
+        )}
         {viewer.proTools ? (
           <>
-            <button
-              type="button"
-              onClick={exportCsv}
+            <a
+              href={csvHref}
+              download
+              onClick={() => setExported(true)}
               className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 ring-inset hover:bg-zinc-50 sm:w-auto dark:bg-zinc-800 dark:text-white dark:ring-zinc-700 dark:hover:bg-zinc-700 ${focusRing}`}
             >
               <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-4">
                 <path d="M10 3v10m0 0-4-4m4 4 4-4M3.5 15.5v1h13v-1" />
               </svg>
-              Export to CSV
-            </button>
+              Download Shopify CSV
+            </a>
             <p role="status" className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
               {exported ? "Downloaded. In Shopify go to Products › Import and choose this file." : ""}
             </p>

@@ -285,7 +285,7 @@ const DOSSIER_EXAMPLE = json({
     },
     note: "Search links only: ProductRadar has not vetted any supplier.",
   },
-  shopifyImportCsv: '"Title","URL handle","Description",… (one draft product)',
+  shopifyImportCsv: '"Handle","Title","Body (HTML)",… (one draft product)',
   bestOffer: "{ … }",
   offers: ["…"],
   evidence: {

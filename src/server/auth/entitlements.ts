@@ -25,6 +25,9 @@ export const canViewLiveData = (v: Viewer) => v !== null && PAID_TIERS.includes(
 /** Browse the full multi-product catalog (/dashboard and /api/products). */
 export const canViewCatalog = (v: Viewer) => v !== null && PAID_TIERS.includes(v.tier);
 
+/** Download a product's Shopify import file (the dossier's "Download Shopify CSV"). */
+export const canExportToShopify = (v: Viewer) => v !== null && PAID_TIERS.includes(v.tier);
+
 /**
  * Open one product's dossier page. Pro sees any product; everyone else sees the
  * sample products and the live products featured on the public landing page.

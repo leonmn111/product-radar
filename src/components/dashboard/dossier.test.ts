@@ -10,6 +10,8 @@ import {
   startingWholesale,
   supplierSearchUrls,
 } from "./dossier";
+import { marginInsight } from "@/server/margins/engine";
+import { LATEST_FX } from "@/server/scoring/fx-latest";
 
 const score = (value: number, confidence = 0.7) => ({
   value,
@@ -141,28 +143,105 @@ describe("supplier keywords", () => {
 });
 
 describe("Shopify CSV", () => {
-  it("exports a draft product with the current Shopify headers", () => {
-    const csv = shopifyCsv(
-      { name: "Men's Tree Runners | Allbirds", description: 'Light "comfy" shoes.\n\n<b>Machine</b> washable.', category: "shoes", merchant: "Allbirds" },
-      { price: 105, costPerItem: 31.5 },
-    );
+  const at = new Date("2026-10-11T14:30:00.000Z");
+  const offer = (id: string, merchant: string, price: number) => ({
+    id,
+    merchant,
+    url: `https://${merchant}/buds`,
+    price: { amount: price.toFixed(2), currency: "GBP" },
+    availability: "IN_STOCK" as const,
+    observedAt: at.toISOString(),
+    sourceEvidenceId: `e-${id}`,
+  });
+  const cheap = offer("o1", "cheap.test", 15);
+  const dear = offer("o2", "dear.test", 20);
+  // A real margin insight for a £15 / £20 price gap between two stores.
+  const gap = marginInsight({
+    category: "wireless-earbuds",
+    offers: [cheap, dear].map((o) => ({ ...o, price: Number(o.price.amount), currency: "GBP", observedAt: at, qualityScore: 80 })),
+    asOf: at,
+    fx: LATEST_FX,
+  });
+  const base = {
+    id: "0199a0a0-0000-7000-8000-00000c406b2f",
+    name: "Men's Tree Runners | Allbirds",
+    brand: "Allbirds",
+    description: 'Light "comfy" shoes.\n\n<b>Machine</b> washable.',
+    category: "shoes",
+    imageUrl: "https://cdn.test/runners.jpg",
+    bestOffer: cheap,
+    margin: gap,
+    merchant: "Allbirds",
+  };
+  const rows = (csv: string) => {
     const [header, row] = csv.trim().split("\r\n");
+    return { header, cells: Object.fromEntries(header.slice(1, -1).split('","').map((h, k) => [h, row.split('","')[k].replace(/^"|"$/g, "")])) };
+  };
+
+  it("uses Shopify's classic import headers, as a draft", () => {
+    const { header } = rows(shopifyCsv(base));
     expect(header).toBe(
-      '"Title","URL handle","Description","Vendor","Type","Tags","Published on online store","Status","Price","Cost per item","Requires shipping"',
-    );
-    expect(row).toBe(
-      '"Men\'s Tree Runners","men-s-tree-runners","<p>Light &quot;comfy&quot; shoes.</p><p>&lt;b&gt;Machine&lt;/b&gt; washable.</p>","","Shoes","Shoes, ProductRadar","false","draft","105.00","31.50","true"',
+      '"Handle","Title","Body (HTML)","Vendor","Type","Tags","Published","Option1 Name","Option1 Value","Variant SKU","Variant Price","Variant Compare At Price","Image Src","Cost per item","Status"',
     );
   });
 
-  it("drops trademark symbols from the URL handle", () => {
-    expect(shopifyCsv({ name: "Loop Quiet™ 2", description: null, category: "earplugs" }, { price: 19.95, costPerItem: 5.99 })).toContain(
-      '"Loop Quiet™ 2","loop-quiet-2"',
-    );
+  it("fills every column from the product's own data", () => {
+    const { cells } = rows(shopifyCsv(base));
+    expect(cells).toEqual({
+      Handle: "men-s-tree-runners",
+      Title: "Men's Tree Runners",
+      "Body (HTML)": "<p>Light &quot;comfy&quot; shoes.</p><p>&lt;b&gt;Machine&lt;/b&gt; washable.</p>",
+      Vendor: "Allbirds",
+      Type: "Shoes",
+      Tags: "Shoes, ProductRadar",
+      Published: "FALSE",
+      "Option1 Name": "Title",
+      "Option1 Value": "Default Title",
+      "Variant SKU": "PR-0C406B2F",
+      "Variant Price": "20.00", // the going price at other stores (the margin engine's resale price)
+      "Variant Compare At Price": "15.00", // the best price found
+      "Image Src": "https://cdn.test/runners.jpg",
+      "Cost per item": startingWholesale(gap)!.toFixed(2),
+      Status: "draft",
+    });
+  });
+
+  it("prices at the best price, with no compare-at, when there's no price gap", () => {
+    const single = marginInsight({
+      category: "wireless-earbuds",
+      offers: [{ ...cheap, price: 15, currency: "GBP", observedAt: at, qualityScore: 80 }],
+      asOf: at,
+      fx: LATEST_FX,
+    });
+    const { cells } = rows(shopifyCsv({ ...base, margin: single }));
+    expect(cells["Variant Price"]).toBe("15.00");
+    expect(cells["Variant Compare At Price"]).toBe("");
+  });
+
+  it("never mixes currencies between the price and the compare-at price", () => {
+    const usd = { ...cheap, price: { amount: "18.00", currency: "USD" } };
+    const { cells } = rows(shopifyCsv({ ...base, bestOffer: usd }));
+    expect(cells["Variant Price"]).toBe("18.00");
+    expect(cells["Variant Compare At Price"]).toBe("");
+    expect(cells["Cost per item"]).toBe(""); // the wholesale estimate is in GBP
+  });
+
+  it("leaves prices and cost empty without an offer, and takes the seller's own cost when given", () => {
+    const { cells } = rows(shopifyCsv({ ...base, bestOffer: null, margin: null, imageUrl: null }));
+    expect([cells["Variant Price"], cells["Variant Compare At Price"], cells["Cost per item"], cells["Image Src"]]).toEqual(["", "", "", ""]);
+    expect(rows(shopifyCsv(base, { costPerItem: 7.5 })).cells["Cost per item"]).toBe("7.50");
+  });
+
+  it("escapes store text exactly once, even when the store already encoded it", () => {
+    const { cells } = rows(shopifyCsv({ ...base, description: "Use AM &amp;amp; PM &#8211; <i>daily</i> &copy;" }));
+    expect(cells["Body (HTML)"]).toBe("<p>Use AM &amp; PM – &lt;i&gt;daily&lt;/i&gt; &amp;copy;</p>");
+  });
+
+  it("drops trademark symbols from the handle", () => {
+    expect(shopifyCsv({ ...base, name: "Loop Quiet™ 2", merchant: null })).toContain('"loop-quiet-2","Loop Quiet™ 2"');
   });
 
   it("neutralises spreadsheet formulas in scraped text", () => {
-    const csv = shopifyCsv({ name: "=HYPERLINK(1)", description: null, category: "x" }, { price: null, costPerItem: null });
-    expect(csv).toContain(`"'=HYPERLINK(1)"`);
+    expect(shopifyCsv({ ...base, name: "=HYPERLINK(1)", merchant: null })).toContain(`"'=HYPERLINK(1)"`);
   });
 });

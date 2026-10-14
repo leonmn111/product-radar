@@ -88,7 +88,7 @@ export function buildDossier(p: ProductDto, now = new Date()) {
       searchUrls: supplierSearchUrls(keywords),
       note: "Search links only: ProductRadar has not vetted any supplier.",
     },
-    shopifyImportCsv: shopifyCsv({ ...p, merchant }, { price, costPerItem: wholesale }),
+    shopifyImportCsv: shopifyCsv({ ...p, merchant }),
     evidence: {
       count: p.evidenceCount,
       included: p.evidence.length, // the newest 50

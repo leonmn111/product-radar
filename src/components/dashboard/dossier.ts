@@ -226,19 +226,26 @@ export function supplierSearchUrls(keywords: string) {
 
 // ── Shopify CSV ──────────────────────────────────────────────────────────────
 
-// Shopify's current product import headers (help.shopify.com › Using CSV files).
+// Shopify's classic product import headers, which its importer still accepts
+// (help.shopify.com › Using CSV files: "Shopify maintains backward compatibility
+// with older column names"). "Cost per item" and "Status" are from the same
+// template: they carry the wholesale estimate and keep the import a draft.
 const SHOPIFY_COLUMNS = [
+  "Handle",
   "Title",
-  "URL handle",
-  "Description",
+  "Body (HTML)",
   "Vendor",
   "Type",
   "Tags",
-  "Published on online store",
-  "Status",
-  "Price",
+  "Published",
+  "Option1 Name",
+  "Option1 Value",
+  "Variant SKU",
+  "Variant Price",
+  "Variant Compare At Price",
+  "Image Src",
   "Cost per item",
-  "Requires shipping",
+  "Status",
 ] as const;
 
 function csvCell(v: string) {
@@ -249,6 +256,23 @@ function csvCell(v: string) {
 
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+
+/** Store pages often encode their text once or twice ("AM &amp;amp; PM"); undo that before escaping once. */
+function decodeEntities(s: string) {
+  for (let i = 0; i < 3; i++) {
+    const next = s.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (m, e: string) => {
+      const k = e.toLowerCase();
+      if (k.startsWith("#x")) return String.fromCodePoint(parseInt(k.slice(2), 16));
+      if (k.startsWith("#")) return String.fromCodePoint(Number(k.slice(1)));
+      return ENTITIES[k] ?? m;
+    });
+    if (next === s) break;
+    s = next;
+  }
+  return s;
+}
 
 export function slugify(s: string) {
   return (
@@ -264,32 +288,68 @@ export function slugify(s: string) {
   );
 }
 
+export type ShopifyProduct = Pick<ProductDto, "id" | "name" | "brand" | "description" | "category" | "imageUrl" | "bestOffer" | "margin"> & {
+  merchant?: string | null;
+};
+
 /**
- * One-product Shopify import file. Imported as a draft (not published) so
- * nothing goes live in the shop until the seller reviews it.
+ * The listing's prices, all from captured store prices (Rule 3):
+ * - price: the going price at other stores, the resale price the margin engine
+ *   prices the trade at; the best (cheapest) price when there's no price gap.
+ * - compareAtPrice: the best price found. It is lower than the price, so Shopify
+ *   themes don't show it to shoppers; it stays in the file as a reference.
+ * - costPerItem: the middle of the wholesale estimate (a rule-based estimate).
+ * Nothing is converted: a figure in another currency than the best price is left out.
  */
-export function shopifyCsv(
-  p: Pick<ProductDto, "name" | "description" | "category"> & { merchant?: string | null },
-  { price, costPerItem }: { price: number | null; costPerItem: number | null },
-) {
+export function shopifyPrices(p: Pick<ShopifyProduct, "bestOffer" | "margin">) {
+  const best = p.bestOffer ? Number(p.bestOffer.price.amount) : null;
+  const currency = p.bestOffer?.price.currency ?? null;
+  const route = [p.margin?.arbitrage, p.margin?.arbitrageOwnStore].find(
+    (s) => s?.resalePrice != null && s.currency === currency,
+  );
+  const resale = route?.resalePrice ?? null;
+  return {
+    currency,
+    price: resale ?? best,
+    compareAtPrice: resale !== null ? best : null,
+    costPerItem: p.margin && p.margin.currency === currency ? startingWholesale(p.margin) : null,
+  };
+}
+
+export const shopifyHandle = (p: Pick<ShopifyProduct, "name"> & { merchant?: string | null }) => slugify(cleanTitle(p.name, p.merchant));
+
+/**
+ * One-product Shopify import file. Imported as a draft, so nothing goes live until the seller
+ * reviews it. `costPerItem` replaces the wholesale estimate with the seller's own figure.
+ */
+export function shopifyCsv(p: ShopifyProduct, { costPerItem: ownCost }: { costPerItem?: number | null } = {}) {
   const title = cleanTitle(p.name, p.merchant);
+  const prices = shopifyPrices(p);
+  const { price, compareAtPrice } = prices;
+  const costPerItem = ownCost ?? prices.costPerItem;
+  const amount = (x: number | null) => (x !== null ? x.toFixed(2) : "");
   const row: Record<(typeof SHOPIFY_COLUMNS)[number], string> = {
+    Handle: slugify(title),
     Title: title,
-    "URL handle": slugify(title),
-    Description: p.description
+    "Body (HTML)": p.description
       ? p.description
           .split(/\n{2,}/)
-          .map((para) => `<p>${escapeHtml(para.trim())}</p>`)
+          .map((para) => `<p>${escapeHtml(decodeEntities(para.trim()))}</p>`)
           .join("")
       : "",
-    Vendor: "",
+    Vendor: p.brand ?? "",
     Type: humanizeSlug(p.category),
     Tags: `${humanizeSlug(p.category)}, ProductRadar`,
-    "Published on online store": "false",
+    Published: "FALSE",
+    // Shopify's own values for a product with a single variant.
+    "Option1 Name": "Title",
+    "Option1 Value": "Default Title",
+    "Variant SKU": `PR-${p.id.slice(-8).toUpperCase()}`,
+    "Variant Price": amount(price),
+    "Variant Compare At Price": amount(compareAtPrice),
+    "Image Src": p.imageUrl ?? "",
+    "Cost per item": amount(costPerItem),
     Status: "draft",
-    Price: price !== null ? price.toFixed(2) : "",
-    "Cost per item": costPerItem !== null ? costPerItem.toFixed(2) : "",
-    "Requires shipping": "true",
   };
   const line = (cells: readonly string[]) => cells.map(csvCell).join(",");
   return `${line(SHOPIFY_COLUMNS)}\r\n${line(SHOPIFY_COLUMNS.map((c) => row[c]))}\r\n`;
