@@ -19,6 +19,7 @@ const ev = (over: Partial<EvidenceFact>): EvidenceFact => ({
   ...over,
 });
 const offer = (price: number, evidenceId: string, over: Partial<OfferFact> = {}): OfferFact => ({
+  merchant: `store-${evidenceId}`, // one store per offer unless a test says otherwise
   price,
   currency: "USD",
   availability: "IN_STOCK",
@@ -153,6 +154,21 @@ describe("scoring engine", () => {
     const gbp = offer(20, "b", { currency: "GBP" }); // 25 EUR — the smaller number, but dearer
     expect(bestCurrentOffer([usd, gbp], asOf, fx)).toEqual(usd);
     expect(bestCurrentOffer([offer(20, "c", { currency: "GBP" }), offer(25, "d", { currency: "GBP" })], asOf, fx)?.price).toBe(20);
+  });
+
+  it("uses each store's newest price, never an older, cheaper capture of it (v1.5.0)", () => {
+    // lookfantastic sold it at 15 three days ago and at 20 today; another store sells it at 18.
+    const was = offer(15, "a", { merchant: "lookfantastic.com", observedAt: daysAgo(3) });
+    const now = offer(20, "b", { merchant: "lookfantastic.com", observedAt: daysAgo(0) });
+    const other = offer(18, "c", { merchant: "spacenk.com", observedAt: daysAgo(2) });
+    expect(bestCurrentOffer([was, now, other], asOf, fx)).toEqual(other);
+    expect(bestCurrentOffer([was, now], asOf, fx)).toEqual(now);
+  });
+
+  it("drops a store whose newest capture is sold out, instead of using its older price", () => {
+    const inStock = offer(15, "a", { merchant: "shop.test", observedAt: daysAgo(3) });
+    const soldOut = offer(15, "b", { merchant: "shop.test", observedAt: daysAgo(1), availability: "OUT_OF_STOCK" });
+    expect(bestCurrentOffer([inStock, soldOut], asOf, fx)).toBeNull();
   });
 
   it("skips offers in a currency without a rate, unless every offer uses it", () => {

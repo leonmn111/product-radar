@@ -132,6 +132,16 @@ describe("margin engine: which offers count", () => {
     expect(current.map((o) => [o.merchant, o.price])).toEqual([["Shop.test", 25]]);
   });
 
+  it("drops a store whose newest capture is sold out, and prices from the stores left (v1.2.0)", () => {
+    const offers = [
+      offer("shop.test", 20, { observedAt: daysAgo(5) }),
+      offer("shop.test", 20, { observedAt: daysAgo(1), availability: "OUT_OF_STOCK" }),
+      offer("dear.test", 30, { observedAt: daysAgo(2) }),
+    ];
+    expect(currentOffersByStore(offers, asOf).map((o) => o.merchant)).toEqual(["dear.test"]);
+    expect(insight("gadgets", offers)!.retailPrice.merchant).toBe("dear.test");
+  });
+
   it("counts repeated captures of one store once, so they can't fake a gap", () => {
     const a = insight("gadgets", [offer("shop.test", 40, { observedAt: daysAgo(5) }), offer("shop.test", 80, { observedAt: daysAgo(1) })])!.arbitrage;
     expect(a.rating).toBe("RETAIL_ONLY");

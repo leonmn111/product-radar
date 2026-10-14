@@ -161,7 +161,7 @@ const OPPORTUNITY_EXAMPLE = json({
         observedAt: "2026-10-08T10:46:15.722Z",
       },
       margin: {
-        methodologyVersion: "1.1.0",
+        methodologyVersion: "1.2.0",
         currency: "EUR",
         retailPrice: { merchant: "loopearplugs.com", price: 19.95, currency: "EUR", observedAt: "2026-10-08T10:46:15.722Z", "…": "…" },
         wholesaleEstimate: { low: 13.39, high: 14.3 },
@@ -638,7 +638,7 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
             wholesale cost range and gross margin spread (amount and %), taken from US Census retail gross margins for
             the store type that sells the category; these are averages, not supplier quotes. It also has two arbitrage
             ratings, each <C>HIGH_ARBITRAGE</C>, <C>MODERATE</C> or <C>RETAIL_ONLY</C>, worked out from real price gaps
-            between stores we captured in the last 30 days, in the same currency: <C>arbitrage</C> after eBay&apos;s
+            between stores, using each store&apos;s newest price from the last 30 days, in the same currency: <C>arbitrage</C> after eBay&apos;s
             standard selling fees, and <C>arbitrageOwnStore</C> after Shopify Payments card fees for reselling in your
             own shop (advertising not included). It is <C>null</C> when a product has no current price.
           </p>

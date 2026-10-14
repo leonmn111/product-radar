@@ -40,7 +40,7 @@ async function loadCategory(db: PrismaClient, category: string, asOf: Date) {
       },
       offers: {
         where: { observedAt: { gte: offerSince, lte: asOf } },
-        select: { price: true, currency: true, availability: true, observedAt: true, sourceEvidenceId: true },
+        select: { merchant: true, price: true, currency: true, availability: true, observedAt: true, sourceEvidenceId: true },
       },
     },
   });

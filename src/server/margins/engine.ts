@@ -2,20 +2,23 @@
 // Same inputs + same `asOf` date ⇒ identical output.
 //
 // Everything here is an ESTIMATE (CLAUDE.md Rule 4). It answers two separate
-// questions from two kinds of evidence (methodology v1.1.0):
+// questions from two kinds of evidence (methodology v1.2.0):
 //
 // 1. Stocking margin: if a shop bought this at wholesale and sold it at today's
 //    lowest retail price, what would it keep? ProductRadar has no supplier
 //    quotes, so the wholesale cost is a RANGE from US Census retail gross
 //    margins for the store type that sells the category (benchmarks.ts):
-//      retail      = lowest in-stock price seen in the last 30 days (the card's price)
+//      retail      = lowest current price (the card's price): each store's newest
+//                    capture from the last 30 days, if in stock or pre-order (v1.2.0)
 //      wholesale   = retail × (1 − margin), for the lowest and highest 2018–2022 margin
 //      spread      = retail − wholesale  (so spread % = the benchmark margin)
 //    It describes the category, not this product: always say so where it's shown.
 //
 // 2. Arbitrage: is any store we captured selling it cheaply enough to resell at
 //    another store's price, after selling fees? Real captured offers only:
-//      current     = in stock or pre-order, seen in the last 30 days, latest per store
+//      current     = each store's newest capture from the last 30 days, kept only if
+//                    it is in stock or pre-order (v1.2.0: a store whose newest
+//                    capture is sold out no longer falls back to an older one)
 //      per currency with ≥ 2 stores:
 //        buy       = the cheapest store
 //        sell      = median price of the other stores
@@ -35,7 +38,7 @@
 //    find buyers at that price; the UI and API say so.
 
 import type { Availability } from "@/generated/prisma/enums";
-import { bestCurrentOffer, OFFER_MAX_AGE_DAYS } from "@/server/scoring/engine";
+import { bestCurrentOffer, currentOffers } from "@/server/scoring/engine";
 import { toEur, type FxRates } from "@/server/scoring/fx";
 import {
   BENCHMARK_YEARS,
@@ -47,9 +50,8 @@ import {
   type SourceRef,
 } from "./benchmarks";
 
-export const MARGIN_METHODOLOGY_VERSION = "1.1.0";
+export const MARGIN_METHODOLOGY_VERSION = "1.2.0";
 
-const DAY_MS = 86_400_000;
 const HIGH = { returnPct: 25, netEur: 10 };
 const MODERATE = { returnPct: 10, netEur: 3 };
 
@@ -153,24 +155,9 @@ export function resaleFee(salePrice: number, fee: FeeSchedule = MARKETPLACE_FEE)
   return cents(salePrice * fee.rate + perOrder);
 }
 
-/** Latest in-stock/pre-order offer per store, seen in the last 30 days. */
+/** Each store's current offer (its newest capture, if in stock or pre-order), by store name. */
 export function currentOffersByStore(offers: MarginOffer[], asOf: Date): MarginOffer[] {
-  const latest = new Map<string, MarginOffer>();
-  for (const o of offers) {
-    if (o.availability !== "IN_STOCK" && o.availability !== "PREORDER") continue;
-    const age = (asOf.getTime() - o.observedAt.getTime()) / DAY_MS;
-    if (age < 0 || age > OFFER_MAX_AGE_DAYS) continue;
-    const key = o.merchant.toLowerCase();
-    const prev = latest.get(key);
-    if (
-      !prev ||
-      o.observedAt > prev.observedAt ||
-      (o.observedAt.getTime() === prev.observedAt.getTime() && o.sourceEvidenceId > prev.sourceEvidenceId)
-    ) {
-      latest.set(key, o);
-    }
-  }
-  return [...latest.values()].sort((a, b) => a.merchant.localeCompare(b.merchant));
+  return currentOffers(offers, asOf).sort((a, b) => a.merchant.localeCompare(b.merchant));
 }
 
 /** A buy-low / resell pair within one currency. Fees are applied per resale route. */

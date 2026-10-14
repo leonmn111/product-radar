@@ -5,7 +5,7 @@
 // (0–1) and the ids of the evidence it was computed from (Rule 3). If there is
 // no usable evidence for a dimension, NO score is produced — never a default.
 //
-// ── Formulas (methodology v1.4.0) ───────────────────────────────────────────
+// ── Formulas (methodology v1.5.0) ───────────────────────────────────────────
 //
 // Evidence weight     w = (quality / 100) × 0.5^(ageDays / 90) × sourceWeight[sourceType]
 //                     (90-day half-life; future-dated evidence is ignored). Age counts from
@@ -32,7 +32,9 @@
 //                     Needs ≥ 2 points spanning ≥ 7 days.
 // VALUE               priceScore = clamp(50 + 50 × log2(categoryMedian / bestPrice))
 //                     S = 0.5 × QUALITY + 0.5 × priceScore
-//                     bestPrice = lowest in-stock/pre-order offer seen in the last 30 days;
+//                     bestPrice = lowest CURRENT offer: each store's newest capture from the
+//                     last 30 days, counted only if that capture is in stock or pre-order,
+//                     so an older, cheaper capture never stands in for a store's price (v1.5.0);
 //                     needs ≥ 2 priced products in the category and a QUALITY score.
 //                     Prices in different currencies are compared in euros at the ECB
 //                     reference rates in `input.fx` (v1.4.0); a currency the ECB doesn't
@@ -45,7 +47,7 @@
 import type { Availability, EvidenceMetric, ScoreDimension, SourceType } from "@/generated/prisma/enums";
 import { toEur, type FxRates } from "./fx";
 
-export const METHODOLOGY_VERSION = "1.4.0";
+export const METHODOLOGY_VERSION = "1.5.0";
 
 const HALF_LIFE_DAYS = 90;
 const PRIOR = 50;
@@ -90,6 +92,7 @@ export type EvidenceFact = {
 };
 
 export type OfferFact = {
+  merchant: string; // the store, so only its newest capture counts
   price: number;
   currency: string;
   availability: Availability;
@@ -224,13 +227,31 @@ export function scoreTrend(input: ScoringInput): DimensionScore | null {
  * compared as-is; mixed currencies are compared in euros, skipping any currency
  * without an ECB rate. Returns the offer in its own price and currency.
  */
+/**
+ * Each store's current offer: its newest capture from the last 30 days, kept only if
+ * that capture is in stock or on pre-order. A store that has since raised its price,
+ * or sold out, is never represented by an older capture.
+ */
+export function currentOffers<T extends OfferFact>(offers: T[], asOf: Date): T[] {
+  const newest = new Map<string, T>();
+  for (const o of offers) {
+    const age = (asOf.getTime() - o.observedAt.getTime()) / DAY_MS;
+    if (age < 0 || age > OFFER_MAX_AGE_DAYS) continue;
+    const key = o.merchant.toLowerCase();
+    const prev = newest.get(key);
+    if (
+      !prev ||
+      o.observedAt > prev.observedAt ||
+      (o.observedAt.getTime() === prev.observedAt.getTime() && o.sourceEvidenceId > prev.sourceEvidenceId)
+    ) {
+      newest.set(key, o);
+    }
+  }
+  return [...newest.values()].filter((o) => o.availability === "IN_STOCK" || o.availability === "PREORDER");
+}
+
 export function bestCurrentOffer<T extends OfferFact>(offers: T[], asOf: Date, fx: FxRates): T | null {
-  const live = offers
-    .filter((o) => o.availability === "IN_STOCK" || o.availability === "PREORDER")
-    .filter((o) => {
-      const age = (asOf.getTime() - o.observedAt.getTime()) / DAY_MS;
-      return age >= 0 && age <= OFFER_MAX_AGE_DAYS;
-    });
+  const live = currentOffers(offers, asOf);
   const oneCurrency = live.every((o) => o.currency === live[0].currency);
   return (
     live

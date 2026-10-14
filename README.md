@@ -334,7 +334,10 @@ catalog cards, in the dossier, and in both agent endpoints and the MCP tools.
   category averages, not supplier quotes, and the UI and API say so. The figures, the category → store-type
   mapping and the sources live in `src/server/margins/benchmarks.ts`. A new category falls back to all retail
   stores, so add it to `CATEGORY_STORE_TYPE` when you create one.
-- **Arbitrage ratings:** only from captured offers (in stock, last 30 days, latest per store, same currency).
+- **Which prices count (scoring v1.5.0, margin v1.2.0):** each store's newest capture from the last 30 days,
+  and only if that capture is in stock or on pre-order. An older, cheaper capture never stands in for a store's
+  current price, so "lowest current price", the Value score and the margin figures all use the same prices.
+- **Arbitrage ratings:** only from those current offers, in the same currency.
   Buy at the cheapest store and resell at the median of the others, then rate the trade twice:
   `arbitrage` after eBay's standard US fee (13.6% + $0.40 per order), and `arbitrageOwnStore` after Shopify
   Payments card fees for your own shop (Basic plan: 2% + 25p in GBP, otherwise the US 2.9% + 30¢; advertising and
