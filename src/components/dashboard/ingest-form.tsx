@@ -11,7 +11,7 @@ type State =
   | { kind: "error"; message: string };
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:focus-visible:outline-indigo-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
 const input = `w-full rounded-md border-0 bg-white px-3 py-2 text-sm text-zinc-900 ring-1 ring-zinc-300 ring-inset placeholder:text-zinc-500 dark:bg-zinc-950 dark:text-zinc-100 dark:ring-zinc-700 dark:placeholder:text-zinc-500 ${focusRing}`;
 
 export function IngestForm({
@@ -112,7 +112,7 @@ export function IngestForm({
         <button
           type="submit"
           disabled={busy}
-          className={`inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:text-zinc-950 ${focusRing}`}
+          className={`inline-flex items-center justify-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-purple-500 dark:hover:bg-purple-400 dark:text-zinc-950 ${focusRing}`}
         >
           {busy && (
             <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 animate-spin" fill="none">

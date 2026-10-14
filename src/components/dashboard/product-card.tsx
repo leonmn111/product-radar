@@ -23,7 +23,7 @@ export function ProductImage({ src, alt, label, className = "" }: { src: string 
   return (
     <div
       className={`relative aspect-square overflow-hidden ${
-        showImage ? "bg-zinc-50 dark:bg-zinc-200" : "bg-gradient-to-br from-indigo-50 to-zinc-100 dark:from-indigo-950/60 dark:to-zinc-900"
+        showImage ? "bg-zinc-50 dark:bg-zinc-200" : "bg-gradient-to-br from-purple-50 to-zinc-100 dark:from-purple-950/60 dark:to-zinc-900"
       } ${className}`}
     >
       {showImage ? (
@@ -42,7 +42,7 @@ export function ProductImage({ src, alt, label, className = "" }: { src: string 
         />
       ) : (
         <div aria-hidden="true" className="flex size-full flex-col items-center justify-center gap-3">
-          <span className="flex size-20 items-center justify-center rounded-2xl bg-white/80 text-2xl font-semibold tracking-tight text-indigo-700 shadow-sm ring-1 ring-indigo-900/5 dark:bg-zinc-800/80 dark:text-indigo-300 dark:ring-white/10">
+          <span className="flex size-20 items-center justify-center rounded-2xl bg-white/80 text-2xl font-semibold tracking-tight text-purple-700 shadow-sm ring-1 ring-purple-900/5 dark:bg-zinc-800/80 dark:text-purple-300 dark:ring-white/10">
             {initials(label) || "?"}
           </span>
           <span className="flex items-center gap-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">
@@ -102,7 +102,7 @@ function SourcesBadge({ product: p }: { product: ProductDto }) {
       {p.hasSearchTrend && (
         <>
           <span aria-hidden="true">·</span>
-          <span className="inline-flex items-center gap-1 text-indigo-700 dark:text-indigo-300">
+          <span className="inline-flex items-center gap-1 text-purple-700 dark:text-purple-300">
             <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
               <path
                 fillRule="evenodd"
@@ -153,9 +153,9 @@ export function ProductCard({
   const frameClass =
     frame === "bento"
       ? "h-full rounded-2xl bg-white ring-1 ring-zinc-200 duration-300 hover:shadow-purple-900/10 hover:ring-purple-500/50 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-purple-600 dark:ring-white/10 dark:hover:shadow-purple-950/50 dark:hover:ring-purple-500/50 dark:has-[a:focus-visible]:ring-purple-400"
-      : `rounded-xl border duration-200 hover:shadow-zinc-900/10 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-indigo-600 has-[a:focus-visible]:ring-offset-2 dark:hover:shadow-black/40 dark:has-[a:focus-visible]:ring-indigo-400 dark:has-[a:focus-visible]:ring-offset-zinc-950 ${
+      : `rounded-xl border duration-200 hover:shadow-zinc-900/10 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-purple-600 has-[a:focus-visible]:ring-offset-2 dark:hover:shadow-black/40 dark:has-[a:focus-visible]:ring-purple-400 dark:has-[a:focus-visible]:ring-offset-zinc-950 ${
           highlighted
-            ? "border-indigo-500 ring-2 ring-indigo-500 dark:border-indigo-400 dark:ring-indigo-400"
+            ? "border-purple-500 ring-2 ring-purple-500 dark:border-purple-400 dark:ring-purple-400"
             : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700"
         }`;
   return (
@@ -179,7 +179,7 @@ export function ProductCard({
         <div className="flex flex-1 flex-col gap-3 p-4">
           <div className="min-w-0">
             {p.brand && (
-              <p className="truncate text-xs font-semibold tracking-wide text-indigo-700 uppercase dark:text-indigo-300">{p.brand}</p>
+              <p className="truncate text-xs font-semibold tracking-wide text-purple-700 uppercase dark:text-purple-300">{p.brand}</p>
             )}
             <h3 className="mt-0.5 line-clamp-2 font-semibold text-zinc-950 dark:text-white" title={p.name}>
               <Link href={href} className="after:absolute after:inset-0 after:z-10 after:content-[''] focus:outline-none">
@@ -214,7 +214,7 @@ export function ProductCard({
             <SourcesBadge product={p} />
             <span
               aria-hidden="true"
-              className="inline-flex items-center gap-1 text-sm font-medium text-indigo-700 transition-colors group-hover/card:text-indigo-900 dark:text-indigo-300 dark:group-hover/card:text-indigo-200"
+              className="inline-flex items-center gap-1 text-sm font-medium text-purple-700 transition-colors group-hover/card:text-purple-900 dark:text-purple-300 dark:group-hover/card:text-purple-200"
             >
               View dossier
               <svg

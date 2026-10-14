@@ -37,8 +37,8 @@ const NAV = [
   ["guarantees", "What you can rely on"],
 ] as const;
 
-const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400";
-const link = `font-medium text-indigo-300 underline decoration-indigo-300/40 underline-offset-2 hover:decoration-indigo-300 ${focusRing}`;
+const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400";
+const link = `font-medium text-purple-300 underline decoration-purple-300/40 underline-offset-2 hover:decoration-purple-300 ${focusRing}`;
 
 function C({ children }: { children: ReactNode }) {
   return (
@@ -65,7 +65,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
       <h3 className="flex items-center gap-3 text-base font-semibold text-white">
         <span
           aria-hidden
-          className="grid size-7 shrink-0 place-items-center rounded-full bg-indigo-500/15 text-sm text-indigo-300 ring-1 ring-indigo-400/30"
+          className="grid size-7 shrink-0 place-items-center rounded-full bg-purple-500/15 text-sm text-purple-300 ring-1 ring-purple-400/30"
         >
           {n}
         </span>
@@ -315,7 +315,7 @@ export default function DocsPage() {
       <style>{"body{background:#09090b}"}</style>
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded-md focus:bg-indigo-500 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded-md focus:bg-purple-600 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
       >
         Skip to content
       </a>
@@ -323,7 +323,7 @@ export default function DocsPage() {
       <header className="border-b border-zinc-800">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 text-sm whitespace-nowrap">
-            <Link href="/" className={`rounded font-semibold tracking-tight text-indigo-300 ${focusRing}`}>
+            <Link href="/" className={`rounded font-semibold tracking-tight text-purple-300 ${focusRing}`}>
               ProductRadar
             </Link>
             <span aria-hidden className="text-zinc-600">
@@ -423,7 +423,7 @@ async function DocsMain() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
       <div className="space-y-6">
-        <p className="text-sm font-medium text-indigo-300">For developers and AI agents</p>
+        <p className="text-sm font-medium text-purple-300">For developers and AI agents</p>
         <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           Product research your agent can buy by the request
         </h1>
@@ -438,7 +438,7 @@ async function DocsMain() {
         <div className="flex flex-wrap gap-3">
           <a
             href="#quickstart"
-            className={`rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-400 ${focusRing}`}
+            className={`rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 ${focusRing}`}
           >
             Make your first request
           </a>

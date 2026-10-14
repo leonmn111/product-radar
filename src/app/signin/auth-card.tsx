@@ -8,7 +8,7 @@ export function AuthCard({ children }: { children: ReactNode }) {
       <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <Link
           href="/"
-          className="text-sm font-semibold text-indigo-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-indigo-300"
+          className="text-sm font-semibold text-purple-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:text-purple-300"
         >
           ← ProductRadar
         </Link>
@@ -19,4 +19,4 @@ export function AuthCard({ children }: { children: ReactNode }) {
 }
 
 export const linkClass =
-  "font-medium text-indigo-700 underline underline-offset-2 hover:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-indigo-300";
+  "font-medium text-purple-700 underline underline-offset-2 hover:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:text-purple-300";

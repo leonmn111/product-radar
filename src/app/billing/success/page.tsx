@@ -55,7 +55,7 @@ export default function BillingSuccessPage(props: { searchParams: Promise<{ sess
         </Suspense>
         <Link
           href="/dashboard"
-          className="mt-6 inline-flex rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:text-zinc-950"
+          className="mt-6 inline-flex rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:bg-purple-500 dark:text-zinc-950"
         >
           Go to dashboard
         </Link>

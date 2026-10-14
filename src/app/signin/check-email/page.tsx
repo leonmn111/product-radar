@@ -17,7 +17,7 @@ export default function CheckEmailPage() {
         </p>
         <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
           Didn&apos;t get it? Check spam, or{" "}
-          <Link href="/signin" className="font-medium text-indigo-700 underline underline-offset-2 dark:text-indigo-300">
+          <Link href="/signin" className="font-medium text-purple-700 underline underline-offset-2 dark:text-purple-300">
             try again
           </Link>
           .

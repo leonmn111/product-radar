@@ -35,7 +35,7 @@ export function ScoreCell({ score, emphasis = false }: { score?: Score; emphasis
 export function ScoreBar({ value }: { value: number }) {
   return (
     <span aria-hidden="true" className="block h-1.5 w-full max-w-24 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-      <span className="block h-full rounded-full bg-indigo-600 dark:bg-indigo-400" style={{ width: `${value}%` }} />
+      <span className="block h-full rounded-full bg-purple-600 dark:bg-purple-400" style={{ width: `${value}%` }} />
     </span>
   );
 }

@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:focus-visible:outline-indigo-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
 const card = "rounded-xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6 dark:border-zinc-800 dark:bg-zinc-900";
 const cardTitle = "text-base font-semibold text-zinc-950 dark:text-white";
 const muted = "text-sm text-zinc-600 dark:text-zinc-400";
@@ -36,7 +36,7 @@ function TierBadge({ tier }: { tier: SubscriptionTier }) {
     <span
       className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${
         paid
-          ? "bg-indigo-50 text-indigo-800 ring-indigo-600/20 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-400/30"
+          ? "bg-purple-50 text-purple-800 ring-purple-600/20 dark:bg-purple-950/40 dark:text-purple-300 dark:ring-purple-400/30"
           : "bg-zinc-100 text-zinc-700 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-400/20"
       }`}
     >
@@ -110,7 +110,7 @@ function PlanCard({ tier, billing }: { tier: SubscriptionTier; billing: BillingS
       <p className={`mt-3 text-sm ${TONE[status.tone]}`}>{status.text}</p>
 
       {!paid && (
-        <div className="mt-4 rounded-lg bg-indigo-50 p-4 ring-1 ring-indigo-200 ring-inset dark:bg-indigo-950/40 dark:ring-indigo-500/30">
+        <div className="mt-4 rounded-lg bg-purple-50 p-4 ring-1 ring-purple-200 ring-inset dark:bg-purple-950/40 dark:ring-purple-500/30">
           <p className="text-sm font-semibold text-zinc-950 dark:text-white">Pro unlocks everything ProductRadar tracks</p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-700 dark:text-zinc-300">
             <li>Every live product, not just the samples</li>
@@ -119,7 +119,7 @@ function PlanCard({ tier, billing }: { tier: SubscriptionTier; billing: BillingS
           </ul>
           <a
             href="/upgrade"
-            className={`mt-4 inline-flex w-full items-center justify-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 sm:w-auto dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400 ${focusRing}`}
+            className={`mt-4 inline-flex w-full items-center justify-center rounded-md bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 sm:w-auto dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400 ${focusRing}`}
           >
             Upgrade to Pro · {proPrice}
           </a>
@@ -181,7 +181,7 @@ export default function AccountPage({ searchParams }: { searchParams: SearchPara
       <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
           <div className="flex flex-col gap-1">
-            <Link href="/" className={`self-start rounded-sm text-sm font-semibold tracking-tight text-indigo-700 hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-200 ${focusRing}`}>
+            <Link href="/" className={`self-start rounded-sm text-sm font-semibold tracking-tight text-purple-700 hover:text-purple-900 dark:text-purple-300 dark:hover:text-purple-200 ${focusRing}`}>
               ← ProductRadar
             </Link>
             <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl dark:text-white">Account</h1>

@@ -19,7 +19,7 @@ import { ProductDetail } from "./product-detail";
 export type DossierViewer = { signedIn: boolean; proTools: boolean };
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:focus-visible:outline-indigo-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
 const card = "rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-900";
 const cardTitle = "text-sm font-semibold text-zinc-950 dark:text-white";
 
@@ -238,7 +238,7 @@ function MoneyInput({
         {label}
       </label>
       <div
-        className={`mt-1 flex items-center rounded-md bg-white ring-1 ring-inset focus-within:ring-2 focus-within:ring-indigo-600 dark:bg-zinc-950 dark:focus-within:ring-indigo-400 ${
+        className={`mt-1 flex items-center rounded-md bg-white ring-1 ring-inset focus-within:ring-2 focus-within:ring-purple-600 dark:bg-zinc-950 dark:focus-within:ring-purple-400 ${
           invalid ? "ring-rose-500" : "ring-zinc-300 dark:ring-zinc-700"
         }`}
       >
@@ -298,7 +298,7 @@ function SupplierAndExport({
         </p>
         {viewer.proTools ? (
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <a href={urls.aliexpress} target="_blank" rel="noopener noreferrer" className={`${supplierBtn} bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400`}>
+            <a href={urls.aliexpress} target="_blank" rel="noopener noreferrer" className={`${supplierBtn} bg-purple-600 text-white hover:bg-purple-700 dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400`}>
               Find on AliExpress
               <ExternalIcon />
               <span className="sr-only">(opens in new tab)</span>
@@ -355,9 +355,9 @@ function SupplierAndExport({
       </div>
 
       {!viewer.proTools && (
-        <div className="rounded-lg bg-indigo-50 p-4 ring-1 ring-indigo-200 ring-inset dark:bg-indigo-950/40 dark:ring-indigo-500/30">
+        <div className="rounded-lg bg-purple-50 p-4 ring-1 ring-purple-200 ring-inset dark:bg-purple-950/40 dark:ring-purple-500/30">
           <p className="flex items-center gap-2 text-sm font-semibold text-zinc-950 dark:text-white">
-            <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-indigo-600 dark:text-indigo-400">
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-purple-600 dark:text-purple-400">
               <path fillRule="evenodd" d="M10 2a4 4 0 0 0-4 4v2H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-1V6a4 4 0 0 0-4-4Zm2 6V6a2 2 0 1 0-4 0v2h4Z" clipRule="evenodd" />
             </svg>
             Supplier search and Shopify export are Pro features
@@ -367,7 +367,7 @@ function SupplierAndExport({
           </p>
           <a
             href="/upgrade"
-            className={`mt-3 inline-flex rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400 ${focusRing}`}
+            className={`mt-3 inline-flex rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400 ${focusRing}`}
           >
             {viewer.signedIn ? "Upgrade to Pro · £39/month" : "Sign in & upgrade · £39/month"}
           </a>

@@ -40,7 +40,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 ];
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:focus-visible:outline-indigo-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
@@ -264,7 +264,7 @@ type ListProps = {
   highlightId: string | null;
 };
 
-const HIGHLIGHT = "bg-indigo-50 ring-2 ring-indigo-500 ring-inset dark:bg-indigo-950/40 dark:ring-indigo-400";
+const HIGHLIGHT = "bg-purple-50 ring-2 ring-purple-500 ring-inset dark:bg-purple-950/40 dark:ring-purple-400";
 
 function ProductTable({ products, highlightId }: ListProps) {
   return (
@@ -321,7 +321,7 @@ function ProductTable({ products, highlightId }: ListProps) {
                 <td className="py-4 pr-4 text-right align-top">
                   <Link
                     href={dossierHref(p)}
-                    className={`group inline-flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/40 ${focusRing}`}
+                    className={`group inline-flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-purple-700 hover:bg-purple-50 dark:text-purple-300 dark:hover:bg-purple-950/40 ${focusRing}`}
                   >
                     Dossier
                     <span className="sr-only"> for {p.name}</span>
@@ -357,7 +357,7 @@ function ProductName({ product: p }: { product: ProductDto }) {
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-zinc-950 dark:text-white">
         <Link
           href={dossierHref(p)}
-          className={`rounded-sm hover:text-indigo-700 hover:underline hover:underline-offset-2 dark:hover:text-indigo-300 ${focusRing}`}
+          className={`rounded-sm hover:text-purple-700 hover:underline hover:underline-offset-2 dark:hover:text-purple-300 ${focusRing}`}
         >
           {p.name}
         </Link>

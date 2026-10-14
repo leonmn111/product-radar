@@ -64,7 +64,7 @@ export function AuthPanel({ callbackUrl, initialTab, linkError }: { callbackUrl:
             tabIndex={tab === t.key ? 0 : -1}
             onClick={() => setTab(t.key)}
             onKeyDown={onTabKey}
-            className="rounded-md px-3 py-1.5 text-sm font-semibold text-zinc-600 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 aria-selected:bg-white aria-selected:text-zinc-950 aria-selected:shadow-sm dark:text-zinc-400 dark:hover:text-zinc-100 dark:aria-selected:bg-zinc-950 dark:aria-selected:text-white"
+            className="rounded-md px-3 py-1.5 text-sm font-semibold text-zinc-600 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 aria-selected:bg-white aria-selected:text-zinc-950 aria-selected:shadow-sm dark:text-zinc-400 dark:hover:text-zinc-100 dark:aria-selected:bg-zinc-950 dark:aria-selected:text-white"
           >
             {t.label}
           </button>
@@ -83,7 +83,7 @@ export function AuthPanel({ callbackUrl, initialTab, linkError }: { callbackUrl:
               </label>
               <Link
                 href="/signin/forgot"
-                className="text-xs font-medium text-indigo-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-indigo-300"
+                className="text-xs font-medium text-purple-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:text-purple-300"
               >
                 Forgot password?
               </Link>

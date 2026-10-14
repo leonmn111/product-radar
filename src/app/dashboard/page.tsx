@@ -87,7 +87,7 @@ export default function DashboardPage({ searchParams }: { searchParams: SearchPa
           <div className="flex flex-col gap-1">
             <Link
               href="/"
-              className="self-start rounded-sm text-sm font-semibold tracking-tight text-indigo-700 hover:text-indigo-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-indigo-300 dark:hover:text-indigo-200 dark:focus-visible:outline-indigo-400"
+              className="self-start rounded-sm text-sm font-semibold tracking-tight text-purple-700 hover:text-purple-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:text-purple-300 dark:hover:text-purple-200 dark:focus-visible:outline-purple-400"
             >
               ProductRadar
             </Link>
@@ -102,7 +102,7 @@ export default function DashboardPage({ searchParams }: { searchParams: SearchPa
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 md:justify-end">
             <Link
               href="/docs"
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:focus-visible:outline-indigo-400"
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:focus-visible:outline-purple-400"
             >
               API for agents
             </Link>

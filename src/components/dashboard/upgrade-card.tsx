@@ -10,7 +10,7 @@ export function UpgradeCard({ signedIn, liveProducts }: { signedIn: boolean; liv
   return (
     <section
       aria-labelledby="upgrade-title"
-      className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-5 shadow-sm sm:p-6 dark:border-indigo-500/30 dark:from-indigo-950/40 dark:to-zinc-900"
+      className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-white p-5 shadow-sm sm:p-6 dark:border-purple-500/30 dark:from-purple-950/40 dark:to-zinc-900"
     >
       <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="max-w-2xl">
@@ -25,7 +25,7 @@ export function UpgradeCard({ signedIn, liveProducts }: { signedIn: boolean; liv
           <ul className="mt-3 grid gap-1.5 text-sm text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
             {BENEFITS.map((b) => (
               <li key={b} className="flex gap-2">
-                <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 size-4 shrink-0 text-indigo-600 dark:text-indigo-400">
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 size-4 shrink-0 text-purple-600 dark:text-purple-400">
                   <path
                     fillRule="evenodd"
                     d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z"
@@ -44,7 +44,7 @@ export function UpgradeCard({ signedIn, liveProducts }: { signedIn: boolean; liv
           </p>
           <a
             href="/upgrade"
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 motion-reduce:transition-none dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400"
+            className="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-700 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 motion-reduce:transition-none dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400"
           >
             {signedIn ? "Upgrade to Pro" : "Sign in & upgrade"}
           </a>

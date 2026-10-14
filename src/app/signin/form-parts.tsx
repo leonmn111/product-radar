@@ -6,12 +6,12 @@ import { useState } from "react";
 import { useFormStatus } from "react-dom";
 
 export const inputClass =
-  "mt-1 w-full rounded-md border-0 bg-white px-3 py-2 text-sm text-zinc-900 ring-1 ring-zinc-300 ring-inset placeholder:text-zinc-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 aria-invalid:ring-red-600 dark:bg-zinc-950 dark:text-zinc-100 dark:ring-zinc-700 dark:aria-invalid:ring-red-400";
+  "mt-1 w-full rounded-md border-0 bg-white px-3 py-2 text-sm text-zinc-900 ring-1 ring-zinc-300 ring-inset placeholder:text-zinc-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 aria-invalid:ring-red-600 dark:bg-zinc-950 dark:text-zinc-100 dark:ring-zinc-700 dark:aria-invalid:ring-red-400";
 export const labelClass = "block text-sm font-medium text-zinc-900 dark:text-zinc-100";
 const primaryClass =
-  "inline-flex w-full items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400";
+  "inline-flex w-full items-center justify-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400";
 const secondaryClass =
-  "inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 ring-inset hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700 dark:hover:bg-zinc-800";
+  "inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 ring-inset hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700 dark:hover:bg-zinc-800";
 
 function Spinner() {
   return <span aria-hidden className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent" />;
@@ -102,7 +102,7 @@ export function PasswordInput({
         type="button"
         onClick={() => setShown((s) => !s)}
         aria-pressed={shown}
-        className="absolute inset-y-0 right-0 mt-1 rounded-r-md px-3 text-xs font-semibold text-zinc-600 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-indigo-600 dark:text-zinc-400 dark:hover:text-zinc-100"
+        className="absolute inset-y-0 right-0 mt-1 rounded-r-md px-3 text-xs font-semibold text-zinc-600 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-purple-600 dark:text-zinc-400 dark:hover:text-zinc-100"
       >
         {shown ? "Hide" : "Show"}
         <span className="sr-only"> password</span>

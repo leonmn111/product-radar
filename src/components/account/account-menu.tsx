@@ -4,7 +4,7 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { getViewer } from "@/server/auth/entitlements";
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:focus-visible:outline-indigo-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
 
 async function doSignOut() {
   "use server";
@@ -26,7 +26,7 @@ export async function AccountMenu() {
         </Link>
         <a
           href="/upgrade"
-          className={`rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400 ${focusRing}`}
+          className={`rounded-md bg-purple-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-purple-700 dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400 ${focusRing}`}
         >
           Get Pro
         </a>
@@ -45,7 +45,7 @@ export async function AccountMenu() {
         <span
           className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${
             isPro
-              ? "bg-indigo-50 text-indigo-800 ring-indigo-600/20 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-400/30"
+              ? "bg-purple-50 text-purple-800 ring-purple-600/20 dark:bg-purple-950/40 dark:text-purple-300 dark:ring-purple-400/30"
               : "bg-zinc-100 text-zinc-700 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-400/20"
           }`}
         >
@@ -68,7 +68,7 @@ export async function AccountMenu() {
       ) : (
         <a
           href="/upgrade"
-          className={`rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:text-zinc-950 dark:hover:bg-indigo-400 ${focusRing}`}
+          className={`rounded-md bg-purple-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-purple-700 dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400 ${focusRing}`}
         >
           Upgrade to Pro
         </a>

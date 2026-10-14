@@ -17,7 +17,7 @@ import { getShowcase } from "@/server/products/showcase-cache";
 type Params = PageProps<"/dossier/[slug]">["params"];
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:focus-visible:outline-indigo-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
@@ -37,7 +37,7 @@ function ProductSummary({ product: p }: { product: ProductDto }) {
         <ProductImage src={p.imageUrl} alt={p.name} label={p.brand ?? p.name} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-center gap-2 text-xs font-semibold tracking-wide text-indigo-700 uppercase dark:text-indigo-300">
+        <p className="flex flex-wrap items-center gap-2 text-xs font-semibold tracking-wide text-purple-700 uppercase dark:text-purple-300">
           {p.brand && <span>{p.brand}</span>}
           <span
             className={`rounded-md px-1.5 py-0.5 tracking-normal normal-case ring-1 ring-inset ${
@@ -136,7 +136,7 @@ async function DossierContent({ params }: { params: Params }) {
       </Link>
       <ProductSummary product={product} />
       {showcased && !pro && (
-        <p className="rounded-lg bg-indigo-50 px-4 py-3 text-sm text-indigo-950 ring-1 ring-indigo-200 ring-inset dark:bg-indigo-950/40 dark:text-indigo-100 dark:ring-indigo-500/30">
+        <p className="rounded-lg bg-purple-50 px-4 py-3 text-sm text-purple-950 ring-1 ring-purple-200 ring-inset dark:bg-purple-950/40 dark:text-purple-100 dark:ring-purple-500/30">
           <strong className="font-semibold">Free preview.</strong> This live product is open to everyone. Pro opens a
           dossier like this for every product in the catalog.
         </p>
@@ -155,7 +155,7 @@ export default function DossierPage({ params }: { params: Params }) {
     <div className="min-h-full bg-zinc-50 dark:bg-zinc-950">
       <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className={`rounded-sm text-sm font-semibold tracking-tight text-indigo-700 hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-200 ${focusRing}`}>
+          <Link href="/" className={`rounded-sm text-sm font-semibold tracking-tight text-purple-700 hover:text-purple-900 dark:text-purple-300 dark:hover:text-purple-200 ${focusRing}`}>
             ProductRadar
           </Link>
           <Suspense fallback={<div className="h-8 w-40 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />}>

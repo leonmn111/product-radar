@@ -71,7 +71,7 @@ export function PasswordForm({ email, hasPassword }: { email: string; hasPasswor
             name="signOutOthers"
             type="checkbox"
             aria-describedby="account-sign-out-others-hint"
-            className="mt-0.5 size-4 rounded border-zinc-300 text-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:border-zinc-600 dark:bg-zinc-950"
+            className="mt-0.5 size-4 rounded border-zinc-300 text-purple-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:border-zinc-600 dark:bg-zinc-950"
           />
           <div>
             <label htmlFor="account-sign-out-others" className="text-sm font-medium text-zinc-900 dark:text-zinc-100">

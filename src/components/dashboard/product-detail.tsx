@@ -23,7 +23,7 @@ const AVAILABILITY_STYLE: Record<string, string> = {
 
 const badge = "inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset";
 const link =
-  "rounded-sm font-medium text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:decoration-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:text-indigo-300 dark:decoration-indigo-700 dark:hover:decoration-indigo-300";
+  "rounded-sm font-medium text-purple-700 underline decoration-purple-300 underline-offset-2 hover:decoration-purple-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:text-purple-300 dark:decoration-purple-700 dark:hover:decoration-purple-300";
 
 export function ProductDetail({ product }: { product: ProductDto }) {
   // Which scores each piece of evidence fed into — shown on every evidence row.
@@ -136,7 +136,7 @@ export function ProductDetail({ product }: { product: ProductDto }) {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <p className="min-w-0 flex-1 text-sm text-zinc-900 dark:text-zinc-100">{e.claim}</p>
                   {e.metric && (
-                    <span className={`${badge} bg-indigo-50 text-indigo-800 ring-indigo-600/20 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-400/20`}>
+                    <span className={`${badge} bg-purple-50 text-purple-800 ring-purple-600/20 dark:bg-purple-950/40 dark:text-purple-300 dark:ring-purple-400/20`}>
                       {formatMetric(e.metric)}
                     </span>
                   )}
