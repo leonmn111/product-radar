@@ -321,13 +321,11 @@ function SupplierAndExport({
         {prices.price !== null && (
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
             <dt className="font-medium text-zinc-900 dark:text-zinc-100">Price {money(prices.price)}</dt>
-            <dd>{prices.compareAtPrice !== null ? "the going price at other stores" : "the best price found"}</dd>
-            {prices.compareAtPrice !== null && (
-              <>
-                <dt className="font-medium text-zinc-900 dark:text-zinc-100">Compare-at {money(prices.compareAtPrice)}</dt>
-                <dd>the best price found</dd>
-              </>
-            )}
+            <dd>{prices.priceIsGoingRate ? "the going price at other stores" : "the best price found"}</dd>
+            <dt className="font-medium text-zinc-900 dark:text-zinc-100">
+              Compare-at{prices.compareAtPrice !== null && ` ${money(prices.compareAtPrice)}`}
+            </dt>
+            <dd>{prices.compareAtPrice !== null ? "the RRP" : "left blank: no RRP found above the price"}</dd>
           </dl>
         )}
         {viewer.proTools ? (

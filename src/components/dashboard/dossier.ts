@@ -294,10 +294,11 @@ export type ShopifyProduct = Pick<ProductDto, "id" | "name" | "brand" | "descrip
 
 /**
  * The listing's prices, all from captured store prices (Rule 3):
- * - price: the going price at other stores, the resale price the margin engine
- *   prices the trade at; the best (cheapest) price when there's no price gap.
- * - compareAtPrice: the best price found. It is lower than the price, so Shopify
- *   themes don't show it to shoppers; it stays in the file as a reference.
+ * - price: the recommended selling price, i.e. the going price at other stores (the
+ *   resale price the margin engine prices the trade at); the best price when there's no gap.
+ * - compareAtPrice: Shopify shows it struck through as a discount, so it may only ever be
+ *   a real RRP/MSRP above the price. No RRP is captured from store pages yet, so it stays
+ *   empty rather than borrowing a store's price (a lower one reads as a price rise).
  * - costPerItem: the middle of the wholesale estimate (a rule-based estimate).
  * Nothing is converted: a figure in another currency than the best price is left out.
  */
@@ -311,7 +312,8 @@ export function shopifyPrices(p: Pick<ShopifyProduct, "bestOffer" | "margin">) {
   return {
     currency,
     price: resale ?? best,
-    compareAtPrice: resale !== null ? best : null,
+    priceIsGoingRate: resale !== null,
+    compareAtPrice: null as number | null,
     costPerItem: p.margin && p.margin.currency === currency ? startingWholesale(p.margin) : null,
   };
 }

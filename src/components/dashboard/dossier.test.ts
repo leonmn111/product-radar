@@ -199,11 +199,19 @@ describe("Shopify CSV", () => {
       "Option1 Value": "Default Title",
       "Variant SKU": "PR-0C406B2F",
       "Variant Price": "20.00", // the going price at other stores (the margin engine's resale price)
-      "Variant Compare At Price": "15.00", // the best price found
+      "Variant Compare At Price": "", // no RRP is captured, and a store's lower price would read as a price rise
       "Image Src": "https://cdn.test/runners.jpg",
       "Cost per item": startingWholesale(gap)!.toFixed(2),
       Status: "draft",
     });
+  });
+
+  it("never puts a price at or below the selling price in compare-at", () => {
+    for (const margin of [gap, null]) {
+      const { cells } = rows(shopifyCsv({ ...base, margin }));
+      const compareAt = cells["Variant Compare At Price"];
+      expect(compareAt === "" || Number(compareAt) > Number(cells["Variant Price"])).toBe(true);
+    }
   });
 
   it("prices at the best price, with no compare-at, when there's no price gap", () => {
