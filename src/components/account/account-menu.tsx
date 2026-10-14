@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signOut } from "@/auth";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { getViewer } from "@/server/auth/entitlements";
+import { AccountDropdown } from "./account-dropdown";
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
@@ -20,13 +21,14 @@ export async function AccountMenu() {
         <ThemeToggle />
         <Link
           href="/signin"
-          className={`rounded-md px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 ${focusRing}`}
+          // On the narrowest phones "Get Pro" signs you in on the way, so this one can go.
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 max-[420px]:hidden dark:text-zinc-300 dark:hover:bg-white/10 ${focusRing}`}
         >
           Sign in
         </Link>
         <a
           href="/upgrade"
-          className={`rounded-md bg-purple-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-purple-700 dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400 ${focusRing}`}
+          className={`rounded-lg bg-purple-600 px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-white shadow-sm shadow-purple-600/25 transition hover:bg-purple-700 active:scale-[0.98] motion-reduce:transition-none dark:hover:bg-purple-600 dark:hover:shadow-purple-500/40 ${focusRing}`}
         >
           Get Pro
         </a>
@@ -36,51 +38,18 @@ export async function AccountMenu() {
 
   const isPro = viewer.tier !== "FREE";
   return (
-    <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+    <div className="flex items-center gap-2">
       <ThemeToggle />
-      <span className="flex min-w-0 items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-        <span className="max-w-[16ch] truncate sm:max-w-[28ch]" title={viewer.email}>
-          {viewer.email}
-        </span>
-        <span
-          className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${
-            isPro
-              ? "bg-purple-50 text-purple-800 ring-purple-600/20 dark:bg-purple-950/40 dark:text-purple-300 dark:ring-purple-400/30"
-              : "bg-zinc-100 text-zinc-700 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-400/20"
-          }`}
-        >
-          {isPro ? "Pro" : "Free"}
-        </span>
-      </span>
-      <Link
-        href="/account"
-        className={`rounded-md px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-300 ring-inset hover:bg-zinc-100 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-800 ${focusRing}`}
-      >
-        Account
-      </Link>
-      {isPro ? (
-        <Link
-          href="/account#billing"
-          className={`rounded-md px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-300 ring-inset hover:bg-zinc-100 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-800 ${focusRing}`}
-        >
-          Billing
-        </Link>
-      ) : (
+      {!isPro && (
+        // The one action that earns: kept in plain sight for Free accounts, not tucked in the menu.
         <a
           href="/upgrade"
-          className={`rounded-md bg-purple-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-purple-700 dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400 ${focusRing}`}
+          className={`rounded-lg bg-purple-600 px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-white shadow-sm shadow-purple-600/25 transition hover:bg-purple-700 active:scale-[0.98] motion-reduce:transition-none dark:hover:bg-purple-600 dark:hover:shadow-purple-500/40 ${focusRing}`}
         >
-          Upgrade to Pro
+          Upgrade<span className="hidden sm:inline"> to Pro</span>
         </a>
       )}
-      <form action={doSignOut}>
-        <button
-          type="submit"
-          className={`rounded-md px-2 py-1.5 text-sm font-medium text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white ${focusRing}`}
-        >
-          Sign out
-        </button>
-      </form>
+      <AccountDropdown email={viewer.email} isPro={isPro} signOutAction={doSignOut} />
     </div>
   );
 }

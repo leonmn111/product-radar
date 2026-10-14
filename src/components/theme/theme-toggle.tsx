@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId } from "react";
+import { useDropdown } from "@/components/ui/use-dropdown";
 import type { Theme } from "./theme";
 import { useTheme } from "./theme-provider";
 
@@ -34,41 +35,23 @@ function Icon({ theme, className }: { theme: Theme; className: string }) {
  */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [open, setOpen] = useState(false);
-  const wrapper = useRef<HTMLDivElement>(null);
-  const button = useRef<HTMLButtonElement>(null);
+  const { open, toggle, close, wrapper, button, panelPosition, onBlur } = useDropdown();
   const panelId = useId();
 
+  // Opening moves focus to the current choice, so arrow-free keyboard use is one Tab away from the rest.
   useEffect(() => {
-    if (!open) return;
-    wrapper.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
-    const onPointer = (e: PointerEvent) => !wrapper.current?.contains(e.target as Node) && setOpen(false);
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      setOpen(false);
-      button.current?.focus();
-    };
-    document.addEventListener("pointerdown", onPointer);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointer);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
+    if (open) wrapper.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
+  }, [open, wrapper]);
 
   return (
-    <div
-      ref={wrapper}
-      className="relative"
-      onBlur={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && setOpen(false)}
-    >
+    <div ref={wrapper} className="relative" onBlur={onBlur}>
       <button
         ref={button}
         type="button"
         aria-label="Theme"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         className={`flex size-9 items-center justify-center rounded-lg text-zinc-600 ring-1 ring-zinc-200 transition ring-inset hover:bg-zinc-100 hover:text-zinc-950 active:scale-95 motion-reduce:transition-none dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-white ${focusRing}`}
       >
         <Icon theme="light" className="size-5 dark:hidden" />
@@ -77,7 +60,7 @@ export function ThemeToggle() {
       {open && (
         <div
           id={panelId}
-          className="absolute top-full right-0 z-50 mt-2 w-40 rounded-xl bg-white p-1 shadow-xl ring-1 shadow-zinc-900/10 ring-zinc-200 dark:bg-zinc-900 dark:shadow-black/50 dark:ring-white/10"
+          className={`absolute top-full ${panelPosition} z-50 mt-2 w-40 rounded-xl bg-white p-1 shadow-xl ring-1 shadow-zinc-900/10 ring-zinc-200 dark:bg-zinc-900 dark:shadow-black/50 dark:ring-white/10`}
         >
           {OPTIONS.map((o) => {
             const selected = theme === o.value;
@@ -88,8 +71,7 @@ export function ThemeToggle() {
                 aria-pressed={selected}
                 onClick={() => {
                   setTheme(o.value);
-                  setOpen(false);
-                  button.current?.focus();
+                  close({ refocus: true });
                 }}
                 className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors motion-reduce:transition-none ${focusRing} ${
                   selected

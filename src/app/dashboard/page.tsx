@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { AccountMenu } from "@/components/account/account-menu";
+import { AppHeader } from "@/components/app-header";
 import { dossierHref } from "@/components/dashboard/format";
 import { ProductCard } from "@/components/dashboard/product-card";
 import { ProductDashboard } from "@/components/dashboard/product-dashboard";
@@ -41,7 +40,7 @@ async function ProGate() {
           </p>
           <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((p) => (
-              <ProductCard key={p.id} product={p} href={dossierHref(p)} />
+              <ProductCard key={p.id} product={p} href={dossierHref(p)} frame="bento" />
             ))}
           </ul>
         </section>
@@ -82,42 +81,20 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
 export default function DashboardPage({ searchParams }: { searchParams: SearchParams }) {
   return (
     <div className="min-h-full bg-zinc-50 dark:bg-zinc-950">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 md:flex-row md:items-start md:justify-between lg:px-8">
-          <div className="flex flex-col gap-1">
-            <Link
-              href="/"
-              className="self-start rounded-sm text-sm font-semibold tracking-tight text-purple-700 hover:text-purple-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:text-purple-300 dark:hover:text-purple-200 dark:focus-visible:outline-purple-400"
-            >
-              ProductRadar
-            </Link>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl dark:text-white">
-              Product intelligence
-            </h1>
-            <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-              Every score is calculated from sourced, timestamped evidence. Open a product to see exactly which
-              evidence each score is based on.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 md:justify-end">
-            <Link
-              href="/docs"
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:focus-visible:outline-purple-400"
-            >
-              API for agents
-            </Link>
-            <Suspense fallback={<div className="h-8 w-40 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />}>
-              <AccountMenu />
-            </Suspense>
-          </div>
+      <AppHeader />
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">Product intelligence</h1>
+          <p className="mt-1 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
+            Every score is calculated from sourced, timestamped evidence. Open a product to see exactly which evidence
+            each score is based on.
+          </p>
         </div>
-      </header>
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <Suspense
           fallback={
             <div aria-hidden="true" className="space-y-3">
-              <div className="h-40 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
-              <div className="h-96 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
+              <div className="h-14 animate-pulse rounded-2xl bg-zinc-200/70 dark:bg-white/5" />
+              <div className="h-96 animate-pulse rounded-2xl bg-zinc-200/70 dark:bg-white/5" />
             </div>
           }
         >

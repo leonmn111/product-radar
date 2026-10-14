@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { AccountMenu } from "@/components/account/account-menu";
+import { AppHeader } from "@/components/app-header";
 import { formatDateTime, formatPrice, getScore, humanizeSlug } from "@/components/dashboard/format";
 import { OpportunityDossier } from "@/components/dashboard/opportunity-dossier";
 import { ProductImage } from "@/components/dashboard/product-card";
@@ -153,16 +153,7 @@ async function DossierContent({ params }: { params: Params }) {
 export default function DossierPage({ params }: { params: Params }) {
   return (
     <div className="min-h-full bg-zinc-50 dark:bg-zinc-950">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className={`rounded-sm text-sm font-semibold tracking-tight text-purple-700 hover:text-purple-900 dark:text-purple-300 dark:hover:text-purple-200 ${focusRing}`}>
-            ProductRadar
-          </Link>
-          <Suspense fallback={<div className="h-8 w-40 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />}>
-            <AccountMenu />
-          </Suspense>
-        </div>
-      </header>
+      <AppHeader />
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <Suspense
           fallback={

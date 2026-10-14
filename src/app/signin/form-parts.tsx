@@ -9,7 +9,7 @@ export const inputClass =
   "mt-1 w-full rounded-md border-0 bg-white px-3 py-2 text-sm text-zinc-900 ring-1 ring-zinc-300 ring-inset placeholder:text-zinc-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 aria-invalid:ring-red-600 dark:bg-zinc-950 dark:text-zinc-100 dark:ring-zinc-700 dark:aria-invalid:ring-red-400";
 export const labelClass = "block text-sm font-medium text-zinc-900 dark:text-zinc-100";
 const primaryClass =
-  "inline-flex w-full items-center justify-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400";
+  "inline-flex w-full items-center justify-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 disabled:cursor-not-allowed disabled:opacity-70 dark:hover:bg-purple-700";
 const secondaryClass =
   "inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 ring-inset hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700 dark:hover:bg-zinc-800";
 

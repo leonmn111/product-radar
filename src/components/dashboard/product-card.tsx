@@ -120,7 +120,7 @@ function SourcesBadge({ product: p }: { product: ProductDto }) {
 
 function StatusChip({ sample }: { sample: boolean }) {
   return sample ? (
-    <span className="rounded-md bg-amber-50/95 px-1.5 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-600/20 ring-inset dark:bg-amber-950/90 dark:text-amber-300 dark:ring-amber-400/20">
+    <span className="rounded-md bg-white/95 px-1.5 py-0.5 text-xs font-medium text-zinc-700 ring-1 ring-zinc-500/20 ring-inset dark:bg-zinc-900/90 dark:text-zinc-300 dark:ring-white/15">
       Sample
     </span>
   ) : (
@@ -152,7 +152,11 @@ export function ProductCard({
   const overall = getScore(p, "OVERALL");
   const frameClass =
     frame === "bento"
-      ? "h-full rounded-2xl bg-white ring-1 ring-zinc-200 duration-300 hover:shadow-purple-900/10 hover:ring-purple-500/50 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-purple-600 dark:ring-white/10 dark:hover:shadow-purple-950/50 dark:hover:ring-purple-500/50 dark:has-[a:focus-visible]:ring-purple-400"
+      ? `h-full rounded-2xl bg-white duration-300 hover:shadow-purple-900/10 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-purple-600 dark:hover:shadow-purple-950/50 dark:has-[a:focus-visible]:ring-purple-400 ${
+          highlighted
+            ? "ring-2 ring-purple-500 dark:ring-purple-400"
+            : "ring-1 ring-zinc-200 hover:ring-purple-500/50 dark:ring-white/10 dark:hover:ring-purple-500/50"
+        }`
       : `rounded-xl border duration-200 hover:shadow-zinc-900/10 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-purple-600 has-[a:focus-visible]:ring-offset-2 dark:hover:shadow-black/40 dark:has-[a:focus-visible]:ring-purple-400 dark:has-[a:focus-visible]:ring-offset-zinc-950 ${
           highlighted
             ? "border-purple-500 ring-2 ring-purple-500 dark:border-purple-400 dark:ring-purple-400"
@@ -240,8 +244,8 @@ export function CardGridSkeleton() {
   return (
     <div aria-hidden="true" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }, (_, i) => (
-        <div key={i} className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="aspect-square animate-pulse bg-zinc-200/70 dark:bg-zinc-800/70" />
+        <div key={i} className="overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-white/10">
+          <div className="aspect-square animate-pulse bg-zinc-200/70 dark:bg-white/5" />
           <div className="space-y-2 p-4">
             <div className="h-3 w-1/3 animate-pulse rounded bg-zinc-200/70 dark:bg-zinc-800/70" />
             <div className="h-4 w-4/5 animate-pulse rounded bg-zinc-200/70 dark:bg-zinc-800/70" />

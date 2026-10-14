@@ -146,19 +146,32 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
       )}
 
       {hasSample && (
-        <div
+        <p
           role="note"
-          className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200"
+          className="flex items-start gap-2 rounded-xl border border-zinc-200 bg-white/60 px-3 py-1.5 text-xs text-zinc-600 sm:inline-flex sm:items-center sm:rounded-full dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400"
         >
-          <strong className="font-semibold">Includes sample data.</strong> Products marked &ldquo;Sample&rdquo; use
-          fictional brands and example.com sources for demonstration. Products marked &ldquo;Live&rdquo; come from real
-          store pages.
-        </div>
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-px size-4 shrink-0 text-zinc-400 sm:mt-0 dark:text-zinc-500">
+            <path
+              fillRule="evenodd"
+              d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span>
+            <span className="font-medium text-zinc-800 dark:text-zinc-200">Includes sample data.</span> &ldquo;Sample&rdquo;
+            products use fictional brands and example.com sources; &ldquo;Live&rdquo; ones come from real store pages.
+          </span>
+        </p>
       )}
 
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div role="group" aria-label="Filter by category" className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div
+          role="group"
+          aria-label="Filter by category"
+          // Phones: one row that scrolls sideways; wider screens: wraps.
+          className="-mx-4 flex min-w-0 gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
+        >
           {[null, ...knownCategories].map((c) => {
             const active = c === category;
             return (
@@ -167,10 +180,10 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
                 type="button"
                 aria-pressed={active}
                 onClick={() => setCategory(c)}
-                className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${focusRing} ${
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition motion-reduce:transition-none ${focusRing} ${
                   active
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "bg-white text-zinc-700 ring-1 ring-zinc-300 ring-inset hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-800"
+                    ? "bg-purple-600 text-white shadow-sm shadow-purple-600/30"
+                    : "bg-white text-zinc-600 ring-1 ring-zinc-200 ring-inset hover:text-zinc-950 hover:ring-zinc-300 dark:bg-white/[0.03] dark:text-zinc-400 dark:ring-white/10 dark:hover:text-white dark:hover:ring-white/20"
                 }`}
               >
                 {c ? humanizeSlug(c) : "All categories"}
@@ -178,34 +191,63 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
             );
           })}
         </div>
-        <div className="flex items-center gap-3">
-        <div role="group" aria-label="Layout" className="hidden rounded-lg bg-zinc-100 p-0.5 md:flex dark:bg-zinc-800">
-          {(["cards", "table"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={view === v}
-              onClick={() => setView(v)}
-              className={`rounded-md px-2.5 py-1 text-sm font-medium text-zinc-600 hover:text-zinc-900 aria-pressed:bg-white aria-pressed:text-zinc-950 aria-pressed:shadow-sm dark:text-zinc-400 dark:hover:text-zinc-100 dark:aria-pressed:bg-zinc-950 dark:aria-pressed:text-white ${focusRing}`}
-            >
-              {v === "cards" ? "Cards" : "Table"}
-            </button>
-          ))}
-        </div>
-        <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-          <span className="shrink-0">Sort by</span>
-          <select
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as SortKey)}
-            className={`rounded-md border-0 bg-white py-1.5 pr-8 pl-3 text-sm text-zinc-900 ring-1 ring-zinc-300 ring-inset dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700 ${focusRing}`}
+        <div className="flex shrink-0 items-center gap-2">
+          <div
+            role="group"
+            aria-label="Layout"
+            className="hidden rounded-xl bg-zinc-100 p-1 ring-1 ring-zinc-200 ring-inset md:flex dark:bg-white/5 dark:ring-white/10"
           >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.key} value={o.key}>
-                {o.label}
-              </option>
+            {(["cards", "table"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={view === v}
+                onClick={() => setView(v)}
+                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm font-medium text-zinc-500 transition hover:text-zinc-900 aria-pressed:bg-white aria-pressed:text-zinc-950 aria-pressed:shadow-sm motion-reduce:transition-none dark:text-zinc-400 dark:hover:text-zinc-100 dark:aria-pressed:bg-zinc-800 dark:aria-pressed:text-white ${focusRing}`}
+              >
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                  {v === "cards" ? (
+                    <path d="M3 4.25A1.25 1.25 0 0 1 4.25 3h3.5A1.25 1.25 0 0 1 9 4.25v3.5A1.25 1.25 0 0 1 7.75 9h-3.5A1.25 1.25 0 0 1 3 7.75v-3.5Zm8 0A1.25 1.25 0 0 1 12.25 3h3.5A1.25 1.25 0 0 1 17 4.25v3.5A1.25 1.25 0 0 1 15.75 9h-3.5A1.25 1.25 0 0 1 11 7.75v-3.5Zm-8 8A1.25 1.25 0 0 1 4.25 11h3.5A1.25 1.25 0 0 1 9 12.25v3.5A1.25 1.25 0 0 1 7.75 17h-3.5A1.25 1.25 0 0 1 3 15.75v-3.5Zm8 0A1.25 1.25 0 0 1 12.25 11h3.5A1.25 1.25 0 0 1 17 12.25v3.5A1.25 1.25 0 0 1 15.75 17h-3.5A1.25 1.25 0 0 1 11 15.75v-3.5Z" />
+                  ) : (
+                    <path
+                      fillRule="evenodd"
+                      d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75Zm0 5A.75.75 0 0 1 2.75 9h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 9.75Zm0 5a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z"
+                      clipRule="evenodd"
+                    />
+                  )}
+                </svg>
+                {v === "cards" ? "Cards" : "Table"}
+              </button>
             ))}
-          </select>
-        </label>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <span className="shrink-0">Sort by</span>
+            <span className="relative">
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                className={`h-9 appearance-none rounded-xl border-0 bg-white py-1.5 pr-9 pl-3 text-sm font-medium text-zinc-900 ring-1 ring-zinc-200 ring-inset hover:ring-zinc-300 dark:bg-white/5 dark:text-zinc-100 dark:ring-white/10 dark:hover:ring-white/20 ${focusRing}`}
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-zinc-500 dark:text-zinc-400"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </span>
+          </label>
         </div>
       </div>
 
@@ -220,7 +262,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
       </div>
 
       {error ? (
-        <div className="rounded-lg border border-red-300 bg-red-50 p-6 text-center dark:border-red-500/30 dark:bg-red-950/30">
+        <div className="rounded-2xl border border-red-300 bg-red-50 p-6 text-center dark:border-red-500/30 dark:bg-red-950/30">
           <p className="text-sm font-medium text-red-900 dark:text-red-200">Couldn&apos;t load products. {error}</p>
           <button
             type="button"
@@ -233,7 +275,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
       ) : loading ? (
         <CardGridSkeleton />
       ) : products.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-zinc-300 p-10 text-center dark:border-zinc-700">
+        <div className="rounded-2xl border border-dashed border-zinc-300 p-10 text-center dark:border-white/15">
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">No products yet.</p>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             Run <code className="rounded bg-zinc-100 px-1 py-0.5 font-mono text-xs dark:bg-zinc-800">npm run db:seed</code>{" "}
@@ -268,11 +310,11 @@ const HIGHLIGHT = "bg-purple-50 ring-2 ring-purple-500 ring-inset dark:bg-purple
 
 function ProductTable({ products, highlightId }: ListProps) {
   return (
-    <div className="hidden overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm md:block dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="hidden overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-200 md:block dark:bg-zinc-900 dark:ring-white/10">
       <div className="overflow-x-auto">
         <table className="min-w-full text-left">
           <caption className="sr-only">Products ranked with evidence-based scores</caption>
-          <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium tracking-wide text-zinc-600 uppercase dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+          <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium tracking-wide text-zinc-600 uppercase dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400">
             <tr>
               <th scope="col" className="w-10 py-3 pl-4">
                 #
@@ -296,12 +338,12 @@ function ProductTable({ products, highlightId }: ListProps) {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+          <tbody className="divide-y divide-zinc-200 dark:divide-white/10">
             {products.map((p, i) => (
               <tr
                 key={p.id}
                 data-product-id={p.id}
-                className={`transition-colors duration-700 ${p.id === highlightId ? HIGHLIGHT : "hover:bg-zinc-50 dark:hover:bg-zinc-800/40"}`}
+                className={`transition-colors duration-700 ${p.id === highlightId ? HIGHLIGHT : "hover:bg-zinc-50 dark:hover:bg-white/[0.03]"}`}
               >
                 <td className="py-4 pl-4 align-top text-sm tabular-nums text-zinc-500 dark:text-zinc-400">{i + 1}</td>
                 <td className="px-3 py-4 align-top">
@@ -343,7 +385,7 @@ function ProductGrid({ products, highlightId, className = "" }: ListProps & { cl
   return (
     <ol className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${className}`}>
       {products.map((p, i) => (
-        <ProductCard key={p.id} product={p} href={dossierHref(p)} rank={i + 1} highlighted={p.id === highlightId} />
+        <ProductCard key={p.id} product={p} href={dossierHref(p)} rank={i + 1} highlighted={p.id === highlightId} frame="bento" />
       ))}
     </ol>
   );
@@ -362,7 +404,7 @@ function ProductName({ product: p }: { product: ProductDto }) {
           {p.name}
         </Link>
         {p.isSample ? (
-          <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-600/20 ring-inset dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-400/20">
+          <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-700 ring-1 ring-zinc-500/20 ring-inset dark:bg-white/10 dark:text-zinc-300 dark:ring-white/15">
             Sample
           </span>
         ) : (

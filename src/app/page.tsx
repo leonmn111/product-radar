@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
+import { Logo } from "@/components/brand/logo";
 import { LiveStats, LiveStatsSkeleton } from "@/components/landing/live-stats";
 import { Showcase } from "@/components/landing/showcase";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
@@ -45,18 +46,6 @@ const eyebrow = "text-sm font-semibold text-purple-700 dark:text-purple-300";
 const navLink = `rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white ${focusRing}`;
 
 // ── Small pieces ─────────────────────────────────────────────────────────────
-
-function Logo() {
-  return (
-    <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-purple-600 text-white shadow-sm shadow-purple-600/30">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-5">
-        <circle cx="12" cy="12" r="8.5" />
-        <circle cx="12" cy="12" r="4.5" />
-        <path d="M12 12 18 6" />
-      </svg>
-    </span>
-  );
-}
 
 function Arrow() {
   return (

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
-import { AccountMenu } from "@/components/account/account-menu";
+import { AppHeader } from "@/components/app-header";
 import type { SubscriptionTier } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { getAccountProfile, type AccountProfile } from "@/server/auth/account";
@@ -119,7 +118,7 @@ function PlanCard({ tier, billing }: { tier: SubscriptionTier; billing: BillingS
           </ul>
           <a
             href="/upgrade"
-            className={`mt-4 inline-flex w-full items-center justify-center rounded-md bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 sm:w-auto dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400 ${focusRing}`}
+            className={`mt-4 inline-flex w-full items-center justify-center rounded-md bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 sm:w-auto dark:hover:bg-purple-700 ${focusRing}`}
           >
             Upgrade to Pro · {proPrice}
           </a>
@@ -178,20 +177,9 @@ async function AccountContent({ searchParams }: { searchParams: SearchParams }) 
 export default function AccountPage({ searchParams }: { searchParams: SearchParams }) {
   return (
     <div className="min-h-full bg-zinc-50 dark:bg-zinc-950">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
-          <div className="flex flex-col gap-1">
-            <Link href="/" className={`self-start rounded-sm text-sm font-semibold tracking-tight text-purple-700 hover:text-purple-900 dark:text-purple-300 dark:hover:text-purple-200 ${focusRing}`}>
-              ← ProductRadar
-            </Link>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl dark:text-white">Account</h1>
-          </div>
-          <Suspense fallback={<div className="h-8 w-40 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />}>
-            <AccountMenu />
-          </Suspense>
-        </div>
-      </header>
-      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
+      <AppHeader />
+      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+        <h1 className="mb-6 text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">Account</h1>
         <Suspense
           fallback={
             <div aria-hidden="true" className="space-y-6">

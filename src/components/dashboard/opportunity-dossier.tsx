@@ -298,7 +298,7 @@ function SupplierAndExport({
         </p>
         {viewer.proTools ? (
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <a href={urls.aliexpress} target="_blank" rel="noopener noreferrer" className={`${supplierBtn} bg-purple-600 text-white hover:bg-purple-700 dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400`}>
+            <a href={urls.aliexpress} target="_blank" rel="noopener noreferrer" className={`${supplierBtn} bg-purple-600 text-white hover:bg-purple-700 dark:hover:bg-purple-700`}>
               Find on AliExpress
               <ExternalIcon />
               <span className="sr-only">(opens in new tab)</span>
@@ -367,7 +367,7 @@ function SupplierAndExport({
           </p>
           <a
             href="/upgrade"
-            className={`mt-3 inline-flex rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400 ${focusRing}`}
+            className={`mt-3 inline-flex rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 dark:hover:bg-purple-700 ${focusRing}`}
           >
             {viewer.signedIn ? "Upgrade to Pro · £39/month" : "Sign in & upgrade · £39/month"}
           </a>

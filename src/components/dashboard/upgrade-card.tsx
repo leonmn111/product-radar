@@ -44,7 +44,7 @@ export function UpgradeCard({ signedIn, liveProducts }: { signedIn: boolean; liv
           </p>
           <a
             href="/upgrade"
-            className="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-700 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 motion-reduce:transition-none dark:bg-purple-500 dark:text-zinc-950 dark:hover:bg-purple-400"
+            className="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-700 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 motion-reduce:transition-none dark:hover:bg-purple-700"
           >
             {signedIn ? "Upgrade to Pro" : "Sign in & upgrade"}
           </a>
