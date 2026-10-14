@@ -24,6 +24,8 @@ import { fetchPage as defaultFetchPage, type FetchedPage } from "./fetch-page";
 const METHOD_QUALITY: Record<ExtractionMethod, number> = {
   "json-ld": 80,
   microdata: 70,
+  // A store's own labelled page data: machine-readable, but a private format that can change.
+  "page-data": 70,
   "open-graph": 65,
   html: 40,
 };
@@ -148,6 +150,9 @@ export async function ingestUrl(db: PrismaClient, input: IngestInput, deps: Inge
 
   if (!review) {
     if (!extracted.price) warnings.push("No machine-readable price with a currency was found, so no offer was recorded.");
+    if (extracted.price && extracted.rrp && extracted.rrp.value.currency !== extracted.price.value.currency) {
+      warnings.push("The page's RRP is in a different currency from its price, so it wasn't recorded.");
+    }
     if (!extracted.rating) warnings.push("No rating data was published on the page, so Quality and Value can't be scored yet.");
   }
 
@@ -223,6 +228,16 @@ export async function ingestUrl(db: PrismaClient, input: IngestInput, deps: Inge
           qualityScore: METHOD_QUALITY[extracted.price.method],
         }),
       );
+      // The page's RRP for this listing, recorded as its own evidence. Only in the price's currency.
+      const rrp = extracted.rrp?.value.currency === currency ? extracted.rrp : null;
+      const rrpEvidence = rrp
+        ? await add(
+            evidence({
+              claim: `${rrp.value.label} ${rrp.value.amount} ${currency} on ${host}`,
+              qualityScore: METHOD_QUALITY[rrp.method],
+            }),
+          )
+        : null;
       offer = await tx.offer.create({
         data: {
           productId: product.id,
@@ -233,6 +248,8 @@ export async function ingestUrl(db: PrismaClient, input: IngestInput, deps: Inge
           currency,
           availability,
           observedAt,
+          rrp: rrp?.value.amount ?? null,
+          rrpEvidenceId: rrpEvidence?.id ?? null,
         },
       });
     }
@@ -284,11 +301,12 @@ export async function ingestUrl(db: PrismaClient, input: IngestInput, deps: Inge
       title,
       brand: extracted.brand?.value ?? null,
       price: extracted.price?.value ?? null,
+      rrp: extracted.rrp?.value ?? null,
       rating: extracted.rating?.value ?? null,
       reviewCount: extracted.reviewCount?.value ?? null,
       expertReview: review ? { ...review.value.rating, author: review.value.author, publishedAt: review.value.publishedAt } : null,
       methods: Object.fromEntries(
-        (["title", "price", "rating", "reviewCount", "review"] as const)
+        (["title", "price", "rrp", "rating", "reviewCount", "review"] as const)
           .filter((k) => extracted[k])
           .map((k) => [k, extracted[k]!.method]),
       ),

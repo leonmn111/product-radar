@@ -37,6 +37,7 @@ function describe(r: IngestResult) {
   const x = r.extracted;
   const facts = [
     x.price && `${x.price.amount} ${x.price.currency}`,
+    x.rrp && `${x.rrp.label} ${x.rrp.amount} ${x.rrp.currency}`,
     x.rating && `rated ${x.rating.value}/${x.rating.best}`,
     x.reviewCount !== null && `${x.reviewCount} ratings`,
     x.expertReview && `expert ${x.expertReview.value}/${x.expertReview.best}`,

@@ -6,6 +6,7 @@ import {
   opportunityVerdict,
   parseMoney,
   shopifyCsv,
+  type ShopifyProduct,
   sourcingKeywords,
   startingWholesale,
   supplierSearchUrls,
@@ -43,6 +44,7 @@ function product(scores: Record<string, ReturnType<typeof score>>, evidence = [m
     description: null,
     imageUrl: null,
     isSample: true,
+    rrp: null,
     bestOffer: null,
     margin: null,
     scores,
@@ -152,6 +154,7 @@ describe("Shopify CSV", () => {
     availability: "IN_STOCK" as const,
     observedAt: at.toISOString(),
     sourceEvidenceId: `e-${id}`,
+    rrp: null,
   });
   const cheap = offer("o1", "cheap.test", 15);
   const dear = offer("o2", "dear.test", 20);
@@ -171,8 +174,17 @@ describe("Shopify CSV", () => {
     imageUrl: "https://cdn.test/runners.jpg",
     bestOffer: cheap,
     margin: gap,
+    rrp: null as ShopifyProduct["rrp"],
     merchant: "Allbirds",
   };
+  const rrpOf = (amount: string, currency = "GBP") => ({
+    amount,
+    currency,
+    merchant: "rrp.test",
+    url: "https://rrp.test/buds",
+    observedAt: at.toISOString(),
+    evidenceId: "e-rrp",
+  });
   const rows = (csv: string) => {
     const [header, row] = csv.trim().split("\r\n");
     return { header, cells: Object.fromEntries(header.slice(1, -1).split('","').map((h, k) => [h, row.split('","')[k].replace(/^"|"$/g, "")])) };
@@ -212,6 +224,13 @@ describe("Shopify CSV", () => {
       const compareAt = cells["Variant Compare At Price"];
       expect(compareAt === "" || Number(compareAt) > Number(cells["Variant Price"])).toBe(true);
     }
+  });
+
+  it("uses the highest RRP found as compare-at, but only when it's above the price", () => {
+    expect(rows(shopifyCsv({ ...base, rrp: rrpOf("25.00") })).cells["Variant Compare At Price"]).toBe("25.00");
+    expect(rows(shopifyCsv({ ...base, rrp: rrpOf("20.00") })).cells["Variant Compare At Price"]).toBe(""); // equal to the price
+    expect(rows(shopifyCsv({ ...base, rrp: rrpOf("18.00") })).cells["Variant Compare At Price"]).toBe(""); // below it
+    expect(rows(shopifyCsv({ ...base, rrp: rrpOf("25.00", "USD") })).cells["Variant Compare At Price"]).toBe(""); // other currency
   });
 
   it("prices at the best price, with no compare-at, when there's no price gap", () => {

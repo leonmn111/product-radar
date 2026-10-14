@@ -134,6 +134,43 @@ describe("extractProduct", () => {
     expect(extractProduct(outOfRange, URL_).review).toBeNull();
   });
 
+  it("reads an RRP labelled in the offer's price specifications, never as the selling price", () => {
+    const offer = (priceSpecification: unknown, extra = {}) =>
+      page(ld({ "@type": "Product", name: "Buds", offers: { "@type": "Offer", priceCurrency: "GBP", availability: "InStock", priceSpecification, ...extra } }));
+    // No top-level price: the selling price is the unlabelled spec, the RRP the ListPrice one.
+    const listed = extractProduct(
+      offer([
+        { "@type": "UnitPriceSpecification", priceType: "https://schema.org/ListPrice", price: 30, priceCurrency: "GBP" },
+        { "@type": "UnitPriceSpecification", price: 24, priceCurrency: "GBP" },
+      ]),
+      URL_,
+    );
+    expect(listed.price?.value.amount).toBe("24.00");
+    expect(listed.rrp).toEqual({ value: { amount: "30.00", currency: "GBP", label: "list price" }, method: "json-ld" });
+    const msrp = extractProduct(offer({ "@type": "UnitPriceSpecification", priceType: "MSRP", price: "49.99" }, { price: 39 }), URL_);
+    expect(msrp.rrp?.value).toEqual({ amount: "49.99", currency: "GBP", label: "MSRP" });
+    // A store's own crossed-out "was" price is not an RRP.
+    const was = extractProduct(offer({ "@type": "UnitPriceSpecification", priceType: "https://schema.org/StrikethroughPrice", price: 35 }, { price: 24 }), URL_);
+    expect(was.price?.value.amount).toBe("24.00");
+    expect(was.rrp).toBeNull();
+  });
+
+  it("reads the RRP that THG stores publish beside the page's own price, and only that one", () => {
+    const state = (pairs: [string, string][]) =>
+      `<script>window.__STATE__={"items":[${pairs
+        .map(([price, rrp]) => `{"price":{"price":{"currency":"GBP","amount":"${price}","displayValue":"£${price}"},"rrp":{"currency":"GBP","amount":"${rrp}","displayValue":"£${rrp}"}}}`)
+        .join(",")}]};</script>`;
+    const product = ld({ "@type": "Product", name: "Ceramide Cream", offers: { "@type": "Offer", price: "15.00", priceCurrency: "GBP" } });
+    // The page's product (£15, RRP £20) plus a recommended product (£8, RRP £8).
+    const thg = extractProduct(page(product, state([["15.0", "20.0"], ["8.0", "8.0"], ["15.0", "20.0"]])), URL_);
+    expect(thg.rrp).toEqual({ value: { amount: "20.00", currency: "GBP", label: "RRP" }, method: "page-data" });
+    // Two different RRPs for the same price: ambiguous, so none.
+    expect(extractProduct(page(product, state([["15.0", "20.0"], ["15.0", "18.0"]])), URL_).rrp).toBeNull();
+    // Nothing matches the page's price, or there's no price at all: none.
+    expect(extractProduct(page(product, state([["9.0", "12.0"]])), URL_).rrp).toBeNull();
+    expect(extractProduct(page(ld({ "@type": "Product", name: "X" }), state([["15.0", "20.0"]])), URL_).rrp).toBeNull();
+  });
+
   it("survives malformed JSON-LD and uses the next layer", () => {
     const html = page(`<script type="application/ld+json">{ not json</script><meta property="og:title" content="Fallback">`);
     expect(extractProduct(html, URL_).title).toEqual({ value: "Fallback", method: "open-graph" });

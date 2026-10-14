@@ -5,6 +5,7 @@ import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { marginInsight } from "@/server/margins/engine";
 import { bestCurrentOffer } from "@/server/scoring/engine";
 import { LATEST_FX } from "@/server/scoring/fx-latest";
+import { highestRrp } from "./rrp";
 import { minimumMatch, type SearchTerm } from "./search";
 import { hasPriceGap, pickShowcase } from "./showcase";
 
@@ -237,6 +238,7 @@ function toDto(p: ProductRow, asOf: Date, sources: SourceSummary = { sourceCount
     availability: o.availability,
     observedAt: o.observedAt.toISOString(),
     sourceEvidenceId: o.sourceEvidenceId,
+    rrp: o.rrp ? o.rrp.toFixed(2) : null, // the page's own RRP for this listing, same currency
   }));
 
   const offerFacts = p.offers.map((o) => ({
@@ -257,6 +259,12 @@ function toDto(p: ProductRow, asOf: Date, sources: SourceSummary = { sourceCount
     imageUrl: webImage(p.imageUrl),
     isSample: p.isSample,
     bestOffer,
+    // The highest RRP a store currently publishes, in the best offer's currency (or null).
+    rrp: highestRrp(
+      p.offers.map((o) => ({ ...o, rrp: o.rrp?.toNumber() ?? null })),
+      bestOffer?.price.currency ?? null,
+      asOf,
+    ),
     // Rule-based estimate: Census wholesale range + arbitrage from captured prices (src/server/margins).
     margin: marginInsight({ category: p.category, offers: offerFacts, asOf, fx: LATEST_FX }),
     scores: Object.fromEntries(

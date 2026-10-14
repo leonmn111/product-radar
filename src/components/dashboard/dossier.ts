@@ -288,7 +288,10 @@ export function slugify(s: string) {
   );
 }
 
-export type ShopifyProduct = Pick<ProductDto, "id" | "name" | "brand" | "description" | "category" | "imageUrl" | "bestOffer" | "margin"> & {
+export type ShopifyProduct = Pick<
+  ProductDto,
+  "id" | "name" | "brand" | "description" | "category" | "imageUrl" | "bestOffer" | "margin" | "rrp"
+> & {
   merchant?: string | null;
 };
 
@@ -296,24 +299,27 @@ export type ShopifyProduct = Pick<ProductDto, "id" | "name" | "brand" | "descrip
  * The listing's prices, all from captured store prices (Rule 3):
  * - price: the recommended selling price, i.e. the going price at other stores (the
  *   resale price the margin engine prices the trade at); the best price when there's no gap.
- * - compareAtPrice: Shopify shows it struck through as a discount, so it may only ever be
- *   a real RRP/MSRP above the price. No RRP is captured from store pages yet, so it stays
- *   empty rather than borrowing a store's price (a lower one reads as a price rise).
+ * - compareAtPrice: Shopify shows it struck through as a discount, so it is only ever the
+ *   highest RRP a store publishes, and only when that is above the price; otherwise empty
+ *   (a lower figure would read as a price rise).
  * - costPerItem: the middle of the wholesale estimate (a rule-based estimate).
  * Nothing is converted: a figure in another currency than the best price is left out.
  */
-export function shopifyPrices(p: Pick<ShopifyProduct, "bestOffer" | "margin">) {
+export function shopifyPrices(p: Pick<ShopifyProduct, "bestOffer" | "margin" | "rrp">) {
   const best = p.bestOffer ? Number(p.bestOffer.price.amount) : null;
   const currency = p.bestOffer?.price.currency ?? null;
   const route = [p.margin?.arbitrage, p.margin?.arbitrageOwnStore].find(
     (s) => s?.resalePrice != null && s.currency === currency,
   );
   const resale = route?.resalePrice ?? null;
+  const price = resale ?? best;
+  const rrp = p.rrp && p.rrp.currency === currency ? p.rrp : null;
   return {
     currency,
-    price: resale ?? best,
+    price,
     priceIsGoingRate: resale !== null,
-    compareAtPrice: null as number | null,
+    rrp,
+    compareAtPrice: rrp && price !== null && Number(rrp.amount) > price ? Number(rrp.amount) : null,
     costPerItem: p.margin && p.margin.currency === currency ? startingWholesale(p.margin) : null,
   };
 }

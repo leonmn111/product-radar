@@ -162,6 +162,24 @@ async function main() {
     }),
   );
 
+  const offerData = {
+    productId: product.id,
+    sourceEvidenceId: evidence.id,
+    merchant: "M",
+    url: "https://e.com",
+    price: 1,
+    currency: "USD",
+    observedAt: new Date(),
+  };
+  await expectRejected("offer with an RRP but no evidence for it", () => db.offer.create({ data: { ...offerData, rrp: 2 } }));
+  await expectRejected("offer with a zero RRP", () =>
+    db.offer.create({ data: { ...offerData, rrp: 0, rrpEvidenceId: evidence.id } }),
+  );
+  const elsewhere = await db.evidence.create({ data: { ...base, productId: other.id, claim: "RRP 2.00 USD on e.com" } });
+  await expectRejected("offer whose RRP cites another product's evidence", () =>
+    db.offer.create({ data: { ...offerData, rrp: 2, rrpEvidenceId: elsewhere.id } }),
+  );
+
   console.log("Score rules");
   const sbase = { productId: product.id, dimension: "VALUE" as const, value: 50, confidence: 0.5, methodologyVersion: "v0" };
   await expectRejected("score value 150", () => db.productScore.create({ data: { ...sbase, value: 150 } }));

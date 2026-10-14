@@ -325,7 +325,13 @@ function SupplierAndExport({
             <dt className="font-medium text-zinc-900 dark:text-zinc-100">
               Compare-at{prices.compareAtPrice !== null && ` ${money(prices.compareAtPrice)}`}
             </dt>
-            <dd>{prices.compareAtPrice !== null ? "the RRP" : "left blank: no RRP found above the price"}</dd>
+            <dd>
+              {prices.compareAtPrice !== null && prices.rrp
+                ? `the RRP on ${prices.rrp.merchant}`
+                : prices.rrp
+                  ? `left blank: the RRP (${money(Number(prices.rrp.amount))} on ${prices.rrp.merchant}) isn't above the price`
+                  : "left blank: no RRP found"}
+            </dd>
           </dl>
         )}
         {viewer.proTools ? (

@@ -6,6 +6,11 @@
 // returned with an explicit currency; we never infer a price from loose text.
 // Each fact records where it came from so evidence quality can reflect it.
 //
+// An RRP is only read where the page labels it as one: a schema.org price
+// specification typed MSRP, SRP, ListPrice or MaximumRetailPrice, or the "rrp"
+// field THG stores (lookfantastic, Cult Beauty) publish beside each price in their
+// page data. A store's own "was" price (StrikethroughPrice) is not an RRP.
+//
 // Two kinds of page are understood: a store's product page (price, the store's
 // own customer rating) and an expert review article that publishes its verdict
 // as structured data (a dated score by a named reviewer). A score written only
@@ -13,7 +18,8 @@
 
 import * as cheerio from "cheerio";
 
-export type ExtractionMethod = "json-ld" | "open-graph" | "microdata" | "html";
+// "page-data": a store's own JSON page state (not a public standard), read only for labelled fields.
+export type ExtractionMethod = "json-ld" | "open-graph" | "microdata" | "page-data" | "html";
 
 export type Sourced<T> = { value: T; method: ExtractionMethod };
 
@@ -27,6 +33,8 @@ export type ExtractedProduct = {
   canonicalUrl: string | null;
   category: Sourced<string> | null;
   price: Sourced<{ amount: string; currency: string; availability: ExtractedAvailability }> | null;
+  // The RRP the page publishes for the same listing as `price` (never a "was" price).
+  rrp: Sourced<Rrp> | null;
   rating: Sourced<{ value: number; best: number }> | null; // value on 0..best
   reviewCount: Sourced<number> | null;
   // An expert's review of the product (never set on a store page — customer
@@ -36,6 +44,8 @@ export type ExtractedProduct = {
   // Product (JSON-LD or microdata), og:type "product", or product price tags.
   declaresProduct: boolean;
 };
+
+export type Rrp = { amount: string; currency: string; label: string };
 
 export type ExpertReview = {
   rating: { value: number; best: number };
@@ -114,6 +124,21 @@ const pastDate = (v: unknown): Date | null => {
   return d && !Number.isNaN(d.getTime()) && d.getTime() <= Date.now() ? d : null;
 };
 
+// schema.org PriceTypeEnumeration members (or free text) that mean a recommended retail price.
+const RRP_TYPES: Record<string, string> = {
+  msrp: "MSRP",
+  srp: "SRP",
+  listprice: "list price",
+  maximumretailprice: "maximum retail price",
+  rrp: "RRP",
+};
+const NOT_SELLING_PRICE = new Set([...Object.keys(RRP_TYPES), "strikethroughprice"]);
+const priceTypeOf = (spec: Json) =>
+  String(spec.priceType ?? "")
+    .replace(/^https?:\/\/schema\.org\//i, "")
+    .replace(/[\s_-]/g, "")
+    .toLowerCase();
+
 // ── JSON-LD ──────────────────────────────────────────────────────────────────
 
 function jsonLdNodes($: cheerio.CheerioAPI): Json[] {
@@ -171,15 +196,27 @@ function fromJsonLd(nodes: Json[]): Partial<ExtractedProduct> {
 
   const priced = offerCandidates
     .map((o) => {
-      const spec = first(o.priceSpecification as unknown) as Json | undefined;
+      const specs = [o.priceSpecification].flat().filter((x): x is Json => !!x && typeof x === "object");
+      // The selling price never comes from a spec labelled as an RRP or a crossed-out price.
+      const spec = specs.find((x) => !NOT_SELLING_PRICE.has(priceTypeOf(x)));
       const amount = normalisePrice(o.price ?? o.lowPrice ?? spec?.price);
       const currency = currencyOf(o.priceCurrency ?? spec?.priceCurrency);
-      return amount && currency ? { amount, currency, availability: normaliseAvailability(o.availability) } : null;
+      if (!amount || !currency) return null;
+      const rrpSpec = specs.find((x) => RRP_TYPES[priceTypeOf(x)]);
+      const rrpAmount = normalisePrice(rrpSpec?.price);
+      const rrpCurrency = currencyOf(rrpSpec?.priceCurrency ?? o.priceCurrency);
+      const rrp = rrpSpec && rrpAmount && rrpCurrency && Number(rrpAmount) > 0
+        ? { amount: rrpAmount, currency: rrpCurrency, label: RRP_TYPES[priceTypeOf(rrpSpec)] }
+        : null;
+      return { price: { amount, currency, availability: normaliseAvailability(o.availability) }, rrp };
     })
     .filter((x): x is NonNullable<typeof x> => x !== null);
-  // Prefer an in-stock price; otherwise the first listed.
-  const chosen = priced.find((p) => p.availability === "IN_STOCK") ?? priced[0];
-  if (chosen) out.price = { value: chosen, method: m };
+  // Prefer an in-stock price; otherwise the first listed. The RRP is that same offer's.
+  const chosen = priced.find((p) => p.price.availability === "IN_STOCK") ?? priced[0];
+  if (chosen) {
+    out.price = { value: chosen.price, method: m };
+    if (chosen.rrp) out.rrp = { value: chosen.rrp, method: m };
+  }
 
   const agg = product.aggregateRating as Json | undefined;
   if (agg && typeof agg === "object") {
@@ -288,6 +325,30 @@ function fromHtml($: cheerio.CheerioAPI): Partial<ExtractedProduct> {
   return out;
 }
 
+// ── Store page data ──────────────────────────────────────────────────────────
+
+// THG stores embed each listing's price beside its RRP:
+// "price":{"price":{"currency":"GBP","amount":"20.0",…},"rrp":{"currency":"GBP","amount":"20.0",…}}
+const THG_PRICE_RRP =
+  /"price":\{"currency":"([A-Z]{3})","amount":"(\d+(?:\.\d+)?)"[^{}]*\},"rrp":\{"currency":"([A-Z]{3})","amount":"(\d+(?:\.\d+)?)"/g;
+
+/**
+ * The RRP paired with the page's own selling price. Pages also carry other products
+ * (recommendations), so only pairs whose price matches are used, and they must all
+ * agree on one RRP; anything ambiguous gives no RRP rather than a guess.
+ */
+export function rrpFromPageData(html: string, price: { amount: string; currency: string }): Sourced<Rrp> | null {
+  const rrps = new Set<string>();
+  for (const [, cur, amount, rrpCur, rrpAmount] of html.matchAll(THG_PRICE_RRP)) {
+    if (cur !== price.currency || normalisePrice(amount) !== price.amount) continue;
+    const rrp = normalisePrice(rrpAmount);
+    if (rrp && Number(rrp) > 0) rrps.add(`${rrpCur} ${rrp}`);
+  }
+  if (rrps.size !== 1) return null;
+  const [currency, amount] = [...rrps][0].split(" ");
+  return { value: { amount, currency, label: "RRP" }, method: "page-data" };
+}
+
 // ── Entry point ──────────────────────────────────────────────────────────────
 
 export function extractProduct(html: string, pageUrl: string): ExtractedProduct {
@@ -316,6 +377,11 @@ export function extractProduct(html: string, pageUrl: string): ExtractedProduct 
     canonicalUrl = null;
   }
 
+  const price = pick("price");
+  // An RRP only counts alongside the price it belongs to: JSON-LD's comes from the
+  // same offer; otherwise the store's page data, matched to that price.
+  const rrp = !price ? null : price.method === "json-ld" && pick("rrp") ? pick("rrp") : rrpFromPageData(html, price.value);
+
   const imageUrl = pick("imageUrl");
   if (imageUrl) {
     try {
@@ -332,11 +398,12 @@ export function extractProduct(html: string, pageUrl: string): ExtractedProduct 
     imageUrl: imageUrl && /^https?:\/\//i.test(imageUrl.value) ? imageUrl : null,
     canonicalUrl,
     category: pick("category"),
-    price: pick("price"),
+    price,
+    rrp,
     rating: pick("rating"),
     reviewCount: pick("reviewCount"),
     // A priced page is a store page, whatever else it marks up.
-    review: pick("price") ? null : review,
+    review: price ? null : review,
     declaresProduct,
   };
 }
