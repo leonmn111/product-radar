@@ -122,6 +122,6 @@ export async function setNewPassword(_prev: AuthFormState, formData: FormData): 
   if (!result.ok) return { error: "This link has expired or was already used. Request a new one below." };
   // The link proved the address, so earlier wrong-password attempts no longer lock it.
   signInLimits.perEmail.reset(result.email);
-  return signInWithPassword(result.email, parsed.data, "/");
+  return signInWithPassword(result.email, parsed.data, "/dashboard");
 }
 

@@ -25,8 +25,9 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
 };
 
-// Sign up, then straight to Stripe Checkout: /upgrade sends signed-out visitors through sign-in first.
-const GET_STARTED = "/signin?tab=register&callbackUrl=%2Fupgrade";
+// Sign up, then the dashboard: a Free account sees the Pro offer and the showcase there, and
+// upgrades when it wants to. No callbackUrl, so sign-in falls back to /dashboard.
+const GET_STARTED = "/signin?tab=register";
 const PRO_PRICE = new Intl.NumberFormat("en-GB", {
   style: "currency",
   currency: PRO_PLAN.currency.toUpperCase(),
