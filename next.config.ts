@@ -14,9 +14,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
-  // The icon is app/icon.svg; older tools still ask for /favicon.ico by name.
   async redirects() {
-    return [{ source: "/favicon.ico", destination: "/icon.svg", permanent: true }];
+    return [
+      // One address for search engines and links: www.<domain>/… → https://<domain>/… (path and query kept).
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www\\.(?<domain>.+)" }],
+        destination: "https://:domain/:path*",
+        permanent: true,
+      },
+      // The icon is app/icon.svg; older tools still ask for /favicon.ico by name.
+      { source: "/favicon.ico", destination: "/icon.svg", permanent: true },
+    ];
   },
   /* config options here */
   cacheComponents: true,
