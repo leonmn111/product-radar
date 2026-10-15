@@ -7,6 +7,7 @@ import { createRainforestSource } from "./index";
 import { parseRainforestSearch, RAINFOREST_QUALITY } from "./parse";
 
 const fixture = JSON.parse(readFileSync(join(__dirname, "fixtures/search-amazon-co-uk.json"), "utf8"));
+const recorded = JSON.parse(readFileSync(join(__dirname, "fixtures/search-amazon-co-uk-recorded.json"), "utf8"));
 const fallback = new Date("2026-10-15T12:00:00.000Z");
 
 describe("parseRainforestSearch", () => {
@@ -36,6 +37,16 @@ describe("parseRainforestSearch", () => {
       },
     });
     expect(listings[0].evidence.claim).toContain("£21.99 on Amazon UK, rated 4.4/5 from 2,311 ratings, 1K+ bought in past month");
+  });
+});
+
+describe("a real recorded Rainforest response (amazon.co.uk, 2026-10-15)", () => {
+  it("parses every listing, in GBP, with its evidence", () => {
+    const listings = parseRainforestSearch(recorded, "GB", fallback);
+    expect(listings).toHaveLength(recorded.search_results.length);
+    expect(listings.every((l) => l.price.currency === "GBP" && l.evidence.sourceUrl.startsWith("https://www.amazon.co.uk/"))).toBe(true);
+    // This response carries no sponsored flags: absent means not sponsored, never guessed.
+    expect(listings.some((l) => l.sponsored)).toBe(false);
   });
 });
 

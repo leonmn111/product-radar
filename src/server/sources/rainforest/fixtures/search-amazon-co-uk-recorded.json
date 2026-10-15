@@ -1,0 +1,992 @@
+{
+ "_fixture": "RECORDED from a real Rainforest API search (amazon.co.uk, 'magnetic power bank') on 2026-10-15 for tests. Real Amazon listings at that time; never served to users.",
+ "request_info": {
+  "success": true,
+  "credits_used_this_request": 1
+ },
+ "request_parameters": {
+  "type": "search",
+  "amazon_domain": "amazon.co.uk",
+  "search_term": "magnetic power bank"
+ },
+ "request_metadata": {
+  "created_at": "2026-10-15T19:32:08.515Z",
+  "processed_at": "2026-10-15T19:32:11.460Z",
+  "total_time_taken": 2.94,
+  "amazon_url": "https://www.amazon.co.uk/s/?k=magnetic+power+bank&ref=nb_sb_noss_2"
+ },
+ "search_results": [
+  {
+   "position": 1,
+   "title": "for Magsafe Power Bank,5000mAh Slim Wireless Portable Charger for iPhone 18",
+   "asin": "B0H6G5KKYK",
+   "link": "https://www.amazon.co.uk/Magsafe-5000mAh-Wireless-Portable-Charger/dp/B0H6G5KKYK/ref=sr_1_1?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-1",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/61ufhswY9EL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4.9,
+   "ratings_total": 1217,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 19.99,
+     "currency": "GBP",
+     "raw": "£19.99",
+     "name": "Limited time deal",
+     "is_primary": true,
+     "list_price": "£64.48",
+     "asin": "B0H6G5KKYK",
+     "link": "https://www.amazon.co.uk/Magsafe-5000mAh-Wireless-Portable-Charger/dp/B0H6G5KKYK/ref=sr_1_1?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-1"
+    },
+    {
+     "symbol": "£",
+     "value": 64.48,
+     "currency": "GBP",
+     "raw": "£64.48",
+     "name": "Limited time deal",
+     "is_rrp": true,
+     "link": "https://www.amazon.co.uk/Magsafe-5000mAh-Wireless-Portable-Charger/dp/B0H6G5KKYK/ref=sr_1_1?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-1",
+     "asin": "B0H6G5KKYK"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 19.99,
+    "currency": "GBP",
+    "raw": "£19.99",
+    "name": "Limited time deal",
+    "is_primary": true,
+    "list_price": "£64.48",
+    "asin": "B0H6G5KKYK",
+    "link": "https://www.amazon.co.uk/Magsafe-5000mAh-Wireless-Portable-Charger/dp/B0H6G5KKYK/ref=sr_1_1?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-1"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Sun 18 Oct on your first eligible order to UK or Ireland Or fastest delivery Tomorrow, 16 Oct",
+    "price": {
+     "raw": "£19.99",
+     "symbol": "£",
+     "value": 19.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 2,
+   "title": "UGREEN Nexode 10000mAh MagSafe Wireless Power Bank PD 20W Fast Charging",
+   "asin": "B0CH33F5P2",
+   "link": "https://www.amazon.co.uk/UGREEN-10000mAh-Magnetic-Wireless-Compatible-Black/dp/B0CH33F5P2/ref=sr_1_2?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-2",
+   "recent_sales": "5K+ bought in past month",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/516Z4HFBZUL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4.3,
+   "ratings_total": 15088,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 17.97,
+     "currency": "GBP",
+     "raw": "£17.97",
+     "name": "Limited time deal",
+     "is_primary": true,
+     "list_price": "£24.99",
+     "asin": "B0CH33F5P2",
+     "link": "https://www.amazon.co.uk/UGREEN-10000mAh-Magnetic-Wireless-Compatible-Black/dp/B0CH33F5P2/ref=sr_1_2?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-2"
+    },
+    {
+     "symbol": "£",
+     "value": 24.99,
+     "currency": "GBP",
+     "raw": "£24.99",
+     "name": "Limited time deal",
+     "is_rrp": true,
+     "link": "https://www.amazon.co.uk/UGREEN-10000mAh-Magnetic-Wireless-Compatible-Black/dp/B0CH33F5P2/ref=sr_1_2?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-2",
+     "asin": "B0CH33F5P2"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 17.97,
+    "currency": "GBP",
+    "raw": "£17.97",
+    "name": "Limited time deal",
+    "is_primary": true,
+    "list_price": "£24.99",
+    "asin": "B0CH33F5P2",
+    "link": "https://www.amazon.co.uk/UGREEN-10000mAh-Magnetic-Wireless-Compatible-Black/dp/B0CH33F5P2/ref=sr_1_2?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-2"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Sun 18 Oct on your first eligible order to UK or Ireland Or fastest delivery Tomorrow, 16 Oct",
+    "price": {
+     "raw": "£17.97",
+     "symbol": "£",
+     "value": 17.97,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 3,
+   "title": "For MagSafe Power Bank, 10000mAh 20W Fast Charge Wireless Portable Charger",
+   "asin": "B0GG42HJ9J",
+   "link": "https://www.amazon.co.uk/10000mAh-Wireless-Portable-Essential-Compatible/dp/B0GG42HJ9J/ref=sr_1_3?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-3",
+   "recent_sales": "500+ bought in past month",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/81pjUh7OEgL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4.5,
+   "ratings_total": 1865,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 22.99,
+     "currency": "GBP",
+     "raw": "£22.99",
+     "name": "Limited time deal",
+     "is_primary": true,
+     "list_price": "£108.99",
+     "asin": "B0GG42HJ9J",
+     "link": "https://www.amazon.co.uk/10000mAh-Wireless-Portable-Essential-Compatible/dp/B0GG42HJ9J/ref=sr_1_3?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-3"
+    },
+    {
+     "symbol": "£",
+     "value": 108.99,
+     "currency": "GBP",
+     "raw": "£108.99",
+     "name": "Limited time deal",
+     "is_rrp": true,
+     "link": "https://www.amazon.co.uk/10000mAh-Wireless-Portable-Essential-Compatible/dp/B0GG42HJ9J/ref=sr_1_3?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-3",
+     "asin": "B0GG42HJ9J"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 22.99,
+    "currency": "GBP",
+    "raw": "£22.99",
+    "name": "Limited time deal",
+    "is_primary": true,
+    "list_price": "£108.99",
+    "asin": "B0GG42HJ9J",
+    "link": "https://www.amazon.co.uk/10000mAh-Wireless-Portable-Essential-Compatible/dp/B0GG42HJ9J/ref=sr_1_3?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-3"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Thu 22 Oct on your first eligible order to UK or Ireland",
+    "price": {
+     "raw": "£22.99",
+     "symbol": "£",
+     "value": 22.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 4,
+   "title": "Power Bank, Ultra-Slim 10000mAh Wireless Portable Charger, 20W Magnetic Power Bank Fast Charging with USB-C in&Out, Battery Pack for iPhone Air/17/16/15/14/13/12 Plus/Pro/Pro Max, Samsung, Android",
+   "asin": "B0H8RGDZL7",
+   "link": "https://www.amazon.co.uk/Ultra-Slim-10000mAh-Wireless-Portable-Pro/dp/B0H8RGDZL7/ref=sr_1_4?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-4",
+   "recent_sales": "1K+ bought in past month",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/51dJWV8NrjL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4.8,
+   "ratings_total": 61,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 13.99,
+     "currency": "GBP",
+     "raw": "£13.99",
+     "asin": "B0H8RGDZL7",
+     "link": "https://www.amazon.co.uk/Ultra-Slim-10000mAh-Wireless-Portable-Pro/dp/B0H8RGDZL7/ref=sr_1_4?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-4"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 13.99,
+    "currency": "GBP",
+    "raw": "£13.99",
+    "asin": "B0H8RGDZL7",
+    "link": "https://www.amazon.co.uk/Ultra-Slim-10000mAh-Wireless-Portable-Pro/dp/B0H8RGDZL7/ref=sr_1_4?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-4"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Sun 18 Oct on your first eligible order to UK or Ireland Or fastest delivery Sat 17 Oct",
+    "price": {
+     "raw": "£13.99",
+     "symbol": "£",
+     "value": 13.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 5,
+   "title": "For MagSafe Power Bank, 12000mAh Portable Charger 22.5W with Stand",
+   "asin": "B0DX25162Q",
+   "link": "https://www.amazon.co.uk/Magsafe-Portable-Charger-12000mAh-Charging/dp/B0DX25162Q/ref=sr_1_5?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-5",
+   "recent_sales": "3K+ bought in past month",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/610Vz+2eDmL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4,
+   "ratings_total": 1217,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 20.99,
+     "currency": "GBP",
+     "raw": "£20.99",
+     "name": "Primary",
+     "is_primary": true,
+     "list_price": "£33.99",
+     "asin": "B0DX25162Q",
+     "link": "https://www.amazon.co.uk/Magsafe-Portable-Charger-12000mAh-Charging/dp/B0DX25162Q/ref=sr_1_5?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-5"
+    },
+    {
+     "symbol": "£",
+     "value": 33.99,
+     "currency": "GBP",
+     "raw": "£33.99",
+     "name": "Original",
+     "is_rrp": true,
+     "link": "https://www.amazon.co.uk/Magsafe-Portable-Charger-12000mAh-Charging/dp/B0DX25162Q/ref=sr_1_5?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-5",
+     "asin": "B0DX25162Q"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 20.99,
+    "currency": "GBP",
+    "raw": "£20.99",
+    "name": "Primary",
+    "is_primary": true,
+    "list_price": "£33.99",
+    "asin": "B0DX25162Q",
+    "link": "https://www.amazon.co.uk/Magsafe-Portable-Charger-12000mAh-Charging/dp/B0DX25162Q/ref=sr_1_5?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-5"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Sun 18 Oct on your first eligible order to UK or Ireland Or fastest delivery Tomorrow, 16 Oct",
+    "price": {
+     "raw": "£20.99",
+     "symbol": "£",
+     "value": 20.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 6,
+   "title": "Wireless Magnetic Power Bank, Ultra-Slim Portable Charger 10000mAh, 20W Fast Charging Compact High-Speed Battery Pack, Wireless Powerbank for iPhone 17 16 15 14 13 12 Plus Pro Max Mini iPad Galaxy",
+   "asin": "B0H5CFV9LL",
+   "link": "https://www.amazon.co.uk/Wireless-Magnetic-Ultra-Slim-High-Speed-Powerbank/dp/B0H5CFV9LL/ref=sr_1_6?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-6",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/419lMHMIoWL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4.5,
+   "ratings_total": 381,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 12.99,
+     "currency": "GBP",
+     "raw": "£12.99",
+     "name": "Save 7%",
+     "is_primary": true,
+     "list_price": "£13.99",
+     "asin": "B0H5CFV9LL",
+     "link": "https://www.amazon.co.uk/Wireless-Magnetic-Ultra-Slim-High-Speed-Powerbank/dp/B0H5CFV9LL/ref=sr_1_6?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-6"
+    },
+    {
+     "symbol": "£",
+     "value": 13.99,
+     "currency": "GBP",
+     "raw": "£13.99",
+     "name": "Save 7%",
+     "is_rrp": true,
+     "link": "https://www.amazon.co.uk/Wireless-Magnetic-Ultra-Slim-High-Speed-Powerbank/dp/B0H5CFV9LL/ref=sr_1_6?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-6",
+     "asin": "B0H5CFV9LL"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 12.99,
+    "currency": "GBP",
+    "raw": "£12.99",
+    "name": "Save 7%",
+    "is_primary": true,
+    "list_price": "£13.99",
+    "asin": "B0H5CFV9LL",
+    "link": "https://www.amazon.co.uk/Wireless-Magnetic-Ultra-Slim-High-Speed-Powerbank/dp/B0H5CFV9LL/ref=sr_1_6?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-6"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Sun 18 Oct on your first eligible order to UK or Ireland Or fastest delivery Tomorrow, 16 Oct",
+    "price": {
+     "raw": "£12.99",
+     "symbol": "£",
+     "value": 12.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 7,
+   "title": "For MagSafe Power Bank, 12000mAh Portable Charger 22.5W, Deep Black",
+   "asin": "B0HDP4QPZH",
+   "link": "https://www.amazon.co.uk/MagSafe-Power-12000mAh-Portable-Charger/dp/B0HDP4QPZH/ref=sr_1_7?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-7",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/61pnVNe9CcL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4.9,
+   "ratings_total": 13,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 17.99,
+     "currency": "GBP",
+     "raw": "£17.99",
+     "name": "Primary",
+     "is_primary": true,
+     "list_price": "£27.99",
+     "asin": "B0HDP4QPZH",
+     "link": "https://www.amazon.co.uk/MagSafe-Power-12000mAh-Portable-Charger/dp/B0HDP4QPZH/ref=sr_1_7?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-7"
+    },
+    {
+     "symbol": "£",
+     "value": 27.99,
+     "currency": "GBP",
+     "raw": "£27.99",
+     "name": "Original",
+     "is_rrp": true,
+     "link": "https://www.amazon.co.uk/MagSafe-Power-12000mAh-Portable-Charger/dp/B0HDP4QPZH/ref=sr_1_7?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-7",
+     "asin": "B0HDP4QPZH"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 17.99,
+    "currency": "GBP",
+    "raw": "£17.99",
+    "name": "Primary",
+    "is_primary": true,
+    "list_price": "£27.99",
+    "asin": "B0HDP4QPZH",
+    "link": "https://www.amazon.co.uk/MagSafe-Power-12000mAh-Portable-Charger/dp/B0HDP4QPZH/ref=sr_1_7?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-7"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Mon 19 Oct on your first eligible order to UK or Ireland",
+    "price": {
+     "raw": "£17.99",
+     "symbol": "£",
+     "value": 17.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 8,
+   "title": "For MagSafe Power Bank, 10000mAh 20W Fast Charge Wireless Portable Charger",
+   "asin": "B0G7H991L6",
+   "link": "https://www.amazon.co.uk/10000mAh-Wireless-Portable-Essential-Compatible/dp/B0G7H991L6/ref=sr_1_8?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-8",
+   "recent_sales": "1K+ bought in past month",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/613UyvQm8bL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 3.9,
+   "ratings_total": 1185,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 30.99,
+     "currency": "GBP",
+     "raw": "£30.99",
+     "asin": "B0G7H991L6",
+     "link": "https://www.amazon.co.uk/10000mAh-Wireless-Portable-Essential-Compatible/dp/B0G7H991L6/ref=sr_1_8?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-8"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 30.99,
+    "currency": "GBP",
+    "raw": "£30.99",
+    "asin": "B0G7H991L6",
+    "link": "https://www.amazon.co.uk/10000mAh-Wireless-Portable-Essential-Compatible/dp/B0G7H991L6/ref=sr_1_8?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-8"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Sun 18 Oct on your first eligible order to UK or Ireland Or fastest delivery Tomorrow, 16 Oct",
+    "price": {
+     "raw": "£30.99",
+     "symbol": "£",
+     "value": 30.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 9,
+   "title": "for Magsafe Power Bank, 5000mAh Slim Wireless Portable Charger",
+   "asin": "B0GLPX6CRS",
+   "link": "https://www.amazon.co.uk/Magsafe-5000mAh-Wireless-Portable-Charger/dp/B0GLPX6CRS/ref=sr_1_9?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-9",
+   "recent_sales": "1K+ bought in past month",
+   "availability": {
+    "raw": "Only 6 left in stock."
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/719nGQhMrxL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4,
+   "ratings_total": 205,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 30.63,
+     "currency": "GBP",
+     "raw": "£30.63",
+     "asin": "B0GLPX6CRS",
+     "link": "https://www.amazon.co.uk/Magsafe-5000mAh-Wireless-Portable-Charger/dp/B0GLPX6CRS/ref=sr_1_9?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-9"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 30.63,
+    "currency": "GBP",
+    "raw": "£30.63",
+    "asin": "B0GLPX6CRS",
+    "link": "https://www.amazon.co.uk/Magsafe-5000mAh-Wireless-Portable-Charger/dp/B0GLPX6CRS/ref=sr_1_9?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-9"
+   },
+   "delivery": {
+    "tagline": "FREE delivery 28 Oct - 2 Nov on your first eligible order to UK or Ireland",
+    "price": {
+     "raw": "£30.63",
+     "symbol": "£",
+     "value": 30.63,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 10,
+   "title": "Anker Nano Magnetic Ultra Slim Power Bank Qi2 15W Wireless Portable Charger",
+   "asin": "B0F29J6H1V",
+   "link": "https://www.amazon.co.uk/Anker-Magnetic-Wireless-Portable-Charger/dp/B0F29J6H1V/ref=sr_1_10?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-10",
+   "recent_sales": "3K+ bought in past month",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/61vP1lfNnjL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4.3,
+   "ratings_total": 5091,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 42.99,
+     "currency": "GBP",
+     "raw": "£42.99",
+     "name": "Primary",
+     "is_primary": true,
+     "list_price": "£49.99",
+     "asin": "B0F29J6H1V",
+     "link": "https://www.amazon.co.uk/Anker-Magnetic-Wireless-Portable-Charger/dp/B0F29J6H1V/ref=sr_1_10?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-10"
+    },
+    {
+     "symbol": "£",
+     "value": 49.99,
+     "currency": "GBP",
+     "raw": "£49.99",
+     "name": "Original",
+     "is_rrp": true,
+     "link": "https://www.amazon.co.uk/Anker-Magnetic-Wireless-Portable-Charger/dp/B0F29J6H1V/ref=sr_1_10?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-10",
+     "asin": "B0F29J6H1V"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 42.99,
+    "currency": "GBP",
+    "raw": "£42.99",
+    "name": "Primary",
+    "is_primary": true,
+    "list_price": "£49.99",
+    "asin": "B0F29J6H1V",
+    "link": "https://www.amazon.co.uk/Anker-Magnetic-Wireless-Portable-Charger/dp/B0F29J6H1V/ref=sr_1_10?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-10"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Sun 18 Oct Or fastest delivery Tomorrow, 16 Oct",
+    "price": {
+     "raw": "£42.99",
+     "symbol": "£",
+     "value": 42.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 11,
+   "title": "Riapow Magnetic Power Bank 10000mAh, Slim Magnet Wireless Portable Charger",
+   "asin": "B0F5BDLGGB",
+   "link": "https://www.amazon.co.uk/Riapow-Magnetic-Portable-Charger-10000mAh/dp/B0F5BDLGGB/ref=sr_1_11?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-11",
+   "recent_sales": "1K+ bought in past month",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/61AnGdXmCaL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4.2,
+   "ratings_total": 6047,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 25.69,
+     "currency": "GBP",
+     "raw": "£25.69",
+     "asin": "B0F5BDLGGB",
+     "link": "https://www.amazon.co.uk/Riapow-Magnetic-Portable-Charger-10000mAh/dp/B0F5BDLGGB/ref=sr_1_11?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-11"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 25.69,
+    "currency": "GBP",
+    "raw": "£25.69",
+    "asin": "B0F5BDLGGB",
+    "link": "https://www.amazon.co.uk/Riapow-Magnetic-Portable-Charger-10000mAh/dp/B0F5BDLGGB/ref=sr_1_11?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-11"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Sun 18 Oct on your first eligible order to UK or Ireland Or fastest delivery Tomorrow, 16 Oct",
+    "price": {
+     "raw": "£25.69",
+     "symbol": "£",
+     "value": 25.69,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 12,
+   "title": "For MagSafe Power Bank, 12000mAh Portable Charger 22.5W, Dark Blue",
+   "asin": "B0GCJGVB2J",
+   "link": "https://www.amazon.co.uk/Eissix-Magsafe-12000mAh-Portable-Charging/dp/B0GCJGVB2J/ref=sr_1_12?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-12",
+   "recent_sales": "500+ bought in past month",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/61f6bIDyzrL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4,
+   "ratings_total": 1217,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 20.99,
+     "currency": "GBP",
+     "raw": "£20.99",
+     "name": "Primary",
+     "is_primary": true,
+     "list_price": "£32.99",
+     "asin": "B0GCJGVB2J",
+     "link": "https://www.amazon.co.uk/Eissix-Magsafe-12000mAh-Portable-Charging/dp/B0GCJGVB2J/ref=sr_1_12?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-12"
+    },
+    {
+     "symbol": "£",
+     "value": 32.99,
+     "currency": "GBP",
+     "raw": "£32.99",
+     "name": "Original",
+     "is_rrp": true,
+     "link": "https://www.amazon.co.uk/Eissix-Magsafe-12000mAh-Portable-Charging/dp/B0GCJGVB2J/ref=sr_1_12?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-12",
+     "asin": "B0GCJGVB2J"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 20.99,
+    "currency": "GBP",
+    "raw": "£20.99",
+    "name": "Primary",
+    "is_primary": true,
+    "list_price": "£32.99",
+    "asin": "B0GCJGVB2J",
+    "link": "https://www.amazon.co.uk/Eissix-Magsafe-12000mAh-Portable-Charging/dp/B0GCJGVB2J/ref=sr_1_12?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-12"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Sun 18 Oct on your first eligible order to UK or Ireland Or fastest delivery Sat 17 Oct",
+    "price": {
+     "raw": "£20.99",
+     "symbol": "£",
+     "value": 20.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 13,
+   "title": "Power Bank, 10000mAh Magnetic Portable Charger for Magsafe, Fast Charging Compact High-Speed Battery Pack, Ultra-Slim Wireless Powerbank for iPhone 17/16/15/14/13/12 Pro Max Series, Samsung, Android",
+   "asin": "B0GT3Y8TX1",
+   "link": "https://www.amazon.co.uk/10000mAh-High-Speed-Ultra-Slim-Powerbank-Pro/dp/B0GT3Y8TX1/ref=sr_1_13?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-13",
+   "recent_sales": "1K+ bought in past month",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/617Aefryw4L._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4.3,
+   "ratings_total": 193,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 12.99,
+     "currency": "GBP",
+     "raw": "£12.99",
+     "name": "Primary",
+     "is_primary": true,
+     "list_price": "£14.99",
+     "asin": "B0GT3Y8TX1",
+     "link": "https://www.amazon.co.uk/10000mAh-High-Speed-Ultra-Slim-Powerbank-Pro/dp/B0GT3Y8TX1/ref=sr_1_13?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-13"
+    },
+    {
+     "symbol": "£",
+     "value": 14.99,
+     "currency": "GBP",
+     "raw": "£14.99",
+     "name": "Original",
+     "is_rrp": true,
+     "link": "https://www.amazon.co.uk/10000mAh-High-Speed-Ultra-Slim-Powerbank-Pro/dp/B0GT3Y8TX1/ref=sr_1_13?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-13",
+     "asin": "B0GT3Y8TX1"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 12.99,
+    "currency": "GBP",
+    "raw": "£12.99",
+    "name": "Primary",
+    "is_primary": true,
+    "list_price": "£14.99",
+    "asin": "B0GT3Y8TX1",
+    "link": "https://www.amazon.co.uk/10000mAh-High-Speed-Ultra-Slim-Powerbank-Pro/dp/B0GT3Y8TX1/ref=sr_1_13?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-13"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Fri 30 Oct on your first eligible order to UK or Ireland",
+    "price": {
+     "raw": "£12.99",
+     "symbol": "£",
+     "value": 12.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 14,
+   "title": "Wireless Power Bank for iPhone, 10000mAh Magnetic Power Bank, External Battery Fast Charging Portable, Compatible with iPhone 12/13/14/15/16/17 Pro MAX/Pro/Air/Mini/Plus",
+   "asin": "B0GQY2LTS9",
+   "link": "https://www.amazon.co.uk/Wireless-10000mAh-Magnetic-External-Compatible/dp/B0GQY2LTS9/ref=sr_1_14?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-14",
+   "recent_sales": "200+ bought in past month",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/51G2FhNICmL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4.4,
+   "ratings_total": 68,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 10.99,
+     "currency": "GBP",
+     "raw": "£10.99",
+     "asin": "B0GQY2LTS9",
+     "link": "https://www.amazon.co.uk/Wireless-10000mAh-Magnetic-External-Compatible/dp/B0GQY2LTS9/ref=sr_1_14?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-14"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 10.99,
+    "currency": "GBP",
+    "raw": "£10.99",
+    "asin": "B0GQY2LTS9",
+    "link": "https://www.amazon.co.uk/Wireless-10000mAh-Magnetic-External-Compatible/dp/B0GQY2LTS9/ref=sr_1_14?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-14"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Sun 18 Oct on your first eligible order to UK or Ireland Or fastest delivery Sat 17 Oct",
+    "price": {
+     "raw": "£10.99",
+     "symbol": "£",
+     "value": 10.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 15,
+   "title": "Ultra Slim Power Bank for Magsafe, Magnetic Power Bank 20W Fast Charging",
+   "asin": "B0HGR32683",
+   "link": "https://www.amazon.co.uk/Ultra-Power-Magsafe-Magnetic-Charging/dp/B0HGR32683/ref=sr_1_15?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-15",
+   "recent_sales": "1K+ bought in past month",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/618IXYX2xlL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 3.8,
+   "ratings_total": 44,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 16.99,
+     "currency": "GBP",
+     "raw": "£16.99",
+     "name": "Limited time deal",
+     "is_primary": true,
+     "list_price": "£19.99",
+     "asin": "B0HGR32683",
+     "link": "https://www.amazon.co.uk/Ultra-Power-Magsafe-Magnetic-Charging/dp/B0HGR32683/ref=sr_1_15?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-15"
+    },
+    {
+     "symbol": "£",
+     "value": 19.99,
+     "currency": "GBP",
+     "raw": "£19.99",
+     "name": "Limited time deal",
+     "is_rrp": true,
+     "link": "https://www.amazon.co.uk/Ultra-Power-Magsafe-Magnetic-Charging/dp/B0HGR32683/ref=sr_1_15?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-15",
+     "asin": "B0HGR32683"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 16.99,
+    "currency": "GBP",
+    "raw": "£16.99",
+    "name": "Limited time deal",
+    "is_primary": true,
+    "list_price": "£19.99",
+    "asin": "B0HGR32683",
+    "link": "https://www.amazon.co.uk/Ultra-Power-Magsafe-Magnetic-Charging/dp/B0HGR32683/ref=sr_1_15?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-15"
+   },
+   "delivery": {
+    "tagline": "FREE delivery Sun 18 Oct on your first eligible order to UK or Ireland Or fastest delivery Sat 17 Oct",
+    "price": {
+     "raw": "£16.99",
+     "symbol": "£",
+     "value": 16.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  },
+  {
+   "position": 16,
+   "title": "Anker Zolo Magnetic Power Bank,10,000mAh Magsafe Portable Charger",
+   "asin": "B0DCNKDS5B",
+   "link": "https://www.amazon.co.uk/Anker-Magnetic-Wireless-Portable-Skin-Friendly/dp/B0DCNKDS5B/ref=sr_1_16?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-16",
+   "recent_sales": "2K+ bought in past month",
+   "availability": {
+    "raw": null
+   },
+   "categories": [
+    {
+     "name": "All Departments",
+     "id": "aps"
+    }
+   ],
+   "image": "https://m.media-amazon.com/images/I/61NmRnphNJL._AC_UY218_.jpg",
+   "is_prime": false,
+   "is_amazon_fresh": false,
+   "is_whole_foods_market": false,
+   "rating": 4.5,
+   "ratings_total": 4917,
+   "prices": [
+    {
+     "symbol": "£",
+     "value": 26.99,
+     "currency": "GBP",
+     "raw": "£26.99",
+     "name": "Primary",
+     "is_primary": true,
+     "list_price": "£29.99",
+     "asin": "B0DCNKDS5B",
+     "link": "https://www.amazon.co.uk/Anker-Magnetic-Wireless-Portable-Skin-Friendly/dp/B0DCNKDS5B/ref=sr_1_16?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-16"
+    },
+    {
+     "symbol": "£",
+     "value": 29.99,
+     "currency": "GBP",
+     "raw": "£29.99",
+     "name": "Original",
+     "is_rrp": true,
+     "link": "https://www.amazon.co.uk/Anker-Magnetic-Wireless-Portable-Skin-Friendly/dp/B0DCNKDS5B/ref=sr_1_16?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-16",
+     "asin": "B0DCNKDS5B"
+    }
+   ],
+   "price": {
+    "symbol": "£",
+    "value": 26.99,
+    "currency": "GBP",
+    "raw": "£26.99",
+    "name": "Primary",
+    "is_primary": true,
+    "list_price": "£29.99",
+    "asin": "B0DCNKDS5B",
+    "link": "https://www.amazon.co.uk/Anker-Magnetic-Wireless-Portable-Skin-Friendly/dp/B0DCNKDS5B/ref=sr_1_16?dib=eyJ2IjoiMSJ9.K3Aq7VfgAPbgSbw7024-tfyZ8PneTUQmAyu9Q9jM1rjMbNMchA205iC5mJyyFakjgJpe4Tkt53vfIogUPCROtXMyMFQxFfY4MPNbZ69JgWgZ6BLnG5bkv-pw0k218RqKC7H97SNFoa3JsdwqIhLIRe6PLsHpssYZqvw3YLXmeyo5NYSo5J4pMy2jWwlajwcC3u9-TD0KGpW_PIwbm1yq7G45NtRAgooz_wzfzs-Q2Yk.CD8Ogbn9r20m53yY49L1hRJxN63bl8A3NJCAydWDe4E&dib_tag=se&keywords=magnetic+power+bank&qid=1792092728&sr=8-16"
+   },
+   "delivery": {
+    "price": {
+     "raw": "£26.99",
+     "symbol": "£",
+     "value": 26.99,
+     "currency": "GBP",
+     "is_free": false
+    }
+   }
+  }
+ ]
+}

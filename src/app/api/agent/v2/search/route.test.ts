@@ -43,7 +43,7 @@ describe("GET /api/agent/v2/search", () => {
   });
 
   it("hands a valid query to the paid search once live search is ready", async () => {
-    vi.mocked(liveSources).mockReturnValue({ ready: true, sources: {} as never });
+    vi.mocked(liveSources).mockReturnValue({ ready: true, sample: false, sources: {} as never });
     const res = await call("?q=power+bank&markets=gb");
     expect(await res.json()).toEqual({ paid: true });
     expect(paid()).toHaveBeenCalledTimes(1);

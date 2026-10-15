@@ -4,7 +4,7 @@
 // arrive in Phase 9: until then they are named as not included, never estimated.
 
 import { ECB_DAILY_URL, toEur, type FxRates } from "@/server/scoring/fx";
-import type { Market, Money, SupplierOffer } from "./types";
+import { MARKET_NAME, type Market, type Money, type SupplierOffer } from "./types";
 
 const cents = (x: number) => Math.round(x * 100) / 100;
 
@@ -57,7 +57,7 @@ export function liveMargin(
   const spread = cents(sellingPrice - landedCost);
   const converted = suppliers.some((s) => s.unitPrice.currency !== currency || (s.shipping && s.shipping.currency !== currency));
   const notIncluded = [
-    ...(shippingCost === null ? [`shipping to ${market} (the supplier didn't quote it)`] : []),
+    ...(shippingCost === null ? [`shipping to ${MARKET_NAME[market]} (the supplier didn't quote it)`] : []),
     "marketplace fees",
     "VAT",
     "import duty",
@@ -72,7 +72,7 @@ export function liveMargin(
     landedCost,
     spread,
     spreadPct: sellingPrice > 0 ? Math.round((spread / sellingPrice) * 1000) / 10 : 0,
-    included: ["selling price (median of matching listings)", "supplier unit price", ...(shippingCost !== null ? [`shipping to ${market}`] : [])],
+    included: ["selling price (median of matching listings)", "supplier unit price", ...(shippingCost !== null ? [`shipping to ${MARKET_NAME[market]}`] : [])],
     notIncluded,
     exchangeRate: converted ? { source: "European Central Bank euro reference rates", url: ECB_DAILY_URL, date: fx.date } : null,
   };

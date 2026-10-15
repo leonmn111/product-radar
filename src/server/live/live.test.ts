@@ -95,7 +95,7 @@ describe("live margin", () => {
   it("leaves unquoted shipping out and says so", () => {
     const m = liveMargin("GB", "GBP", [{ amount: 20, currency: "GBP" }], [offer("x", 5, null)], fx)!;
     expect(m.shippingCost).toBeNull();
-    expect(m.notIncluded[0]).toBe("shipping to GB (the supplier didn't quote it)");
+    expect(m.notIncluded[0]).toBe("shipping to the UK (the supplier didn't quote it)");
     expect(m.label).toBe("Spread before shipping, fees, VAT, duty and advertising");
   });
 });

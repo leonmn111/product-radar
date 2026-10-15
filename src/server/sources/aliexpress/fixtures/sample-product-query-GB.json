@@ -1,0 +1,96 @@
+{
+ "_fixture": "SAMPLE, NOT REAL DATA. Made-up AliExpress offers in the official affiliate API's response shape, for building the live-search UI before the affiliate account is approved. Used only in development sample mode (LIVE_SAMPLE_DATA=on) and in tests; refused in production.",
+ "aliexpress_affiliate_product_query_response": {
+  "resp_result": {
+   "resp_code": 200,
+   "resp_msg": "Call succeeds",
+   "result": {
+    "current_record_count": 8,
+    "products": {
+     "product": [
+      {
+       "product_id": "1005009000000001",
+       "product_title": "Magnetic Power Bank 10000mAh 20W PD Wireless Portable Charger Slim for iPhone",
+       "target_sale_price": "5.89",
+       "target_sale_price_currency": "GBP",
+       "product_detail_url": "https://www.aliexpress.com/item/1005009000000001.html",
+       "product_main_image_url": null,
+       "lastest_volume": 2311,
+       "evaluate_rate": "96.1%"
+      },
+      {
+       "product_id": "1005009000000002",
+       "product_title": "10000mAh Magnetic Wireless Power Bank 20W Fast Charging Portable Charger",
+       "target_sale_price": "6.40",
+       "target_sale_price_currency": "GBP",
+       "product_detail_url": "https://www.aliexpress.com/item/1005009000000002.html",
+       "product_main_image_url": null,
+       "lastest_volume": 845,
+       "evaluate_rate": "95.4%"
+      },
+      {
+       "product_id": "1005009000000003",
+       "product_title": "Ultra Slim Magnetic Power Bank 10000mAh 20W Wireless Charger Portable",
+       "target_sale_price": "6.15",
+       "target_sale_price_currency": "GBP",
+       "product_detail_url": "https://www.aliexpress.com/item/1005009000000003.html",
+       "product_main_image_url": null,
+       "lastest_volume": 1203,
+       "evaluate_rate": "97.0%"
+      },
+      {
+       "product_id": "1005009000000004",
+       "product_title": "Wireless Magnetic Power Bank 10000mAh PD 20W Portable Charger Battery",
+       "target_sale_price": "5.55",
+       "target_sale_price_currency": "GBP",
+       "product_detail_url": "https://www.aliexpress.com/item/1005009000000004.html",
+       "product_main_image_url": null,
+       "lastest_volume": 640,
+       "evaluate_rate": "94.8%"
+      },
+      {
+       "product_id": "1005009000000007",
+       "product_title": "Magsafe Wireless Power Bank 10000mAh PD 20W Fast Charging Magnetic Portable Charger",
+       "target_sale_price": "6.05",
+       "target_sale_price_currency": "GBP",
+       "product_detail_url": "https://www.aliexpress.com/item/1005009000000007.html",
+       "product_main_image_url": null,
+       "lastest_volume": 1876,
+       "evaluate_rate": "96.4%"
+      },
+      {
+       "product_id": "1005009000000008",
+       "product_title": "10000mAh Magsafe Magnetic Wireless Power Bank PD 20W Fast Charging for iPhone",
+       "target_sale_price": "5.95",
+       "target_sale_price_currency": "GBP",
+       "product_detail_url": "https://www.aliexpress.com/item/1005009000000008.html",
+       "product_main_image_url": null,
+       "lastest_volume": 932,
+       "evaluate_rate": "95.7%"
+      },
+      {
+       "product_id": "1005009000000005",
+       "product_title": "Magnetic Power Bank 12000mAh 22.5W Portable Charger with Stand",
+       "target_sale_price": "7.80",
+       "target_sale_price_currency": "GBP",
+       "product_detail_url": "https://www.aliexpress.com/item/1005009000000005.html",
+       "product_main_image_url": null,
+       "lastest_volume": 312,
+       "evaluate_rate": "95.9%"
+      },
+      {
+       "product_id": "1005009000000006",
+       "product_title": "Phone Holder Car Mount Magnetic Dashboard",
+       "target_sale_price": "1.20",
+       "target_sale_price_currency": "GBP",
+       "product_detail_url": "https://www.aliexpress.com/item/1005009000000006.html",
+       "product_main_image_url": null,
+       "lastest_volume": 9800,
+       "evaluate_rate": "96.5%"
+      }
+     ]
+    }
+   }
+  }
+ }
+}

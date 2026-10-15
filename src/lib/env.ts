@@ -45,6 +45,13 @@ const EnvSchema = z
       .default("0.01"),
     // Live search (v2): Rainforest API key for Amazon US + UK (rainforestapi.com).
     RAINFOREST_API_KEY: optional,
+    // Live search (v2): AliExpress Open Platform affiliate API (openservice.aliexpress.com).
+    ALIEXPRESS_APP_KEY: optional,
+    ALIEXPRESS_APP_SECRET: optional,
+    ALIEXPRESS_TRACKING_ID: optional,
+    // Development only: "on" runs the live-search page on recorded/sample responses (no provider
+    // calls, no cost). Refused in production; the paid API never uses it.
+    LIVE_SAMPLE_DATA: optional,
     // Coinbase Developer Platform API key, for the Coinbase facilitator (Base mainnet). The secret is an
     // Ed25519 key (base64) or an EC key (PEM); a PEM pasted on one line with literal "\n"s is unfolded.
     CDP_API_KEY_ID: optional,

@@ -8,6 +8,9 @@ export const MARKETS: Record<Market, { label: string; amazonDomain: string; curr
   GB: { label: "Amazon UK", amazonDomain: "amazon.co.uk", currency: "GBP" },
 };
 
+/** How a market reads in a sentence: "shipping to the UK". */
+export const MARKET_NAME: Record<Market, string> = { US: "the US", GB: "the UK" };
+
 export type Money = { amount: number; currency: string };
 
 /** One sourced fact: where it came from, when, and how much it can be trusted (0–100). */
