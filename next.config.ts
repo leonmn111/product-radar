@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
+  // The icon is app/icon.svg; older tools still ask for /favicon.ico by name.
+  async redirects() {
+    return [{ source: "/favicon.ico", destination: "/icon.svg", permanent: true }];
+  },
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,

@@ -14,9 +14,9 @@ import { getShowcase } from "@/server/products/showcase-cache";
 // to /dashboard. Everything here is static except the live counts and the showcase,
 // which stream in from the database (cached for about an hour).
 
-const TITLE = "ProductRadar — Evidence-backed product research for e-commerce";
+const TITLE = "ProductRadar — Product intelligence for e-commerce arbitrage";
 const DESCRIPTION =
-  "Score products from sourced, timestamped evidence and see real price gaps between stores after eBay and Shopify fees. For e-commerce operators and buyer agents.";
+  "Rule-based product intelligence and Shopify export tools for serious e-commerce arbitrage: real price gaps, sourced evidence and margins after fees.";
 
 export const metadata: Metadata = {
   title: TITLE,

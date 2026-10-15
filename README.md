@@ -384,6 +384,15 @@ Validated at startup by `src/lib/env.ts` — the app refuses to start with a mis
 | `CDP_API_KEY_ID` | for mainnet | Coinbase Developer Platform secret API key ID (portal.cdp.coinbase.com) |
 | `CDP_API_KEY_SECRET` | for mainnet | That key's secret (Ed25519 base64, or EC PEM) |
 | `SERPAPI_API_KEY` | for `trends:enrich` | SerpApi key (serpapi.com, free plan 250 searches/month). Read by the script only, not the app. |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | optional | Turns on Plausible analytics (cookieless), e.g. `theproductradar.io`. Read at build time: redeploy after setting. |
+| `NEXT_PUBLIC_PLAUSIBLE_SRC` | optional | A self-hosted Plausible script URL instead of plausible.io's |
+| `NEXT_PUBLIC_POSTHOG_KEY` | optional | Turns on PostHog instead (`phc_…`), cookie-free in-memory mode. Ignored when Plausible is set. |
+| `NEXT_PUBLIC_POSTHOG_HOST` | optional | Default `https://eu.i.posthog.com` |
+
+**Search and sharing.** `robots.txt` and `sitemap.xml` list only the public pages (`/` and `/docs`); every other
+page is `noindex`. The share card (`src/components/brand/share-card.tsx`) is used for Open Graph and X on every page,
+and the icon is `src/app/icon.svg` (`/favicon.ico` redirects to it). Analytics conversions are page views:
+`/signin` (sign-up started), `/dashboard` (signed in) and `/billing/success` (paid upgrade).
 
 ## Layout
 

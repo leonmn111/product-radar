@@ -16,16 +16,17 @@ const SITE = (env.APP_URL ?? "https://theproductradar.io").replace(/\/+$/, "");
 const MCP_TARBALL = `${SITE}/mcp/productradar-mcp-${mcpPackage.version}.tgz`;
 
 const TITLE = "Agent API & MCP docs | ProductRadar";
+// Kept under ~155 characters, the length search results show.
 const DESCRIPTION =
-  "Query ProductRadar's evidence-backed product opportunities from AI agents. Pay per request in USDC with x402: no account, no API key. cURL examples, a TypeScript client and an MCP server for Claude and Cursor.";
+  "Rule-based product intelligence for AI agents: pay per request in USDC with x402, no account or API key. cURL examples, a TypeScript client and an MCP server.";
 
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: `${SITE}/docs` },
   robots: { index: true, follow: true },
-  openGraph: { type: "website", siteName: "ProductRadar", title: TITLE, description: DESCRIPTION, url: `${SITE}/docs` },
-  twitter: { card: "summary", title: TITLE, description: DESCRIPTION },
+  openGraph: { type: "website", siteName: "ProductRadar", locale: "en_GB", title: TITLE, description: DESCRIPTION, url: `${SITE}/docs` },
+  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
 };
 
 const NAV = [
