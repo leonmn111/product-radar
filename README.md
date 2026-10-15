@@ -1,5 +1,11 @@
 # ProductRadar
 
+> **Pivot in progress (2026-10-15).** ProductRadar is being rebuilt as a **Live Search & Scrape on
+> Demand** engine, paid per query in USDC. This README documents **v1**, the static catalog that
+> still runs on theproductradar.io today. For the target design see [ARCHITECTURE.md](./ARCHITECTURE.md),
+> for the plan and open decisions [ROADMAP.md](./ROADMAP.md). v1 sections such as "Margin engine"
+> (Census benchmarks) and the import scripts describe code that v2 will retire.
+
 Next.js (App Router) · TypeScript · PostgreSQL · Prisma 7 · Zod · Tailwind CSS.
 Architecture rules live in [CLAUDE.md](./CLAUDE.md).
 

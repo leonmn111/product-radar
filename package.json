@@ -20,6 +20,7 @@
     "db:rescore": "tsx scripts/rescore.ts",
     "products:import": "tsx scripts/import-products.ts",
     "trends:enrich": "tsx scripts/enrich-trends.ts",
+    "data:refresh": "tsx scripts/refresh-data.ts && tsx scripts/enrich-trends.ts scripts/data/trend-keywords-2026-10.json",
     "fx:update": "tsx scripts/update-fx-rates.ts",
     "stripe:setup": "tsx scripts/stripe-setup.ts",
     "agent:test": "tsx scripts/test-agent-client.ts",
