@@ -1,0 +1,27 @@
+{
+  "_fixture": "TEST ONLY. Shape copied from Rainforest's documented search response (docs.trajectdata.com, Search results); products, prices and ids are made up. Never served to users.",
+  "request_info": { "success": true, "credits_used": 12, "credits_used_this_request": 1, "credits_remaining": 488 },
+  "request_parameters": { "type": "search", "amazon_domain": "amazon.co.uk", "search_term": "magnetic power bank 10000mah" },
+  "request_metadata": { "created_at": "2026-10-15T09:00:00.000Z", "processed_at": "2026-10-15T09:00:11.000Z", "amazon_url": "https://www.amazon.co.uk/s/?k=magnetic+power+bank+10000mah" },
+  "search_results": [
+    {
+      "position": 1, "title": "Magnetic Power Bank 10000mAh Wireless Portable Charger, 20W PD Fast Charging", "asin": "B0TESTAAA1",
+      "link": "https://www.amazon.co.uk/dp/B0TESTAAA1", "image": "https://m.media-amazon.com/images/I/test1.jpg",
+      "is_prime": true, "rating": 4.4, "ratings_total": 2311, "sponsored": true, "recent_sales": "1K+ bought in past month",
+      "prices": [{ "symbol": "£", "value": 21.99, "currency": "GBP", "raw": "£21.99", "is_primary": true }, { "symbol": "£", "value": 29.99, "currency": "GBP", "raw": "£29.99", "is_rrp": true }],
+      "price": { "symbol": "£", "value": 21.99, "currency": "GBP", "raw": "£21.99" }
+    },
+    {
+      "position": 2, "title": "Wireless Magnetic Power Bank 10000mAh, Portable Charger with 20W PD", "asin": "B0TESTAAA2",
+      "link": "https://www.amazon.co.uk/dp/B0TESTAAA2", "image": "https://m.media-amazon.com/images/I/test2.jpg",
+      "is_prime": true, "rating": 4.3, "ratings_total": 845, "sponsored": false,
+      "price": { "symbol": "£", "value": 19.99, "currency": "GBP", "raw": "£19.99" }
+    },
+    {
+      "position": 3, "title": "Laptop Stand Aluminium Adjustable", "asin": "B0TESTBBB1",
+      "link": "https://www.amazon.co.uk/dp/B0TESTBBB1", "image": null, "sponsored": false,
+      "price": { "symbol": "$", "value": 30, "currency": "USD", "raw": "$30.00" }
+    },
+    { "position": 4, "title": "Listing without a price", "asin": "B0TESTCCC1", "link": "https://www.amazon.co.uk/dp/B0TESTCCC1" }
+  ]
+}

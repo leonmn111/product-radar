@@ -1,0 +1,66 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it, vi } from "vitest";
+import { QueryBudget } from "@/server/live/budget";
+import { SourceError } from "../types";
+import { createRainforestSource } from "./index";
+import { parseRainforestSearch, RAINFOREST_QUALITY } from "./parse";
+
+const fixture = JSON.parse(readFileSync(join(__dirname, "fixtures/search-amazon-co-uk.json"), "utf8"));
+const fallback = new Date("2026-10-15T12:00:00.000Z");
+
+describe("parseRainforestSearch", () => {
+  const listings = parseRainforestSearch(fixture, "GB", fallback);
+
+  it("keeps priced listings in the market's currency, and drops the rest", () => {
+    // The USD-priced and the unpriced listing are dropped: nothing is converted or guessed.
+    expect(listings.map((l) => l.id)).toEqual(["B0TESTAAA1", "B0TESTAAA2"]);
+  });
+
+  it("reads the selling price, never the RRP, with its evidence", () => {
+    expect(listings[0]).toMatchObject({
+      market: "GB",
+      title: "Magnetic Power Bank 10000mAh Wireless Portable Charger, 20W PD Fast Charging",
+      url: "https://www.amazon.co.uk/dp/B0TESTAAA1",
+      price: { amount: 21.99, currency: "GBP" },
+      rating: 4.4,
+      ratingsTotal: 2311,
+      sponsored: true,
+      recentSales: "1K+ bought in past month",
+      evidence: {
+        id: "rainforest:amazon.co.uk:B0TESTAAA1",
+        provider: "rainforest",
+        sourceUrl: "https://www.amazon.co.uk/dp/B0TESTAAA1",
+        observedAt: "2026-10-15T09:00:11.000Z",
+        quality: RAINFOREST_QUALITY,
+      },
+    });
+    expect(listings[0].evidence.claim).toContain("£21.99 on Amazon UK, rated 4.4/5 from 2,311 ratings, 1K+ bought in past month");
+  });
+});
+
+describe("createRainforestSource", () => {
+  const budget = () => new QueryBudget({ maxCalls: 5, deadlineMs: 30_000 });
+
+  it("asks Rainforest for the market's Amazon domain and spends one call", async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => (url ? Response.json(fixture) : Response.error()));
+    const b = budget();
+    const listings = await createRainforestSource({ apiKey: "k", fetchImpl: fetchImpl as typeof fetch }).search("power bank", "GB", b);
+    const url = new URL(String(fetchImpl.mock.calls[0][0]));
+    expect([url.origin + url.pathname, url.searchParams.get("type"), url.searchParams.get("amazon_domain"), url.searchParams.get("search_term")]).toEqual([
+      "https://api.rainforestapi.com/request",
+      "search",
+      "amazon.co.uk",
+      "power bank",
+    ]);
+    expect(listings).toHaveLength(2);
+    expect(b.callsUsed).toBe(1);
+  });
+
+  it("turns a refusal into a SourceError with Rainforest's own message", async () => {
+    const fetchImpl = vi.fn(async () => Response.json({ request_info: { success: false, message: "Invalid API key" } }, { status: 401 }));
+    await expect(createRainforestSource({ apiKey: "bad", fetchImpl: fetchImpl as typeof fetch }).search("x", "US", budget())).rejects.toEqual(
+      new SourceError("rainforest", "Invalid API key"),
+    );
+  });
+});

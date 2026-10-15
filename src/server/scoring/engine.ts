@@ -122,7 +122,8 @@ export type DimensionScore = {
 
 const clamp = (x: number, lo = 0, hi = 100) => Math.min(hi, Math.max(lo, x));
 const round = (x: number, dp: number) => Math.round(x * 10 ** dp) / 10 ** dp;
-const confidenceFrom = (weightSum: number) => 1 - Math.exp(-weightSum / CONFIDENCE_SCALE);
+/** Confidence from summed evidence weight: C = 1 − e^(−Σw/2). Shared with the live engine (v2). */
+export const confidenceFrom = (weightSum: number) => 1 - Math.exp(-weightSum / CONFIDENCE_SCALE);
 
 export function evidenceWeight(e: EvidenceFact, asOf: Date): number {
   if (e.observedAt.getTime() > asOf.getTime()) return 0; // not yet observed as of this calculation

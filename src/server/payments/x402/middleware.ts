@@ -68,12 +68,12 @@ const releaseNonce = (nonce: string) =>
   db.agentPayment.deleteMany({ where: { nonce: nonce.toLowerCase(), status: "RESERVED" } });
 
 export function withX402Payment(
-  meta: { description: string; mimeType?: string },
+  meta: { description: string; mimeType?: string; priceUsdc?: string },
   handler: (request: NextRequest) => Promise<Response>,
 ) {
   return async function paidHandler(request: NextRequest): Promise<Response> {
     await connection();
-    const config = loadPaymentConfig();
+    const config = loadPaymentConfig(meta.priceUsdc);
     if (!config.ok) {
       return Response.json({ error: "payments_unavailable", message: config.reason }, { status: 503 });
     }

@@ -11,13 +11,13 @@ const TESTNET = "eip155:84532"; // Base Sepolia — the default, and the only ne
 const MAX_TIMEOUT_SECONDS = 120;
 const PLACEHOLDER_PAY_TO = "0x0000000000000000000000000000000000000000"; // docs example only
 
-function requirementsFor(network: string, payTo: string): PaymentRequirements {
+function requirementsFor(network: string, payTo: string, priceUsdc: string): PaymentRequirements {
   const usdc = USDC[network];
   return {
     scheme: "exact",
     network,
     asset: usdc.address,
-    amount: usdcToAtomic(env.X402_PRICE_USDC),
+    amount: usdcToAtomic(priceUsdc),
     payTo,
     maxTimeoutSeconds: MAX_TIMEOUT_SECONDS,
     extra: { name: usdc.name, version: usdc.version },
@@ -28,7 +28,8 @@ export type PaymentConfig =
   | { ok: true; facilitator: Facilitator; requirements: PaymentRequirements }
   | { ok: false; reason: string };
 
-export function loadPaymentConfig(): PaymentConfig {
+/** `priceUsdc`: this endpoint's price; defaults to X402_PRICE_USDC (the v1 agent API's). */
+export function loadPaymentConfig(priceUsdc: string = env.X402_PRICE_USDC): PaymentConfig {
   let facilitator: Facilitator;
   let network: string;
   if (env.X402_MODE === "mock") {
@@ -54,7 +55,7 @@ export function loadPaymentConfig(): PaymentConfig {
     return { ok: false, reason: "Agent payments are not enabled on this server." };
   }
   if (!env.X402_PAY_TO) return { ok: false, reason: "X402_PAY_TO is not configured." };
-  return { ok: true, facilitator, requirements: requirementsFor(network, env.X402_PAY_TO) };
+  return { ok: true, facilitator, requirements: requirementsFor(network, env.X402_PAY_TO, priceUsdc) };
 }
 
 /**
@@ -66,7 +67,7 @@ export function agentPaymentStatus() {
   const config = loadPaymentConfig();
   const requirements = config.ok
     ? config.requirements
-    : requirementsFor(env.X402_NETWORK ?? TESTNET, env.X402_PAY_TO ?? PLACEHOLDER_PAY_TO);
+    : requirementsFor(env.X402_NETWORK ?? TESTNET, env.X402_PAY_TO ?? PLACEHOLDER_PAY_TO, env.X402_PRICE_USDC);
   const usdc = USDC[requirements.network];
   return {
     enabled: config.ok,
