@@ -125,7 +125,7 @@ for a cached copy. It gets the buyer's own id, a note saying it came from the ca
     Dossier is 4 credits without a plan.
   - Typed in `src/server/billing/plans.ts` and sold through Stripe Checkout with inline prices, so nothing is
     set up in the Stripe dashboard. `/upgrade` sells Pro; `POST /api/stripe/checkout` sells any plan or pack
-    (packs and Agency go live when `CREDIT_PACKS_ON_SALE=on`).
+    (packs go live when `CREDIT_PACKS_ON_SALE=on`; Agency only once its 500 monthly credits are granted).
   - Paid packs are credited by the existing webhook (`/api/billing/webhook`, also at `/api/stripe/webhook`):
     the pack, amount and currency must match the catalogue.
   - The balance is `User.platformCredits`. Every change writes a `CreditLedgerEntry` in the same transaction:
@@ -165,7 +165,7 @@ Paid sources need the owner's approval of cost first (Rule 8), and tests never c
 | Role | Source | Status |
 | --- | --- | --- |
 | Amazon listings (UK) | Rainforest API | Connected; trial key set (2026-10-15) |
-| Amazon price, rank and sales history | Keepa API | Phase 1 |
+| Amazon price, rank and sales history | Keepa API (domain 2 = amazon.co.uk) | Connector scaffolded 2026-10-16 (`src/server/sources/keepa/`), tested on made-up data; needs a paid key (about €49/month, owner to approve) |
 | Suppliers | AliExpress Open Platform affiliate API (official) | Connector built, waiting for affiliate approval |
 | Suppliers | 1688 via a licensed provider | Phase 1 |
 | Ad duration and density | Meta Ad Library API | Phase 2 |
@@ -181,13 +181,15 @@ terms.
 | Path | Job |
 | --- | --- |
 | `src/types/` | The data model: `dossier.ts` (the 8 parts, `Evidence`, `Gated<T>`), `financials.ts` (fee stacks, duties, VAT, landed margin) |
-| `src/engine/` | Pure, tested business logic: `margin.ts`, `confidence.ts`, `compliance.ts`, `synonyms.ts` (query expansion), `imageMatch.ts` (scaffold: simulated). Next: the brand flagger |
+| `src/engine/` | Pure, tested business logic: `margin.ts`, `confidence.ts`, `compliance.ts`, `synonyms.ts` (query expansion), `imageMatch.ts` (scaffold: simulated), `trend.ts` (least-squares slope per week, daily step series). Next: the brand flagger |
 | `src/services/` | Assembly: `dossierService.ts` fetches the listings and offers (the only I/O) and builds the 8-part Dossier from them (pure); `dossierStore.ts` keeps each delivered Dossier for reopening |
 | `src/jobs/` | Scheduled work: `dailySnapshot.ts` |
 | `src/server/sources/<provider>/` | One adapter per data provider (Rainforest and AliExpress today) |
 | `src/server/payments/` | x402 and Stripe; the only code that knows about money changing hands |
 | `src/server/live/` | The Phase 8 live-search pipeline built on 2026-10-15. Its confidence, margin and matching code moves into `src/engine/` as each engine module is implemented, then this folder goes |
 | `src/components/DossierTerminal.tsx` | The Dossier's 8 panels as a dense terminal; enforces the Verdict gate in the UI too (preview: `/dev/terminal`, development only) |
+| `src/components/DossierRunner.tsx`, `/terminal` | Run a Standard Dossier for an ASIN, paid in credits; without enough credits it opens the credit packs instead of calling anything |
+| `src/components/CreditPacksModal.tsx` | The three credit packs, bought through Stripe Checkout; opened from the header's credit balance and from the terminal |
 | `src/app/` | Pages and API routes (`/search`, `/api/agent/v2/search` at $0.01, `/api/agent/v2/dossier/{asin}` at $2) |
 
 ## Evidence, the product's core (CLAUDE.md Rule 3)

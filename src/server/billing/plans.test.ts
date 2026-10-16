@@ -26,6 +26,7 @@ describe("the plan catalogue", () => {
     ]);
     expect([PLANS.pro.pricePence, PLANS.pro.tier, PLANS.agency.pricePence, PLANS.agency.tier]).toEqual([2900, "PRO", 14900, "AGENCY"]);
     expect([planPriceLabel(PLANS.pro), planPriceLabel(PLANS.agency)]).toEqual(["£29/month", "£149/month"]);
+    expect([PLANS.pro.monthly, PLANS.agency.monthly]).toEqual([{ freeSearches: 100 }, { credits: 500 }]);
   });
 
   it("prices a credit at £0.50, so a Standard Dossier is 4 credits (£2) without a plan and 1 on Pro", () => {

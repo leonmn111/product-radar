@@ -23,9 +23,21 @@ export const CREDIT_PACKS: Record<CreditPackId, CreditPack> = {
   scale: { id: "scale", name: "Scale Pack", pricePence: 5000, credits: 120 },
 };
 
-export type Plan = { id: PlanId; tier: Exclude<SubscriptionTier, "FREE">; name: string; pricePence: number; interval: "month"; description: string };
+export type Plan = {
+  id: PlanId;
+  tier: Exclude<SubscriptionTier, "FREE">;
+  name: string;
+  pricePence: number;
+  interval: "month";
+  description: string;
+  /** Allowances each month. Recorded here; granting and counting them isn't built yet (ROADMAP.md › Open items). */
+  monthly: { freeSearches?: number; credits?: number };
+};
 
-/** The subscriptions. Pro's allowances: 100 free searches a month, and a Standard Dossier for 1 credit. */
+/**
+ * The subscriptions (owner, 2026-10-16). Pro: 100 free searches a month, a Standard Dossier for 1 credit.
+ * Agency: 500 credits a month, a Standard Dossier for 1 credit, and later a bulk CSV endpoint.
+ */
 export const PLANS: Record<PlanId, Plan> = {
   pro: {
     id: "pro",
@@ -34,18 +46,24 @@ export const PLANS: Record<PlanId, Plan> = {
     pricePence: 2900,
     interval: "month",
     description: "100 free searches a month; a Standard Dossier costs 1 credit.",
+    monthly: { freeSearches: 100 },
   },
-  agency: { id: "agency", tier: "AGENCY", name: "Agency", pricePence: 14900, interval: "month", description: "Everything in Pro, for agencies." },
+  agency: {
+    id: "agency",
+    tier: "AGENCY",
+    name: "Agency",
+    pricePence: 14900,
+    interval: "month",
+    description: "500 credits a month; a Standard Dossier costs 1 credit.",
+    monthly: { credits: 500 },
+  },
 };
 
 /** "£29/month": a plan's price as the site shows it. */
 export const planPriceLabel = (plan: Plan) =>
   `${new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 0 }).format(plan.pricePence / 100)}/${plan.interval}`;
 
-/**
- * What a Standard Dossier costs in credits: 4 (£2.00) without a plan, 1 on Pro. Agency is charged
- * like Pro (an assumption until its allowances are set: it shouldn't cost more than Pro).
- */
+/** What a Standard Dossier costs in credits: 4 (£2.00) without a plan, 1 on Pro or Agency. */
 export const STANDARD_DOSSIER_CREDITS: Record<SubscriptionTier, number> = { FREE: 4, PRO: 1, AGENCY: 1 };
 
 export const CHECKOUT_TIERS: readonly CheckoutTier[] = ["starter", "growth", "scale", "pro", "agency"];

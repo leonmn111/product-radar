@@ -2,11 +2,11 @@ import { connection, type NextRequest } from "next/server";
 import { z } from "zod";
 import { appUrl, originFromHeaders } from "@/lib/app-url";
 import { db } from "@/lib/db";
-import { env } from "@/lib/env";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { getViewer } from "@/server/auth/entitlements";
 import { createPlanCheckoutUrl } from "@/server/billing/checkout";
 import { CHECKOUT_TIERS, type CheckoutTier } from "@/server/billing/plans";
+import { agencyOnSale, creditPacksOnSale } from "@/server/billing/sales";
 import { BillingNotConfiguredError } from "@/server/billing/stripe";
 
 // Each call creates a Stripe session, so cap how fast one account can make them.
@@ -19,16 +19,13 @@ const Body = z.object({ tier: z.enum(CHECKOUT_TIERS as [CheckoutTier, ...Checkou
 // (Pro £29/month, Agency £149/month), for the signed-in user. Prices are in src/server/billing/plans.ts.
 // (Pro is also sold through /upgrade, the site's existing button.)
 //
-// On sale with a Stripe test key outside production, or once the owner sets CREDIT_PACKS_ON_SALE=on
-// after a test-mode run: the checkout parameters haven't been tried against Stripe itself yet.
-const onSale = () =>
-  env.CREDIT_PACKS_ON_SALE === "on" || (env.NODE_ENV !== "production" && /^(sk|rk)_test_/.test(env.STRIPE_SECRET_KEY ?? ""));
-
+// On sale only when creditPacksOnSale() says so, and Agency only when agencyOnSale() does
+// (src/server/billing/sales.ts).
 export async function POST(request: NextRequest) {
   await connection();
   const base = appUrl(request.nextUrl.origin);
 
-  if (!onSale()) {
+  if (!creditPacksOnSale()) {
     return Response.json(
       { error: "not_on_sale", message: "Credit packs aren't on sale yet. You haven't been charged." },
       { status: 503, headers: { "Cache-Control": "no-store" } },
@@ -44,6 +41,13 @@ export async function POST(request: NextRequest) {
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return Response.json({ error: "invalid_tier", message: `Choose one of: ${CHECKOUT_TIERS.join(", ")}.` }, { status: 400 });
+  }
+
+  if (parsed.data.tier === "agency" && !agencyOnSale()) {
+    return Response.json(
+      { error: "not_on_sale", message: "The Agency plan isn't on sale yet. You haven't been charged." },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   const viewer = await getViewer();

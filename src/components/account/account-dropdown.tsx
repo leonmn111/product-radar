@@ -12,10 +12,12 @@ const item = `flex w-full items-center rounded-lg px-2.5 py-2 text-left text-sm 
 export function AccountDropdown({
   email,
   isPro,
+  planLabel,
   signOutAction,
 }: {
   email: string;
   isPro: boolean;
+  planLabel: string;
   signOutAction: () => Promise<void>;
 }) {
   const { open, toggle, close, wrapper, button, panelPosition, onBlur } = useDropdown();
@@ -50,12 +52,15 @@ export function AccountDropdown({
                   : "bg-zinc-100 text-zinc-700 ring-zinc-500/20 dark:bg-white/10 dark:text-zinc-300 dark:ring-white/15"
               }`}
             >
-              {isPro ? "Pro" : "Free"}
+              {planLabel}
             </span>
           </div>
           <div className="py-1">
             <Link href="/dashboard" onClick={() => close()} className={item}>
               Catalog
+            </Link>
+            <Link href="/terminal" onClick={() => close()} className={item}>
+              Dossier terminal
             </Link>
             <Link href="/account" onClick={() => close()} className={item}>
               Account

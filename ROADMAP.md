@@ -49,6 +49,10 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
   score only runs on development sample data and is refused for anything else; a real comparison
   (perceptual hash, SSIM or a vision model) replaces it here.
 - **Keepa API:** Amazon price, sales-rank and sales history, feeding momentum and velocity.
+  *Scaffolded 2026-10-16:* `fetchKeepaHistory(asin, 2)` in `src/server/sources/keepa/` reads 90 days of
+  SALES rank and NEW price (Keepa's domain 2 is amazon.co.uk; 3 is amazon.de), and
+  `calculateTrendSlope()` in `src/engine/trend.ts` gives the least-squares slope per week (a negative
+  rank slope means rising sales). Tested on a made-up response in Keepa's documented format; no key yet.
 
 ### Phase 2: payments, ads and polish (weeks 4–8, to 11 Dec)
 
@@ -90,12 +94,16 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 
 ## Open items
 
-- **Agency's allowances:** Agency is £149/month and gets everything Pro does, with a Standard Dossier
-  at 1 credit like Pro. What it adds beyond Pro (seats, more free searches, cheaper Dossiers) isn't set yet.
+- **Monthly allowances aren't granted yet:** Agency's 500 credits a month and Pro's 100 free searches
+  a month are recorded in `src/server/billing/plans.ts`; granting them on each paid invoice (and
+  counting free searches) is the next billing slice. Agency stays off sale until then. The bulk CSV
+  endpoint for Agency comes later.
 - **Credit packs live:** they sell in Stripe test mode today. Run one test-mode purchase, then set
-  `CREDIT_PACKS_ON_SALE=on` on Railway. People also need buttons on the site to buy credits and open
-  Dossiers with them (the API exists: `POST /api/stripe/checkout`, `POST /api/dossier/{asin}`).
-
+  `CREDIT_PACKS_ON_SALE=on` on Railway. The buy buttons are built (header balance, the Buy credits
+  window, the Dossier terminal at `/terminal`); until then they show "go on sale soon".
+- **Keepa costs money (owner's approval needed):** third-party guides put the cheapest Keepa API plan
+  at about €49/month (20 tokens a minute; 1 token per product), with no free tier. Confirm on keepa.com.
+  The connector is scaffolded and tested on made-up data; it needs `KEEPA_API_KEY` to run.
 - **The playbook itself** isn't in the repository. Sharing it lets these docs match it word for word
   (for example what Shortlist and Pre-order include).
 - **EU marketplaces:** which countries and channels first (e.g. Amazon.de / .fr, TikTok Shop in which EU

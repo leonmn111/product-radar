@@ -13,7 +13,8 @@ export function AppHeader() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Link href="/" className={`flex items-center gap-2.5 rounded-md font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 ${focusRing}`}>
           <Logo />
-          ProductRadar
+          {/* The narrowest phones show just the mark, so the account controls fit beside it. */}
+          <span className="max-[400px]:sr-only">ProductRadar</span>
         </Link>
         <div className="flex items-center gap-1 sm:gap-2">
           <Link

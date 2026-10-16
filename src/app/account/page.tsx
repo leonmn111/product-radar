@@ -167,6 +167,19 @@ async function AccountContent({ searchParams }: { searchParams: SearchParams }) 
           Password changed. Every other device has been signed out; you&apos;re still signed in here.
         </p>
       )}
+      {params.checkout === "credits" && (
+        <p
+          role="status"
+          className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-900 ring-1 ring-emerald-600/20 ring-inset dark:bg-emerald-950/30 dark:text-emerald-200 dark:ring-emerald-400/30"
+        >
+          Payment received. Your credits are added as soon as Stripe confirms it, usually within seconds: the balance is at the top of the page.
+        </p>
+      )}
+      {params.checkout === "cancelled" && (
+        <p role="status" className="rounded-lg bg-zinc-100 px-4 py-3 text-sm text-zinc-700 ring-1 ring-zinc-300 ring-inset dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10">
+          Checkout cancelled. Nothing was charged.
+        </p>
+      )}
       <ProfileCard profile={profile} tier={viewer.tier} />
       <PlanCard tier={viewer.tier} billing={billing} />
       <PasswordCard profile={profile} />

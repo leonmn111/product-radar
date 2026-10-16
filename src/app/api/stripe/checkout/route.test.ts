@@ -47,10 +47,12 @@ describe("POST /api/stripe/checkout", () => {
     expect(createPlanCheckoutUrl).not.toHaveBeenCalled();
   });
 
-  it("goes on sale for real once the owner switches it on", async () => {
+  it("goes on sale for real once the owner switches it on, except Agency until its monthly credits are granted", async () => {
     Object.assign(env, { NODE_ENV: "production", STRIPE_SECRET_KEY: "rk_live_x", CREDIT_PACKS_ON_SALE: "on" });
     signedIn();
     expect((await call({ tier: "growth" })).status).toBe(200);
+    const agency = await call({ tier: "agency" });
+    expect([agency.status, (await agency.json()).message]).toEqual([503, "The Agency plan isn't on sale yet. You haven't been charged."]);
   });
 
   it("rejects an unknown tier, a signed-out visitor and other sites", async () => {

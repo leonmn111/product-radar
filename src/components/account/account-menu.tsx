@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { signOut } from "@/auth";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { db } from "@/lib/db";
 import { getViewer } from "@/server/auth/entitlements";
+import { createDbCreditStore } from "@/server/billing/credits";
+import { creditPacksOnSale } from "@/server/billing/sales";
 import { AccountDropdown } from "./account-dropdown";
+import { CreditBalance } from "./credit-balance";
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
@@ -37,9 +41,11 @@ export async function AccountMenu() {
   }
 
   const isPro = viewer.tier !== "FREE";
+  const balance = await createDbCreditStore(db).balance(viewer.id);
   return (
     <div className="flex items-center gap-2">
       <ThemeToggle />
+      <CreditBalance balance={balance} onSale={creditPacksOnSale()} />
       {!isPro && (
         // The one action that earns: kept in plain sight for Free accounts, not tucked in the menu.
         <a
@@ -49,7 +55,7 @@ export async function AccountMenu() {
           Upgrade<span className="hidden sm:inline"> to Pro</span>
         </a>
       )}
-      <AccountDropdown email={viewer.email} isPro={isPro} signOutAction={doSignOut} />
+      <AccountDropdown email={viewer.email} isPro={isPro} planLabel={viewer.tier === "AGENCY" ? "Agency" : isPro ? "Pro" : "Free"} signOutAction={doSignOut} />
     </div>
   );
 }

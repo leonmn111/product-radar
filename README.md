@@ -156,7 +156,7 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
     `POST /api/stripe/webhook`.
   - `POST /api/stripe/checkout` `{ "tier": "starter" | "growth" | "scale" | "pro" | "agency" }` → a Checkout URL for
     a credit pack (£10 / £25 / £50 for 20 / 55 / 120 credits; 1 credit = £0.50) or a plan. Sold only with a
-    Stripe test key outside production until `CREDIT_PACKS_ON_SALE=on`.
+    Stripe test key outside production until `CREDIT_PACKS_ON_SALE=on` (Agency: test mode only until its 500 monthly credits are granted).
   - `POST /api/dossier/{asin}` → a Standard Dossier paid in credits: 4 (£2.00), or 1 on Pro / Agency.
     Credits are taken first and returned if the Dossier can't be built. Served from the 48-hour cache when fresh.
 
