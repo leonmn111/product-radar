@@ -119,6 +119,11 @@ its own time; nothing is overwritten.
 | Shortlist | $12 |
 | Pre-order | $38 |
 
+- **Discovery headers.** Every response from `/api/agent/v2/search` (402, 200 and errors alike) carries
+  `x402-price`, `x402-payment-identifier` (a fresh 256-bit random id per request, which is also the
+  Dossier's `id`) and `x402-bazaar` (the paid endpoints on offer, as JSON). They're built in
+  `src/server/payments/x402/discovery.ts`. Replay protection is the signed payment's own nonce,
+  which the middleware reserves once in the database, not this identifier.
 - **The payment boundary stays where it is** (CLAUDE.md Rule 2). `src/server/payments/` quotes,
   verifies and settles; the engine never sees wallets, signatures or prices.
 
@@ -146,6 +151,7 @@ terms.
 | --- | --- |
 | `src/types/` | The data model: `dossier.ts` (the 8 parts, `Evidence`, `Gated<T>`), `financials.ts` (fee stacks, duties, VAT, landed margin) |
 | `src/engine/` | Pure, tested business logic: `margin.ts`, `confidence.ts`, `compliance.ts`. Next: synonym search and the brand flagger |
+| `src/services/` | Assembly: `dossierService.ts` fetches the listings and offers (the only I/O) and builds the 8-part Dossier from them (pure) |
 | `src/jobs/` | Scheduled work: `dailySnapshot.ts` |
 | `src/server/sources/<provider>/` | One adapter per data provider (Rainforest and AliExpress today) |
 | `src/server/payments/` | x402 and Stripe; the only code that knows about money changing hands |

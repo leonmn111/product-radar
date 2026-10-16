@@ -50,7 +50,7 @@ const EnvSchema = z
     ALIEXPRESS_APP_SECRET: optional,
     ALIEXPRESS_TRACKING_ID: optional,
     // Development only: "on" runs the live-search page on recorded/sample responses (no provider
-    // calls, no cost). Refused in production; the paid API never uses it.
+    // calls, no cost). Refused in production; locally the paid API uses it too, flagged as sample.
     LIVE_SAMPLE_DATA: optional,
     // Coinbase Developer Platform API key, for the Coinbase facilitator (Base mainnet). The secret is an
     // Ed25519 key (base64) or an EC key (PEM); a PEM pasted on one line with literal "\n"s is unfolded.

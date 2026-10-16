@@ -10,6 +10,9 @@
 
 import type { Currency, LandedMargin, Money } from "./financials";
 
+/** Part 3: the margin in each market the evidence covers (EU only when there are EU listings). */
+export type LandedMargins = { uk: LandedMargin; eu: LandedMargin | null };
+
 // ── Evidence ─────────────────────────────────────────────────────────────────
 
 export type EvidenceSourceType = "marketplace" | "supplier" | "official" | "ads_library" | "trend" | "review" | "other";
@@ -33,9 +36,12 @@ export type EvidenceList = Evidence[];
 
 // ── Gating ───────────────────────────────────────────────────────────────────
 
+/** Why a part is withheld: too little evidence for its gate, or a product that can't be resold. */
+export type WithheldReason = "Insufficient Data" | "Not Sellable";
+
 export type Gated<T> =
   | { status: "shown"; confidence: number; value: T; evidenceIds: string[] }
-  | { status: "withheld"; confidence: number; missing: string[] };
+  | { status: "withheld"; reason: WithheldReason; confidence: number; missing: string[] };
 
 // ── Part 1: Verdict ──────────────────────────────────────────────────────────
 
@@ -82,7 +88,7 @@ export interface SupplierMatch {
   listingUrl: string;
   title: string;
   unitPrice: Money;
-  moq: number; // minimum order quantity
+  moq: number | null; // minimum order quantity; null = the listing doesn't state one
   deliveryDays: { min: number; max: number } | null; // to the target market; null = not quoted
   matchScore: number; // 0–1, image + title similarity
   evidenceIds: string[];
@@ -114,10 +120,12 @@ export interface Dossier {
   id: string;
   generatedAt: string; // ISO
   product: DossierProduct;
+  sample: boolean; // true only for development sample data; never in production
+  notes: string[]; // source problems and what isn't covered yet, in plain words
 
   verdict: Gated<Verdict>; // 1, gate 0.5
   resellability: ResellabilityFlags; // 2
-  landedMargin: Gated<LandedMargin>; // 3, gate 0.7
+  landedMargin: Gated<LandedMargins>; // 3, gate 0.7
   momentum: Gated<Momentum>; // 4, gate 0.7
   saturation: Gated<Saturation>; // 5, gate 0.7
   supplierMatches: SupplierMatches; // 6

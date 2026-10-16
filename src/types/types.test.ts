@@ -7,18 +7,31 @@ import type { FeeStack, LandedMargin, Money } from "./financials";
 describe("Dossier types", () => {
   it("has exactly the 8 parts, plus its id, time and product", () => {
     expectTypeOf<keyof Dossier>().toEqualTypeOf<
-      "id" | "generatedAt" | "product" | "verdict" | "resellability" | "landedMargin" | "momentum" | "saturation" | "supplierMatches" | "evidence" | "exports"
+      | "id"
+      | "generatedAt"
+      | "product"
+      | "sample"
+      | "notes"
+      | "verdict"
+      | "resellability"
+      | "landedMargin"
+      | "momentum"
+      | "saturation"
+      | "supplierMatches"
+      | "evidence"
+      | "exports"
     >();
   });
 
   it("gates the verdict, margin, momentum and saturation", () => {
     expectTypeOf<Dossier["verdict"]>().toEqualTypeOf<Gated<Verdict>>();
-    expectTypeOf<Dossier["landedMargin"]>().toEqualTypeOf<Gated<LandedMargin>>();
+    expectTypeOf<Dossier["landedMargin"]>().toEqualTypeOf<Gated<{ uk: LandedMargin; eu: LandedMargin | null }>>();
   });
 
   it("can't hold a shown value without its confidence", () => {
     expectTypeOf<Extract<Gated<number>, { status: "shown" }>>().toHaveProperty("confidence").toEqualTypeOf<number>();
     expectTypeOf<Extract<Gated<number>, { status: "withheld" }>>().not.toHaveProperty("value");
+    expectTypeOf<Extract<Gated<number>, { status: "withheld" }>["reason"]>().toEqualTypeOf<"Insufficient Data" | "Not Sellable">();
   });
 
   it("has the five resellability flags, and at most three supplier matches", () => {

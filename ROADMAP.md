@@ -27,6 +27,10 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 - **Brand flagger:** flags branded and brand-restricted products before anything else is done with them.
 - **Daily snapshot cron:** records daily trend, price, rank and ad history (`src/jobs/dailySnapshot.ts`).
   *Template scaffolded 2026-10-16.*
+- **Dossier assembly:** `src/services/dossierService.ts` turns Amazon UK listings and supplier offers
+  into the 8-part Dossier: compliance first (an unsellable product gets no money maths), then
+  confidence and the two gates. `/api/agent/v2/search` now returns it at **$0.01** with the
+  `x402-price`, `x402-payment-identifier` and `x402-bazaar` headers. *Built 2026-10-16.*
 
 ### Phase 1: suppliers and history (weeks 2–4, to 13 Nov)
 
@@ -39,8 +43,8 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 - **x402:** `Upto` (authorise a maximum, charge the actual cost), `SignInWithX` (wallet identity) and
   `PaymentIdentifier` (one payment per request). Today's x402 code supports `exact` only.
 - **Stripe fiat credit packs:** £10, £25, £50.
-- **Prices:** Search $0.01 · Standard $2 · On-Demand up to $4 · Shortlist $12 · Pre-order $38. The
-  existing `/api/agent/v2/search` endpoint ($0.50, from 2026-10-15) is re-priced to these tiers here.
+- **Prices:** Search $0.01 · Standard $2 · On-Demand up to $4 · Shortlist $12 · Pre-order $38.
+  `/api/agent/v2/search` moved from $0.50 to the $0.01 Search tier on 2026-10-16 (see Phase 0).
 - **Meta Ads:** ad duration and density for Momentum and Saturation (Meta Ad Library API).
 - **UI polish:** the Dossier page, exports (Shopify CSV, PDF, share link), and the live-search page.
 
@@ -69,6 +73,9 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 - **v1 data:** the live site's prices expire around **14 November**. Re-run `npm run data:refresh` on
   Railway before then, unless the daily snapshot job has taken over.
 - **Rainforest trial:** 99 credits left; continuing needs the Hobbyist plan (about $23/month).
+- **Search at $0.01 costs more than it earns:** each live search spends at least one Rainforest credit
+  (about $0.046 on Hobbyist) plus an AliExpress call. Decide whether the live Dossier moves to the
+  $2 Standard tier, or the $0.01 search serves cached results only.
 - **Unconfirmed fee figures** (labelled as estimates in every margin until confirmed): the TikTok
   Shop UK £0.50 self-ship fee, and the EU €2 handling fee (proposed, not adopted). Confirm the
   TikTok fees in Seller Center; the EU fee when it's adopted.

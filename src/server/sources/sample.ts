@@ -1,7 +1,7 @@
 // Development sample sources for the live-search page: no provider calls, no cost. Retail is a
 // REAL recorded Rainforest response (amazon.co.uk, "magnetic power bank", 2026-10-15); the
 // AliExpress side is SAMPLE data until the affiliate account is approved. Only the recorded
-// query has data; anything else returns nothing. Never used by the paid API or in production.
+// query has data; anything else returns nothing. Never used in production.
 
 import type { QueryBudget } from "@/server/live/budget";
 import type { Market } from "@/server/live/types";

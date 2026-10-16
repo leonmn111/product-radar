@@ -1,7 +1,7 @@
 // Which data sources live search runs with, from the environment. Live search is only
 // "ready" when every source it needs is configured; until then callers are told up front.
-// The paid API uses real sources only. The development-only sample mode is for the site's
-// live-search page and is flagged on every result.
+// Sample mode is development-only (refused in production): the live-search page and, locally, the
+// paid API can run on it, and every result says it's sample data.
 
 import { env } from "@/lib/env";
 import { createAliexpressSource } from "@/server/sources/aliexpress";
