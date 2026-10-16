@@ -98,7 +98,13 @@ An unknown flag stays `null` with the reason. It is never assumed safe.
 `src/jobs/dailySnapshot.ts` runs once a day (scheduled on Railway when Phase 0 completes). It records the
 day's trend, price, rank and ad observations for tracked products and keywords as dated evidence. That
 history is what the 12-week slopes and velocity are calculated from. Every snapshot is new evidence with
-its own time; nothing is overwritten.
+its own time; nothing is overwritten. Rows go to the `TrendSnapshot` table (rank, price in pence,
+sales velocity with how it was measured, provider, source, time and quality; one row per product,
+day and provider).
+
+`DossierCache` holds the latest built Dossier per product for 48 hours, so a repeat request can
+reuse its evidence instead of paying the providers again. The table exists; the Dossier service
+starts using it in a later slice.
 
 ## Monetization
 

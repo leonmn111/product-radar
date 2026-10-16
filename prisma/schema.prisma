@@ -351,3 +351,45 @@ model DossierRecord {
 
   @@index([productKey, createdAt(sort: Desc)])
 }
+
+// 48-hour cache of built Dossiers, one per product: a repeat request inside two days can reuse the
+// evidence instead of paying the providers again (CLAUDE.md Rule 8). Replaced when rebuilt; what each
+// buyer received stays in DossierRecord. Not read or written yet: the Dossier service adopts it next.
+model DossierCache {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  marketplace String // e.g. "amazon.co.uk"
+  productId   String // the marketplace's own id (Amazon: ASIN)
+  dossier     Json     @db.Json // the 8-part Dossier, as built
+  generatedAt DateTime @db.Timestamptz(3) // when its evidence was read
+  expiresAt   DateTime @default(dbgenerated("(CURRENT_TIMESTAMP + '48:00:00'::interval)")) @db.Timestamptz(3) // 48 hours on
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([marketplace, productId])
+  @@index([expiresAt])
+}
+
+// ─── Daily snapshots (src/jobs/dailySnapshot.ts) ─────────────────────────────
+// One product's day: best-sellers rank, price and sales velocity, each with its source (CLAUDE.md
+// Rule 3). Twelve weeks of these give Momentum its slope. Appended once per product, day and
+// provider; never updated.
+
+model TrendSnapshot {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  marketplace    String // e.g. "amazon.co.uk"
+  productId      String // the marketplace's own id (Amazon: ASIN)
+  snapshotDate   DateTime @db.Date // the UTC day it describes
+  rank           Int? // best-sellers rank in rankCategory; null = not reported that day
+  rankCategory   String?
+  pricePence     Int? // selling price in minor units (pence, cents); null = no price that day
+  currency       String? // ISO 4217, set whenever pricePence is
+  salesVelocity  Int? // units per month; null = not stated
+  velocityMethod String? // how salesVelocity was measured, e.g. the lower bound of Amazon's "5K+ bought in past month"
+  provider       String // e.g. "rainforest", "keepa"
+  sourceUrl      String
+  observedAt     DateTime @db.Timestamptz(3)
+  quality        Int // 0–100, by how the values were obtained
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([marketplace, productId, snapshotDate, provider])
+  @@index([marketplace, productId, snapshotDate(sort: Desc)])
+}
