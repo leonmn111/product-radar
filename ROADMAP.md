@@ -15,10 +15,13 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 - **Types:** the 8-part `Dossier`, `Evidence`, `Gated<T>`, fee stacks, duties, VAT and `LandedMargin`
   (`src/types/`). *Scaffolded 2026-10-16.*
 - **Margin engine:** `calculateUKMargin()` and `calculateEUMargin()`. EU €3 duty + €2 handling per item;
-  UK VAT at the point of sale; platform fee stacks (TikTok Shop UK 9% + £0.50 + 10–20% creator
-  commission; Amazon FBA); returns allowance; CAC. Every rate cited.
+  UK VAT at the point of sale; platform fee stacks (TikTok Shop UK 9% + £0.50 + 15% creator
+  commission; Amazon FBA); returns allowance; CAC. Every rate cited or labelled an estimate.
+  *Built 2026-10-16.*
 - **Confidence:** `calculateConfidence()`, with the two gates: Verdict at 0.5, numbers at 0.7.
-- **Compliance:** `checkResellability()`: brand-direct, trademarked, UKCA, cosmetics, batteries.
+  *Built 2026-10-16.*
+- **Compliance:** `checkResellability()` and `isSellable()`: brand-direct, trademark risk, UKCA,
+  cosmetics, batteries. *Built 2026-10-16.*
 - **Synonym search:** one query expands to the names sellers actually use, so a search covers the
   same product however it's listed.
 - **Brand flagger:** flags branded and brand-restricted products before anything else is done with them.
@@ -66,6 +69,9 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 - **v1 data:** the live site's prices expire around **14 November**. Re-run `npm run data:refresh` on
   Railway before then, unless the daily snapshot job has taken over.
 - **Rainforest trial:** 99 credits left; continuing needs the Hobbyist plan (about $23/month).
+- **Unconfirmed fee figures** (labelled as estimates in every margin until confirmed): the TikTok
+  Shop UK £0.50 self-ship fee, and the EU €2 handling fee (proposed, not adopted). Confirm the
+  TikTok fees in Seller Center; the EU fee when it's adopted.
 
 ## Done
 

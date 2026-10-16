@@ -1,124 +1,125 @@
-// Money, fee stacks, import charges, VAT and the landed margin (ARCHITECTURE.md › Landed margin
-// model). Types only: the figures quoted in comments are the playbook's, and every rate used at
-// runtime must arrive as cited evidence (CLAUDE.md Rules 3 and 6), never as a constant.
+// Fee stacks, margin inputs and the landed margin (ARCHITECTURE.md › Landed margin model).
+// All amounts are per unit and in the market's currency (GBP for the UK, EUR for the EU): the
+// caller converts first, at a cited rate. Every figure says how it is known (`basis`) and which
+// evidence it rests on (CLAUDE.md Rules 3 and 6).
 
 /** Currencies the screener prices in: GBP (UK), EUR (EU), USD (x402 / supplier quotes). */
 export type Currency = "GBP" | "EUR" | "USD";
 
 export type Money<C extends Currency = Currency> = { amount: number; currency: C };
 
-/** Where a rate or rule comes from, so every margin line can be audited. */
-export type RateSource = { evidenceIds: string[] };
+/**
+ * How a figure is known:
+ * - "sourced": from cited evidence (a listing, a published fee page, a tax authority);
+ * - "caller_supplied": the caller's own figure (their ad cost, their return rate);
+ * - "estimate": a stated default assumption (e.g. the playbook's 15% creator commission), never
+ *   presented as a fact.
+ */
+export type LineBasis = "sourced" | "caller_supplied" | "estimate";
 
-/** A rate (0–1) with its source, e.g. 0.09 for 9%. */
-export type SourcedRate = RateSource & { rate: number };
+/** A per-unit amount in the market's currency, with how it is known. */
+export type CostInput = { amount: number; basis: LineBasis; evidenceIds: string[] };
 
-/** A fixed amount with its source, e.g. £0.50 per order. */
-export type SourcedAmount<C extends Currency = Currency> = RateSource & { amount: Money<C> };
+/** A rate from 0 to 1 (0.09 = 9%), with how it is known. */
+export type RateInput = { rate: number; basis: LineBasis; evidenceIds: string[] };
 
 // ── Platform fee stacks ──────────────────────────────────────────────────────
 
-/** TikTok Shop UK. Playbook: 9% referral + £0.50 per order + 10–20% creator commission. */
+/** A percentage of the selling price, either including or excluding VAT, depending on the platform's rule. */
+export type PercentFee = RateInput & { kind: "percent"; label: string; base: "price_ex_vat" | "price_inc_vat" };
+
+/** A fixed amount per order or per unit. */
+export type FixedFee = CostInput & { kind: "fixed"; label: string };
+
+export type Fee = PercentFee | FixedFee;
+
+/** TikTok Shop UK: referral commission, the seller-shipped order fee, and the creator (affiliate) commission. */
 export interface TikTokShopUKFeeStack {
   channel: "tiktok_shop_uk";
-  referralFee: SourcedRate; // 9%
-  perOrderFee: SourcedAmount<"GBP">; // £0.50
-  creatorCommission: RateSource & { min: number; max: number; applied: number | null }; // 10–20%; null = no creator sale
+  referral: PercentFee;
+  perOrder: FixedFee | null; // null for orders TikTok fulfils
+  creatorCommission: PercentFee | null; // null when there's no affiliate sale
 }
 
-/** Amazon FBA in the UK or an EU marketplace: referral fee plus per-unit fulfilment (and storage). */
+/** Amazon FBA (UK or an EU marketplace): referral fee (with its per-item minimum), fulfilment and storage. */
 export interface AmazonFBAFeeStack {
   channel: "amazon_uk_fba" | "amazon_eu_fba";
   marketplace: string; // e.g. "amazon.co.uk", "amazon.de"
-  referralFee: SourcedRate & { minimumPerItem: Money | null };
-  fulfilmentFeePerUnit: SourcedAmount;
-  monthlyStoragePerUnit: SourcedAmount | null; // null = not included, and named in the margin
+  referral: PercentFee & { minimumPerItem: number | null };
+  fulfilmentPerUnit: FixedFee;
+  storagePerUnit: FixedFee | null; // null = not included, and named in the margin
 }
 
-/** Any other channel, as an explicit list of cited fee lines. */
+/** Any other channel, as an explicit list of fees. */
 export interface CustomFeeStack {
   channel: "custom";
   name: string;
-  lines: (RateSource & { label: string; rate: number | null; fixed: Money | null })[];
+  fees: Fee[];
 }
 
 export type FeeStack = TikTokShopUKFeeStack | AmazonFBAFeeStack | CustomFeeStack;
 
-// ── Duties and VAT ───────────────────────────────────────────────────────────
+// ── Margin inputs ────────────────────────────────────────────────────────────
 
-/** EU import charges on a low-value parcel. Playbook: €3 customs duty + €2 handling per item. */
-export interface EUImportCharges {
-  customsDutyPerItem: SourcedAmount<"EUR">; // €3
-  handlingFeePerItem: SourcedAmount<"EUR">; // €2
-  importVat: SourcedRate & { country: string }; // the destination country's rate
-}
+/** Returns allowance: the share of sales returned × what one return costs. */
+export type ReturnsInput = { returnRate: number; costPerReturn: number; basis: LineBasis; evidenceIds: string[] };
 
-/** UK VAT. Playbook: collected at the point of sale (by the marketplace for imports ≤ £135). */
-export interface UKVat {
-  rate: SourcedRate; // standard rate, e.g. 0.20
-  collectedAtPointOfSale: boolean;
-  sellerVatRegistered: boolean; // supplied by the caller
-}
+type MarginParamsBase = {
+  retailPrice: CostInput; // the consumer price, VAT included
+  supplierCost: CostInput; // per unit at the quoted MOQ
+  shipping: CostInput | null; // per unit to the customer; null = not quoted
+  returns: ReturnsInput | null; // null = no return rate known
+  adCostPerSale: CostInput | null; // CAC: advertising and creator spend per sale; null = not known
+  unitsPerParcel?: number; // identical units sent together (default 1)
+};
 
-/** UK import duty for the product's commodity code, when it applies. */
-export interface UKImportDuty {
-  commodityCode: string | null;
-  rate: SourcedRate | null; // null = not determined, and named in the margin
-}
+export type UKMarginParams = MarginParamsBase & {
+  feeStack?: FeeStack; // default: the TikTok Shop UK stack
+  vatRate?: RateInput; // default: UK standard rate, 20% (GOV.UK)
+};
+
+export type EUMarginParams = MarginParamsBase & {
+  country: string; // ISO code of the destination: "DE", "FR", …
+  feeStack: FeeStack;
+  vatRate?: RateInput; // default: the country's standard rate, when known
+  includeProposedHandlingFee?: boolean; // the €2 handling fee is proposed, not adopted (default true)
+};
 
 // ── Landed margin ────────────────────────────────────────────────────────────
 
-/** How a margin line is known: sourced evidence, or a figure the caller gave us (labelled as theirs). */
-export type LineBasis = "sourced" | "caller_supplied";
+export type MarginLineKind = "supplier" | "shipping" | "duty" | "handling" | "vat" | "platform_fee" | "returns" | "ad_cost";
 
 export type MarginLine = {
-  label: string; // e.g. "TikTok Shop UK referral fee (9%)"
+  kind: MarginLineKind;
+  label: string; // e.g. "TikTok Shop UK referral commission (9% of the price before VAT)"
   amount: Money;
   basis: LineBasis;
-  evidenceIds: string[]; // empty only when basis is "caller_supplied"
+  evidenceIds: string[];
 };
 
-/** A component that couldn't be sourced: left out of the totals and named, never guessed. */
-export type ExcludedLine = { label: string; reason: string };
-
-/** Returns allowance: sourced return rate × the cost of handling one return. */
-export type ReturnsAllowance = { returnRate: SourcedRate; costPerReturn: Money; basis: LineBasis };
-
-/** Customer acquisition cost per sale (advertising and creators). */
-export type CustomerAcquisitionCost = { perSale: Money; basis: LineBasis; evidenceIds: string[] };
+/** A component of the formula that couldn't be sourced: left out of the totals and named, never guessed. */
+export type ExcludedLine = { kind: MarginLineKind; label: string; reason: string };
 
 export interface LandedMargin {
   market: "UK" | "EU";
-  country: string; // ISO code: "GB", "DE", "FR", …
+  country: string; // ISO code: "GB", "DE", …
   channel: FeeStack["channel"];
   currency: Currency;
 
-  sellingPrice: MarginLine;
-  /** Supplier unit price at the quoted MOQ, freight per unit, and duties / handling. */
-  landedCost: { lines: MarginLine[]; total: Money };
-  /** VAT, the platform fee stack, returns allowance and CAC. */
-  deductions: { lines: MarginLine[]; total: Money };
+  retailPrice: Money;
+  /** Every cost taken from the retail price, in formula order. */
+  lines: MarginLine[];
+  totalCosts: Money;
+  /** Supplier + shipping + duty + handling: what one unit costs to land. */
+  landedCost: Money;
 
-  netRevenuePerUnit: Money; // selling price − deductions
-  netMarginPerUnit: Money; // net revenue − landed cost
-  netMarginPct: number; // of the selling price
-  returnOnCostPct: number; // net margin ÷ landed cost
+  netProfit: Money; // retail price − total costs
+  netMarginPct: number; // net profit as % of the retail price
+  roiPercentage: number; // net profit as % of the landed cost
+  breakEvenAdCost: Money; // net profit before ad cost: the most one sale can spend on ads
 
+  vat: { rate: number; collectedAt: "point_of_sale" | "import" };
   excluded: ExcludedLine[];
+  complete: boolean; // false when any part of the formula is excluded
   evidenceIds: string[]; // every evidence item the margin rests on
 }
-
-// ── Inputs to the margin engine ──────────────────────────────────────────────
-
-type MarginInputBase = {
-  sellingPrice: SourcedAmount;
-  supplierUnitCost: SourcedAmount & { moq: number };
-  freightPerUnit: SourcedAmount | null;
-  feeStack: FeeStack;
-  returns: ReturnsAllowance | null;
-  cac: CustomerAcquisitionCost | null;
-};
-
-export type UKMarginInput = MarginInputBase & { vat: UKVat; importDuty: UKImportDuty };
-
-export type EUMarginInput = MarginInputBase & { country: string; importCharges: EUImportCharges };

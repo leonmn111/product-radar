@@ -25,6 +25,7 @@ export interface Evidence {
   quality: number; // 0–100, by how the fact was obtained
   claim: string; // the fact, in words
   value: number | string | boolean | null; // the extracted value, when there is one
+  matchScore?: number | null; // 0–1 for supplier evidence: how closely the listing matches the product
 }
 
 /** Part 7: every evidence item the Dossier uses, in one auditable list. */
@@ -47,15 +48,15 @@ export interface Verdict {
 
 // ── Part 2: Resellability ────────────────────────────────────────────────────
 
-/** A compliance flag: true / false when the evidence settles it, null when it doesn't (never assumed safe). */
+/** A compliance flag: true when tripped, false when checked and clear, null when it couldn't be checked. */
 export type ComplianceFlag = { value: boolean | null; reason: string; evidenceIds: string[] };
 
-export interface Resellability {
-  brandDirect: ComplianceFlag; // sold by the brand itself
-  trademarked: ComplianceFlag; // registered trademark in the target market
-  requiresUKCA: ComplianceFlag; // needs UKCA marking for Great Britain
+export interface ResellabilityFlags {
+  brandDirect: ComplianceFlag; // the seller is the brand itself
+  trademarkRisk: ComplianceFlag; // a brand or trademark is involved
+  requiresUKCA: ComplianceFlag; // electronics or toys: needs UKCA (GB) / CE (EU) conformity marking
   cosmetics: ComplianceFlag; // cosmetics rules apply
-  batteries: ComplianceFlag; // contains batteries
+  batteries: ComplianceFlag; // contains or is a battery
 }
 
 // ── Part 4: Momentum ─────────────────────────────────────────────────────────
@@ -115,7 +116,7 @@ export interface Dossier {
   product: DossierProduct;
 
   verdict: Gated<Verdict>; // 1, gate 0.5
-  resellability: Resellability; // 2
+  resellability: ResellabilityFlags; // 2
   landedMargin: Gated<LandedMargin>; // 3, gate 0.7
   momentum: Gated<Momentum>; // 4, gate 0.7
   saturation: Gated<Saturation>; // 5, gate 0.7

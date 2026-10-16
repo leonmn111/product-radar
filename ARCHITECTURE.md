@@ -15,7 +15,7 @@ A Dossier answers "should I sell this, and what would I really keep?" in eight p
 | # | Part | What it holds | Gate |
 | --- | --- | --- | --- |
 | 1 | **Verdict** | `LAUNCH`, `TEST` or `AVOID`, with the reasons behind it | Hidden below **0.5** confidence |
-| 2 | **Resellability** | Booleans: `brandDirect`, `trademarked`, `requiresUKCA`, `cosmetics`, `batteries`, each with its evidence | Each flag cites its evidence; unknown stays unknown |
+| 2 | **Resellability** | Flags: `brandDirect`, `trademarkRisk`, `requiresUKCA`, `cosmetics`, `batteries`, each with its reason and evidence | Each flag cites its evidence; unknown stays unknown |
 | 3 | **LandedMargin** | Landed cost against net revenue, per channel and market (see the margin model) | Hidden below **0.7** |
 | 4 | **Momentum** | 12-week trend slope, sales velocity, how long ads have been running | Hidden below **0.7** |
 | 5 | **Saturation** | Seller count, store count, ad density | Hidden below **0.7** |
@@ -33,7 +33,7 @@ A Dossier answers "should I sell this, and what would I really keep?" in eight p
 - Confidence keeps v1's formula, `C = 1 − e^(−Σw/2)`. Each evidence item weighs quality × freshness
   (90-day half-life) × source type, and repeat captures of one source count once. Reaching 0.7 needs
   Σw ≈ 2.4, roughly four fresh, independent, structured sources; 0.5 needs Σw ≈ 1.4.
-- Lives in `src/engine/confidence.ts` (`calculateConfidence`) and is applied in one place.
+- Lives in `src/engine/confidence.ts`: `calculateConfidence()`, `VERDICT_THRESHOLD = 0.5` and `FINANCIAL_THRESHOLD = 0.7`. Supplier evidence is also weighted by how well it matches the product (an unscored supplier listing counts for nothing).
 
 ## Landed margin model (UK and EU)
 
@@ -43,7 +43,7 @@ and labelled as theirs. A line that can't be sourced is excluded and named; it i
 ```
 landed cost per unit  = supplier unit price (at the quoted MOQ)
                       + freight to the market, per unit
-                      + EU: €3 customs duty per item + €2 handling per item (low-value parcel rules)
+                      + EU (parcel ≤ €150): €3 customs duty per item type + €2 handling per item
                       + UK: import duty where it applies
 
 net revenue per unit  = selling price
@@ -57,18 +57,26 @@ net revenue per unit  = selling price
 net margin per unit   = net revenue − landed cost        (also % of the price, and return on cost)
 ```
 
-- Types: `FeeStack` (a discriminated union per channel: TikTok Shop UK, Amazon FBA, …), `EUImportCharges`,
-  `UKVat`, `LandedMargin` in `src/types/financials.ts`.
-- Functions: `calculateUKMargin()` and `calculateEUMargin()` in `src/engine/margin.ts`.
-- Every rate (VAT, duty, handling, fee percentages) is evidence with a source, so it can be audited and
-  updated when the rule changes.
+- Types: `FeeStack` (a union per channel: TikTok Shop UK, Amazon FBA, custom), the margin inputs and
+  `LandedMargin` (with `netProfit`, `roiPercentage` = net profit ÷ landed cost, and `breakEvenAdCost` =
+  net profit before ad cost) in `src/types/financials.ts`.
+- Functions: `calculateUKMargin()` and `calculateEUMargin()` in `src/engine/margin.ts`. They are pure,
+  validate their input with Zod, and round each line to the penny.
+- Rules and defaults with their sources are in `src/engine/policy.ts` (checked 2026-10-16):
+  - UK VAT 20% and the £135 point-of-sale rule (GOV.UK);
+  - the EU €3 duty per item type in parcels under €150, from 1 July 2026;
+  - EU standard VAT rates for 10 countries (TEDB);
+  - TikTok Shop UK's 9% referral fee (charged before VAT).
+- **Labelled estimates, not facts:** the £0.50 TikTok self-ship fee (no source confirms it yet), the 15%
+  creator commission (deals run 10–20%) and the EU €2 handling fee (proposed, not adopted; included by
+  default as the cautious choice, and can be switched off).
 
 ## Resellability (compliance)
 
-`checkResellability(product)` in `src/engine/compliance.ts` returns the five flags with their evidence:
+`checkResellability(productData)` in `src/engine/compliance.ts` validates raw listing data with Zod and returns the five flags with their reasons and evidence. `isSellable(flags)` is false if any flag is tripped:
 
 - `brandDirect`: the product is sold by the brand itself (brand-direct items aren't resellable white-label).
-- `trademarked`: the name or brand is a registered trademark in the target market (UK IPO, EUIPO).
+- `trademarkRisk`: a trademark record on file, a ™/® symbol, a named brand, or a known mark in the text (e.g. "for MagSafe").
 - `requiresUKCA`: the category needs UKCA marking for Great Britain (electronics, toys, …).
 - `cosmetics`: cosmetics rules apply (UK/EU cosmetics regulation, responsible person, notification).
 - `batteries`: contains batteries (shipping and compliance restrictions).

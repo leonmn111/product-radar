@@ -1,8 +1,8 @@
 // Type-level checks on the data model: tsc fails (npm run typecheck) if the 8-part shape drifts.
 
 import { describe, expectTypeOf, it } from "vitest";
-import type { Dossier, Gated, Resellability, SupplierMatches, Verdict } from "./dossier";
-import type { FeeStack, LandedMargin } from "./financials";
+import type { Dossier, Gated, ResellabilityFlags, SupplierMatches, Verdict } from "./dossier";
+import type { FeeStack, LandedMargin, Money } from "./financials";
 
 describe("Dossier types", () => {
   it("has exactly the 8 parts, plus its id, time and product", () => {
@@ -22,8 +22,14 @@ describe("Dossier types", () => {
   });
 
   it("has the five resellability flags, and at most three supplier matches", () => {
-    expectTypeOf<keyof Resellability>().toEqualTypeOf<"brandDirect" | "trademarked" | "requiresUKCA" | "cosmetics" | "batteries">();
+    expectTypeOf<keyof ResellabilityFlags>().toEqualTypeOf<"brandDirect" | "trademarkRisk" | "requiresUKCA" | "cosmetics" | "batteries">();
     expectTypeOf<SupplierMatches["length"]>().toEqualTypeOf<0 | 1 | 2 | 3>();
+  });
+
+  it("returns net profit, ROI and break-even ad cost on every margin", () => {
+    expectTypeOf<LandedMargin["netProfit"]>().toEqualTypeOf<Money>();
+    expectTypeOf<LandedMargin["roiPercentage"]>().toEqualTypeOf<number>();
+    expectTypeOf<LandedMargin["breakEvenAdCost"]>().toEqualTypeOf<Money>();
   });
 
   it("covers TikTok Shop UK, Amazon FBA and custom fee stacks", () => {
