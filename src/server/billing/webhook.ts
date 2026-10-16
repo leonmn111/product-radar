@@ -3,6 +3,8 @@
 
 import Stripe from "stripe";
 import type { PrismaClient } from "@/generated/prisma/client";
+import type { CreditStore } from "./credits";
+import { creditGrantFor } from "./plans";
 import { applySubscription, snapshotFromStripe, type ApplyResult } from "./subscription";
 
 export class InvalidSignatureError extends Error {}
@@ -16,9 +18,10 @@ export function verifyStripeEvent(rawBody: string, signature: string | null, sec
   }
 }
 
-export type HandledEvent = { type: string; result: ApplyResult | "linked" | "ignored" };
+export type HandledEvent = { type: string; result: ApplyResult | "linked" | "credited" | "already_credited" | "ignored"; reason?: string };
 
-export async function handleStripeEvent(db: PrismaClient, event: Stripe.Event): Promise<HandledEvent> {
+/** `credits` receives paid credit packs (the mock store until the ledger exists; see credits.ts). */
+export async function handleStripeEvent(db: PrismaClient, event: Stripe.Event, credits?: CreditStore): Promise<HandledEvent> {
   const eventTime = new Date(event.created * 1000);
 
   switch (event.type) {
@@ -30,9 +33,15 @@ export async function handleStripeEvent(db: PrismaClient, event: Stripe.Event): 
       return { type: event.type, result: await applySubscription(db, snapshotFromStripe(event.data.object), eventTime) };
 
     case "checkout.session.completed": {
-      // Normally the customer is linked when checkout starts; this covers
-      // customers created by Stripe itself (e.g. a payment link).
       const s = event.data.object;
+      // A credit pack: credit the buyer once per session, for exactly what the catalogue says.
+      if (s.mode === "payment") {
+        const found = creditGrantFor(s);
+        if (!found.grant || !credits) return { type: event.type, result: "ignored", reason: found.grant ? "no_credit_store" : found.reason };
+        return { type: event.type, result: (await credits.grant(found.grant)) ? "credited" : "already_credited" };
+      }
+      // A subscription: normally the customer is linked when checkout starts; this covers
+      // customers created by Stripe itself (e.g. a payment link).
       const customerId = typeof s.customer === "string" ? s.customer : s.customer?.id;
       if (s.mode !== "subscription" || !s.client_reference_id || !customerId) return { type: event.type, result: "ignored" };
       const { count } = await db.user.updateMany({

@@ -1,9 +1,11 @@
 import { connection } from "next/server";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { creditStore } from "@/server/billing/credits";
 import { handleStripeEvent, InvalidSignatureError, verifyStripeEvent } from "@/server/billing/webhook";
 
-// POST /api/billing/webhook — Stripe → us. Signature-verified; idempotent.
+// POST /api/billing/webhook — Stripe → us. Signature-verified; idempotent. Subscriptions (Pro) and
+// credit packs. Also served at /api/stripe/webhook: either address works with the same signing secret.
 export async function POST(request: Request) {
   await connection();
   if (!env.STRIPE_WEBHOOK_SECRET) {
@@ -20,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const handled = await handleStripeEvent(db, event);
+    const handled = await handleStripeEvent(db, event, creditStore);
     return Response.json({ received: true, ...handled });
   } catch (e) {
     console.error("[billing] webhook handling failed", event.type, event.id, e);

@@ -115,7 +115,12 @@ starts using it in a later slice.
 
   `SignInWithX` is built (2026-10-16, for the $2 Dossier; see below). `Upto` and `PaymentIdentifier`
   are built in Phase 2 against the current x402 specification.
-- **Stripe fiat credit packs:** £10, £25 and £50.
+- **Stripe fiat credit packs:** Starter £10 (20 credits), Growth £25 (55), Scale £50 (120), and a £29/month
+  Pro (100 free searches a month, Standard Dossier for 1 credit). Typed in `src/server/billing/plans.ts`
+  and sold through Stripe Checkout (`POST /api/stripe/checkout`) with inline prices. Paid packs are
+  credited by the existing webhook (`/api/billing/webhook`, also served at `/api/stripe/webhook`). The
+  pack, amount and currency must match the catalogue, and each session is credited once. Until the
+  credit ledger table exists, credits are held in memory and checkout only sells in Stripe test mode.
 - **Prices:**
 
 | Product | Price |
@@ -171,6 +176,7 @@ terms.
 | `src/server/sources/<provider>/` | One adapter per data provider (Rainforest and AliExpress today) |
 | `src/server/payments/` | x402 and Stripe; the only code that knows about money changing hands |
 | `src/server/live/` | The Phase 8 live-search pipeline built on 2026-10-15. Its confidence, margin and matching code moves into `src/engine/` as each engine module is implemented, then this folder goes |
+| `src/components/DossierTerminal.tsx` | The Dossier's 8 panels as a dense terminal; enforces the Verdict gate in the UI too (preview: `/dev/terminal`, development only) |
 | `src/app/` | Pages and API routes (`/search`, `/api/agent/v2/search` at $0.01, `/api/agent/v2/dossier/{asin}` at $2) |
 
 ## Evidence, the product's core (CLAUDE.md Rule 3)

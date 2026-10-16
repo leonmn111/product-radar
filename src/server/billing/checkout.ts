@@ -2,6 +2,7 @@
 
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
+import { checkoutSessionParams, type CheckoutTier } from "./plans";
 import { applySubscription, snapshotFromStripe, tierForStatus } from "./subscription";
 import { proPriceId, stripe } from "./stripe";
 
@@ -39,6 +40,20 @@ export async function createCheckoutUrl(db: PrismaClient, userId: string, baseUr
     success_url: `${baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/dashboard?checkout=cancelled`,
   });
+  if (!session.url) throw new Error("Stripe did not return a checkout URL.");
+  return session.url;
+}
+
+/**
+ * Stripe Checkout for a credit pack or the v2 Pro subscription (plans.ts). Someone already on Pro who
+ * picks Pro gets the billing portal instead, so no one is subscribed twice.
+ */
+export async function createPlanCheckoutUrl(db: PrismaClient, userId: string, baseUrl: string, tier: CheckoutTier): Promise<string> {
+  const user = await ensureCustomer(db, userId);
+  if (tier === "pro" && user.subscriptionStatus && tierForStatus(user.subscriptionStatus) === "PRO") {
+    return createPortalUrl(db, userId, baseUrl);
+  }
+  const session = await stripe().checkout.sessions.create(checkoutSessionParams(tier, { userId: user.id, customerId: user.stripeCustomerId, baseUrl }));
   if (!session.url) throw new Error("Stripe did not return a checkout URL.");
   return session.url;
 }
