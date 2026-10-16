@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useId, useState, type FormEvent } from "react";
 import { CreditPacksModal } from "@/components/CreditPacksModal";
 import { DossierTerminal } from "@/components/DossierTerminal";
+import { getDossier } from "@/lib/apiClient";
 import type { Dossier } from "@/types/dossier";
 
 const focusRing =
@@ -54,25 +55,20 @@ export function DossierRunner({
       return;
     }
     setState({ kind: "running", asin: id });
-    try {
-      const res = await fetch(`/api/dossier/${id}`, { method: "POST" });
-      const body = (await res.json().catch(() => null)) as (Dossier & { error?: string; message?: string; balance?: number }) | null;
-      if (res.status === 402 && body?.error === "insufficient_credits") {
-        setState({ kind: "idle" });
-        setPacks({ open: true, reason: short(body.balance ?? 0) });
-        router.refresh();
-        return;
-      }
-      if (!res.ok || !body || body.error) {
-        setState({ kind: "error", message: body?.message ?? "The Dossier couldn't be built. Please try again." });
-        router.refresh(); // a refund may have changed the balance
-        return;
-      }
-      setState({ kind: "done", dossier: body, charged: Number(res.headers.get("x-credits-charged") ?? cost), cache: res.headers.get("x-dossier-cache") });
-      router.refresh(); // the header shows the new balance
-    } catch {
-      setState({ kind: "error", message: "We couldn't reach ProductRadar. Check your connection and try again." });
+    const result = await getDossier(id);
+    if (!result.ok && result.error === "insufficient_credits") {
+      setState({ kind: "idle" });
+      setPacks({ open: true, reason: short(typeof result.details.balance === "number" ? result.details.balance : 0) });
+      router.refresh();
+      return;
     }
+    if (!result.ok) {
+      setState({ kind: "error", message: result.message });
+      if (result.status !== 0) router.refresh(); // a refund may have changed the balance
+      return;
+    }
+    setState({ kind: "done", dossier: result.data.dossier, charged: result.data.creditsCharged, cache: result.data.cache });
+    router.refresh(); // the header shows the new balance
   }
 
   const running = state.kind === "running";
