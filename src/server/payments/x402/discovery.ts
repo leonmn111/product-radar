@@ -1,6 +1,6 @@
 // x402 discovery headers on every response from a paid endpoint (payment code only, CLAUDE.md Rule 2):
 //
-//   x402-price               the endpoint's price in USDC, before anyone pays
+//   x402-price               what this request costs in USDC ("0.00" when a wallet reopens a purchase)
 //   x402-payment-identifier  a fresh 256-bit random id for this request; the Dossier carries it as its id,
 //                            so a receipt, a log line and an answer can be matched. Replay protection is
 //                            NOT this header: it's the signed payment's own nonce, which the middleware
@@ -16,7 +16,14 @@ export const HEADER_PRICE = "x402-price";
 export const HEADER_PAYMENT_ID = "x402-payment-identifier";
 export const HEADER_BAZAAR = "x402-bazaar";
 
-export type BazaarEndpoint = { method: "GET"; path: string; priceUsdc: string; scheme: "exact"; description: string };
+export type BazaarEndpoint = {
+  method: "GET";
+  path: string;
+  priceUsdc: string;
+  scheme: "exact";
+  description: string;
+  extensions?: string[]; // x402 extensions the endpoint supports, e.g. "sign-in-with-x" (free reopening)
+};
 
 /** The paid endpoints that exist today. Each future price tier is added here when its endpoint ships. */
 export const BAZAAR: BazaarEndpoint[] = [
@@ -26,6 +33,14 @@ export const BAZAAR: BazaarEndpoint[] = [
     priceUsdc: "0.01",
     scheme: "exact",
     description: "8-part product Dossier for a search: verdict, resellability, landed margin, momentum, saturation, supplier matches, evidence, exports",
+  },
+  {
+    method: "GET",
+    path: "/api/agent/v2/dossier/{asin}",
+    priceUsdc: "2.00",
+    scheme: "exact",
+    description: "Standard Dossier for one Amazon UK product (ASIN): its product page, other listings of it and supplier matches. Reopen it free with Sign-In-With-X",
+    extensions: ["sign-in-with-x"],
   },
 ];
 

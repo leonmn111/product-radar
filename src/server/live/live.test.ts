@@ -104,6 +104,7 @@ describe("runLiveSearch", () => {
   const product = "Magnetic Power Bank 10000mAh 20W Wireless";
   const retail = (byMarket: Partial<Record<Market, RetailListing[]>>): RetailSource => ({
     name: "test-retail",
+    product: async () => null,
     async search(_term, market, budget) {
       budget.spendCall();
       return byMarket[market] ?? [];
@@ -148,6 +149,7 @@ describe("runLiveSearch", () => {
   it("reports a failing provider instead of guessing, and still answers for the other market", async () => {
     const failing: RetailSource = {
       name: "flaky",
+      product: async () => null,
       async search(_t, market, budget) {
         budget.spendCall();
         if (market === "US") throw new SourceError("rainforest", "timed out");

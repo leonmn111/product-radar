@@ -315,13 +315,39 @@ model AgentPayment {
   network     String // CAIP-2, e.g. "eip155:84532"
   asset       String // token contract
   amount      String // atomic units (USDC has 6 decimals)
-  resource    String // URL that was paid for
-  status      AgentPaymentStatus @default(RESERVED)
-  transaction String? // settlement reference ("mock:" prefix when settled by the mock facilitator)
-  validBefore DateTime           @db.Timestamptz(3)
-  createdAt   DateTime           @default(now()) @db.Timestamptz(3)
-  settledAt   DateTime?          @db.Timestamptz(3)
+  resource     String // URL that was paid for
+  resourcePath String? // its path, e.g. "/api/agent/v2/dossier/B0CH33F5P2": what Sign-In-With-X reopens for this payer
+  reference    String? // what the payment bought, as the paid route named it (the Dossier id); opaque here
+  status       AgentPaymentStatus @default(RESERVED)
+  transaction  String? // settlement reference ("mock:" prefix when settled by the mock facilitator)
+  validBefore  DateTime           @db.Timestamptz(3)
+  createdAt    DateTime           @default(now()) @db.Timestamptz(3)
+  settledAt    DateTime?          @db.Timestamptz(3)
 
   @@index([payer, createdAt(sort: Desc)])
   @@index([status, createdAt])
+  @@index([payer, resourcePath, status])
+}
+
+// Sign-In-With-X (x402 extension): each signed proof reopens a purchase once.
+model SiwxNonce {
+  nonce   String   @id // the nonce in the signed Sign-In-With-Ethereum message
+  address String // the wallet that signed it
+  usedAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([usedAt])
+}
+
+// ─── v2 Dossiers ─────────────────────────────────────────────────────────────
+// Each Dossier as it was delivered, so a buyer can reopen it without new provider calls. Written by
+// src/services/dossierStore.ts; no payment data here (the payment row points at the Dossier id).
+
+model DossierRecord {
+  id         String   @id // the Dossier's id
+  productKey String // marketplace and product id, e.g. "amazon.co.uk:B0CH33F5P2"
+  body       Json     @db.Json // the 8-part Dossier exactly as delivered (json, not jsonb: keeps the text as sent)
+  sample     Boolean  @default(false) // development sample data
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([productKey, createdAt(sort: Desc)])
 }

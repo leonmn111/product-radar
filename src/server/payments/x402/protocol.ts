@@ -65,6 +65,7 @@ export type PaymentRequired = {
   error?: string;
   resource: ResourceInfo;
   accepts: PaymentRequirements[];
+  extensions?: Record<string, unknown>; // e.g. "sign-in-with-x"
 };
 
 export type SettleResponse = {
@@ -109,8 +110,13 @@ export type PaymentPayload = z.infer<typeof PaymentPayloadSchema>;
 export const encodeHeader = (value: unknown) => Buffer.from(JSON.stringify(value), "utf8").toString("base64");
 
 /** The 402 challenge: sent as the response body and, base64-encoded, as PAYMENT-REQUIRED. */
-export function paymentRequiredBody(resource: ResourceInfo, requirements: PaymentRequirements, error?: string): PaymentRequired {
-  return { x402Version: X402_VERSION, ...(error ? { error } : {}), resource, accepts: [requirements] };
+export function paymentRequiredBody(
+  resource: ResourceInfo,
+  requirements: PaymentRequirements,
+  error?: string,
+  extensions?: Record<string, unknown>,
+): PaymentRequired {
+  return { x402Version: X402_VERSION, ...(error ? { error } : {}), resource, accepts: [requirements], ...(extensions ? { extensions } : {}) };
 }
 
 export function decodePaymentSignature(header: string): PaymentPayload {

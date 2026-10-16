@@ -54,6 +54,19 @@ describe("calculateConfidence", () => {
     expect(evidenceWeight(supplier(null), asOf)).toBe(0);
   });
 
+  it("lets a strong image match lift a supplier listing whose title matches weakly, past the financial gate", () => {
+    const listings = fresh(3);
+    const supplier = (imageMatch: Evidence["imageMatch"]) =>
+      ev({ sourceType: "supplier", provider: "aliexpress", sourceUrl: "https://www.aliexpress.com/item/1.html", matchScore: 0.5, imageMatch });
+    const titleOnly = calculateConfidence([...listings, supplier(null)], asOf);
+    const withImage = calculateConfidence([...listings, supplier({ score: 0.95, method: "simulated", comparedWith: "e1" })], asOf);
+    expect(titleOnly).toBeLessThan(FINANCIAL_THRESHOLD);
+    expect(withImage).toBeGreaterThanOrEqual(FINANCIAL_THRESHOLD);
+    // Title and image combine as 1 − (1 − 0.5)(1 − 0.95) = 0.975.
+    const w = evidenceWeight(supplier({ score: 0.95, method: "simulated", comparedWith: "e1" }), asOf);
+    expect(w).toBeCloseTo(0.8 * 0.8 * 0.975, 6);
+  });
+
   it("ignores evidence observed after the calculation time", () => {
     expect(calculateConfidence([ev({ observedAt: "2026-10-17T00:00:00.000Z" })], asOf)).toBe(0);
   });

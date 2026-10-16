@@ -38,6 +38,17 @@ export type RetailListing = {
   evidence: Evidence;
 };
 
+/** A retail product page: its listing, plus what the resellability checks read (brand, seller, category, text). */
+export type RetailProductDetail = {
+  listing: RetailListing;
+  brand: string | null;
+  sellerName: string | null; // who sells it in the buy box
+  soldByAmazon: boolean;
+  category: string | null; // e.g. "Electronics & Photo > … > Portable Power Banks"
+  bulletPoints: string[];
+  description: string | null;
+};
+
 /** A supplier's offer, as delivered to a market. */
 export type SupplierOffer = {
   id: string;

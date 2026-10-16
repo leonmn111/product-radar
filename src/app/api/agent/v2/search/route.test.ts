@@ -58,7 +58,7 @@ const listing = (over: Partial<RetailListing> = {}): RetailListing => ({
 });
 
 // Thin evidence: one Amazon UK listing and no supplier match, so confidence is well below 0.5.
-const retail: RetailSource = { name: "rainforest (test)", search: vi.fn(async () => [listing()]) };
+const retail: RetailSource = { name: "rainforest (test)", search: vi.fn(async () => [listing()]), product: vi.fn(async () => null) };
 const supplier: SupplierSource = { name: "aliexpress (test)", search: vi.fn(async () => []) };
 
 const call = (query: string, headers: Record<string, string> = {}) => GET(new NextRequest(`${URL_BASE}${query}`, { headers }));

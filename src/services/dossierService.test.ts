@@ -1,8 +1,14 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
+import type { ImageMatcher } from "@/engine/imageMatch";
 import type { RetailListing, SupplierOffer } from "@/server/live/types";
+import { parseRainforestProduct, parseRainforestSearch } from "@/server/sources/rainforest/parse";
 import type { RetailSource, SupplierSource } from "@/server/sources/types";
 import type { FeeStack } from "@/types/financials";
-import { buildDossier, fetchDossierData, type DossierInput } from "./dossierService";
+import { buildDossier, fetchDossierData, fetchProductDossierData, type DossierInput } from "./dossierService";
+
+const fixture = (name: string) => JSON.parse(readFileSync(join(__dirname, "../server/sources/rainforest/fixtures", name), "utf8"));
 
 const NOW = new Date("2026-10-16T12:00:00Z");
 const ctx = { id: "test-dossier", now: NOW };
@@ -127,9 +133,67 @@ describe("buildDossier", () => {
   });
 });
 
+describe("buildDossier: image matching", () => {
+  // Two listings and two suppliers whose titles match only partly: below the financial gate on titles alone.
+  const withImages: DossierInput = {
+    query: "ceramic coffee mug",
+    ukListings: [1, 2].map((n) => ({ ...listing(n, 12.99), image: `https://m.media-amazon.com/images/I/mug${n}.jpg` })),
+    suppliers: [1, 2].map((n) => ({ ...offer(n, 2.2, "GBP", "Coffee Cup 350ml Ceramic Large"), image: `https://ae01.alicdn.com/kf/cup${n}.jpg` })),
+    sample: true,
+  };
+  const fixedMatcher = (score: number): ImageMatcher => ({ method: "simulated", compare: () => score });
+
+  it("lets a high image similarity lift confidence past 0.7, so the numbers show", () => {
+    const titlesOnly = buildDossier(withImages, ctx);
+    expect(titlesOnly.landedMargin.confidence).toBeLessThan(0.7);
+    expect(titlesOnly.landedMargin.status).toBe("withheld");
+
+    const d = buildDossier(withImages, { ...ctx, imageMatcher: fixedMatcher(0.95) });
+    expect(d.landedMargin.confidence).toBeGreaterThanOrEqual(0.7);
+    expect(d.landedMargin.status).toBe("shown");
+    const supplierEvidence = d.evidence.filter((e) => e.sourceType === "supplier");
+    expect(supplierEvidence[0].imageMatch).toEqual({ score: 0.95, method: "simulated", comparedWith: "rainforest:www.amazon.co.uk:B0MUG1" });
+    expect(d.supplierMatches[0]?.matchScore).toBeGreaterThan(0.95); // 1 − (1 − title)(1 − 0.95)
+    expect(d.notes.join(" ")).toContain("SIMULATED");
+  });
+
+  it("refuses a simulated image score on anything but development sample data", () => {
+    expect(() => buildDossier({ ...withImages, sample: false }, { ...ctx, imageMatcher: fixedMatcher(0.95) })).toThrow(/sample data only/);
+  });
+});
+
+describe("buildDossier: one product by ASIN", () => {
+  it("is about the requested product even when another product has more listings", () => {
+    const toothbrush = { ...listing(9, 6.49, "Bamboo Toothbrush Set of 4 Biodegradable"), id: "B0BRUSH001" };
+    const d = buildDossier({ query: "B0BRUSH001", productId: "B0BRUSH001", ukListings: [toothbrush, ...strong.ukListings], suppliers: [] }, ctx);
+    expect(d.product).toMatchObject({ title: "Bamboo Toothbrush Set of 4 Biodegradable", identifiers: { asin: "B0BRUSH001" } });
+  });
+});
+
 describe("fetchDossierData", () => {
+  const supplier: SupplierSource = { name: "supplier", search: vi.fn(async () => []) };
+
+  it("searches a synonym when too few listings agree, within the 3-call budget", async () => {
+    const retail: RetailSource = {
+      name: "retail",
+      search: vi.fn(async (term: string) => [listing(term === "earbuds" ? 1 : 2, 19.99, "Wireless Earbuds Bluetooth 5.3 Headphones")]),
+      product: vi.fn(async () => null),
+    };
+    const data = await fetchDossierData("earbuds", { retail, supplier });
+    expect(vi.mocked(retail.search).mock.calls.map((c) => c[0])).toEqual(["earbuds", "wireless earbuds"]);
+    expect(data.ukListings).toHaveLength(2);
+    expect(data.notes?.join(" ")).toContain('also searched for "wireless earbuds"');
+    expect(supplier.search).toHaveBeenCalled(); // the budget kept a call for the supplier
+  });
+
+  it("doesn't spend on synonyms when the first search already corroborates the product", async () => {
+    const retail: RetailSource = { name: "retail", search: vi.fn(async () => strong.ukListings.map((l) => ({ ...l, title: "Wireless Earbuds Bluetooth 5.3" }))), product: vi.fn(async () => null) };
+    await fetchDossierData("earbuds", { retail, supplier });
+    expect(retail.search).toHaveBeenCalledTimes(1);
+  });
+
   it("asks the supplier source for the best-corroborated product, and keeps a supplier failure as a note", async () => {
-    const retail: RetailSource = { name: "retail", search: vi.fn(async () => strong.ukListings) };
+    const retail: RetailSource = { name: "retail", search: vi.fn(async () => strong.ukListings), product: vi.fn(async () => null) };
     const supplier: SupplierSource = {
       name: "supplier",
       search: vi.fn(async () => {
@@ -142,5 +206,31 @@ describe("fetchDossierData", () => {
     expect(data.ukListings).toHaveLength(4);
     expect(data.suppliers).toEqual([]);
     expect(data.notes?.[0]).toContain("rate limited");
+  });
+});
+
+describe("fetchProductDossierData (real recorded Amazon UK responses)", () => {
+  const page = parseRainforestProduct(fixture("product-amazon-co-uk-B0CH33F5P2-recorded.json"), "GB", NOW);
+  const search = parseRainforestSearch(fixture("search-amazon-co-uk-recorded.json"), "GB", NOW);
+
+  it("reads the product page, finds other listings of it, and checks it with its real brand and seller", async () => {
+    const retail: RetailSource = { name: "retail", search: vi.fn(async () => search), product: vi.fn(async () => page) };
+    const supplier: SupplierSource = { name: "supplier", search: vi.fn(async () => []) };
+    const data = await fetchProductDossierData("B0CH33F5P2", { retail, supplier });
+    expect(retail.product).toHaveBeenCalledWith("B0CH33F5P2", "GB", expect.anything());
+    expect(data?.ukListings[0].evidence.id).toBe("rainforest:amazon.co.uk:B0CH33F5P2:page"); // the page, not the search result
+    expect(data?.ukListings.filter((l) => l.id === "B0CH33F5P2")).toHaveLength(1);
+
+    const d = buildDossier(data!, ctx);
+    expect(d.product.identifiers.asin).toBe("B0CH33F5P2");
+    expect(d.resellability.brandDirect).toMatchObject({ value: true, evidenceIds: ["rainforest:amazon.co.uk:B0CH33F5P2:page"] });
+    expect(d.resellability.brandDirect.reason).toContain('the seller "UGREEN GROUP LIMITED UK" is the brand "UGREEN"');
+    expect(d.landedMargin).toMatchObject({ status: "withheld", reason: "Not Sellable" });
+  });
+
+  it("is null when Amazon UK has no such product, after one call", async () => {
+    const retail: RetailSource = { name: "retail", search: vi.fn(async () => []), product: vi.fn(async () => null) };
+    expect(await fetchProductDossierData("B0NOTHERE1", { retail, supplier: { name: "s", search: vi.fn(async () => []) } })).toBeNull();
+    expect(retail.search).not.toHaveBeenCalled();
   });
 });

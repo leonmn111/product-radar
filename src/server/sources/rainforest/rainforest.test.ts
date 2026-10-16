@@ -4,10 +4,11 @@ import { describe, expect, it, vi } from "vitest";
 import { QueryBudget } from "@/server/live/budget";
 import { SourceError } from "../types";
 import { createRainforestSource } from "./index";
-import { parseRainforestSearch, RAINFOREST_QUALITY } from "./parse";
+import { parseRainforestProduct, parseRainforestSearch, RAINFOREST_QUALITY } from "./parse";
 
 const fixture = JSON.parse(readFileSync(join(__dirname, "fixtures/search-amazon-co-uk.json"), "utf8"));
 const recorded = JSON.parse(readFileSync(join(__dirname, "fixtures/search-amazon-co-uk-recorded.json"), "utf8"));
+const recordedProduct = JSON.parse(readFileSync(join(__dirname, "fixtures/product-amazon-co-uk-B0CH33F5P2-recorded.json"), "utf8"));
 const fallback = new Date("2026-10-15T12:00:00.000Z");
 
 describe("parseRainforestSearch", () => {
@@ -50,6 +51,33 @@ describe("a real recorded Rainforest response (amazon.co.uk, 2026-10-15)", () =>
   });
 });
 
+describe("parseRainforestProduct: a real recorded product page (amazon.co.uk, B0CH33F5P2, 2026-10-16)", () => {
+  const detail = parseRainforestProduct(recordedProduct, "GB", fallback);
+
+  it("reads the buy-box price (never the RRP) as a cited listing", () => {
+    expect(detail?.listing).toMatchObject({
+      market: "GB",
+      id: "B0CH33F5P2",
+      title: "UGREEN Nexode 10000mAh MagSafe Wireless Power Bank PD 20W Fast Charging",
+      price: { amount: 17.97, currency: "GBP" }, // the RRP on the page is £24.99
+      image: "https://m.media-amazon.com/images/I/516Z4HFBZUL.jpg",
+      evidence: { id: "rainforest:amazon.co.uk:B0CH33F5P2:page", provider: "rainforest", observedAt: "2026-10-16T11:19:48.241Z", quality: RAINFOREST_QUALITY },
+    });
+    expect(detail?.listing.evidence.claim).toContain("£17.97 in the buy box on Amazon UK, sold by UGREEN GROUP LIMITED UK, brand UGREEN");
+  });
+
+  it("reads what the resellability checks need: brand, seller, category, bullet points", () => {
+    expect(detail).toMatchObject({ brand: "UGREEN", sellerName: "UGREEN GROUP LIMITED UK", soldByAmazon: false });
+    expect(detail?.category).toBe("Electronics & Photo > Mobile Phones & Communication > Accessories > Chargers > Portable Power Banks");
+    expect(detail?.bulletPoints).toHaveLength(5);
+  });
+
+  it("gives nothing for a page without a product or a price in the market's currency", () => {
+    expect(parseRainforestProduct({ request_info: { success: true } }, "GB", fallback)).toBeNull();
+    expect(parseRainforestProduct(recordedProduct, "US", fallback)).toBeNull(); // GBP price, US market
+  });
+});
+
 describe("createRainforestSource", () => {
   const budget = () => new QueryBudget({ maxCalls: 5, deadlineMs: 30_000 });
 
@@ -65,6 +93,16 @@ describe("createRainforestSource", () => {
       "power bank",
     ]);
     expect(listings).toHaveLength(2);
+    expect(b.callsUsed).toBe(1);
+  });
+
+  it("looks up one product page by ASIN for one call", async () => {
+    const fetchImpl = vi.fn(async () => Response.json(recordedProduct));
+    const b = budget();
+    const detail = await createRainforestSource({ apiKey: "k", fetchImpl: fetchImpl as typeof fetch }).product("B0CH33F5P2", "GB", b);
+    const url = new URL(String((fetchImpl.mock.calls[0] as unknown[])[0]));
+    expect([url.searchParams.get("type"), url.searchParams.get("amazon_domain"), url.searchParams.get("asin")]).toEqual(["product", "amazon.co.uk", "B0CH33F5P2"]);
+    expect(detail?.listing.id).toBe("B0CH33F5P2");
     expect(b.callsUsed).toBe(1);
   });
 

@@ -23,7 +23,10 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 - **Compliance:** `checkResellability()` and `isSellable()`: brand-direct, trademark risk, UKCA,
   cosmetics, batteries. *Built 2026-10-16.*
 - **Synonym search:** one query expands to the names sellers actually use, so a search covers the
-  same product however it's listed.
+  same product however it's listed. `expandQuery()` in `src/engine/synonyms.ts` (25 niche groups,
+  UK wording). The extra terms are searched only when the first search finds fewer than 4 listings
+  of the product, within the query's call budget: each is another paid Rainforest search.
+  *Built 2026-10-16.*
 - **Brand flagger:** flags branded and brand-restricted products before anything else is done with them.
 - **Daily snapshot cron:** records daily trend, price, rank and ad history (`src/jobs/dailySnapshot.ts`).
   *Template scaffolded 2026-10-16.*
@@ -31,17 +34,26 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
   into the 8-part Dossier: compliance first (an unsellable product gets no money maths), then
   confidence and the two gates. `/api/agent/v2/search` now returns it at **$0.01** with the
   `x402-price`, `x402-payment-identifier` and `x402-bazaar` headers. *Built 2026-10-16.*
+- **Standard Dossier, $2:** `/api/agent/v2/dossier/{asin}` builds the Dossier for one Amazon UK product
+  from its product page (price, brand, seller, category), other listings of it and supplier matches,
+  and keeps the delivered copy. A wallet that bought it reopens it free with Sign-In-With-X
+  (`x402-price: "0.00"`), with no new provider calls. *Built 2026-10-16* (pulled forward from Phase 2).
 
 ### Phase 1: suppliers and history (weeks 2–4, to 13 Nov)
 
 - **Supplier matching:** the top 3 1688 / AliExpress matches with MOQ and delivery days. The AliExpress
   connector exists and waits for affiliate approval; 1688 needs a licensed provider.
+- **Image matching:** proves a supplier listing shows the exact white-label item. *Scaffolded
+  2026-10-16:* `src/engine/imageMatch.ts` has the typed interface and a SIMULATED score (random
+  0.6–0.99), and confidence already counts image similarity alongside title similarity. The simulated
+  score only runs on development sample data and is refused for anything else; a real comparison
+  (perceptual hash, SSIM or a vision model) replaces it here.
 - **Keepa API:** Amazon price, sales-rank and sales history, feeding momentum and velocity.
 
 ### Phase 2: payments, ads and polish (weeks 4–8, to 11 Dec)
 
-- **x402:** `Upto` (authorise a maximum, charge the actual cost), `SignInWithX` (wallet identity) and
-  `PaymentIdentifier` (one payment per request). Today's x402 code supports `exact` only.
+- **x402:** `Upto` (authorise a maximum, charge the actual cost) and `PaymentIdentifier` (one payment
+  per request). Payments are `exact` only today. `SignInWithX` was built early, on 2026-10-16, for the $2 Dossier.
 - **Stripe fiat credit packs:** £10, £25, £50.
 - **Prices:** Search $0.01 · Standard $2 · On-Demand up to $4 · Shortlist $12 · Pre-order $38.
   `/api/agent/v2/search` moved from $0.50 to the $0.01 Search tier on 2026-10-16 (see Phase 0).
@@ -72,10 +84,12 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
   countries).
 - **v1 data:** the live site's prices expire around **14 November**. Re-run `npm run data:refresh` on
   Railway before then, unless the daily snapshot job has taken over.
-- **Rainforest trial:** 99 credits left; continuing needs the Hobbyist plan (about $23/month).
+- **Rainforest trial:** 98 credits left (one spent on 2026-10-16 recording a product page for tests);
+  continuing needs the Hobbyist plan (about $23/month). A $2 Dossier uses 2–4 credits (product page,
+  a search, up to two synonym searches), about $0.09–$0.18 on Hobbyist.
 - **Search at $0.01 costs more than it earns:** each live search spends at least one Rainforest credit
-  (about $0.046 on Hobbyist) plus an AliExpress call. Decide whether the live Dossier moves to the
-  $2 Standard tier, or the $0.01 search serves cached results only.
+  (about $0.046 on Hobbyist), two when a synonym is searched, plus an AliExpress call. The $2 Dossier
+  endpoint now exists; decide whether the $0.01 search stays live or serves cached results only.
 - **Unconfirmed fee figures** (labelled as estimates in every margin until confirmed): the TikTok
   Shop UK £0.50 self-ship fee, and the EU €2 handling fee (proposed, not adopted). Confirm the
   TikTok fees in Seller Center; the EU fee when it's adopted.

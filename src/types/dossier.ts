@@ -28,7 +28,15 @@ export interface Evidence {
   quality: number; // 0–100, by how the fact was obtained
   claim: string; // the fact, in words
   value: number | string | boolean | null; // the extracted value, when there is one
-  matchScore?: number | null; // 0–1 for supplier evidence: how closely the listing matches the product
+  matchScore?: number | null; // 0–1 for supplier evidence: how closely the listing's title matches the product
+  imageMatch?: ImageMatchEvidence | null; // supplier evidence: how closely its image matches the product's
+}
+
+/** A supplier image compared with the product's image (the evidence item `comparedWith`). */
+export interface ImageMatchEvidence {
+  score: number; // 0–1
+  method: "simulated"; // how it was measured; "simulated" is development-only and never in a real Dossier
+  comparedWith: string; // evidence id of the product listing whose image it was compared with
 }
 
 /** Part 7: every evidence item the Dossier uses, in one auditable list. */

@@ -33,7 +33,7 @@ A Dossier answers "should I sell this, and what would I really keep?" in eight p
 - Confidence keeps v1's formula, `C = 1 − e^(−Σw/2)`. Each evidence item weighs quality × freshness
   (90-day half-life) × source type, and repeat captures of one source count once. Reaching 0.7 needs
   Σw ≈ 2.4, roughly four fresh, independent, structured sources; 0.5 needs Σw ≈ 1.4.
-- Lives in `src/engine/confidence.ts`: `calculateConfidence()`, `VERDICT_THRESHOLD = 0.5` and `FINANCIAL_THRESHOLD = 0.7`. Supplier evidence is also weighted by how well it matches the product (an unscored supplier listing counts for nothing).
+- Lives in `src/engine/confidence.ts`: `calculateConfidence()`, `VERDICT_THRESHOLD = 0.5` and `FINANCIAL_THRESHOLD = 0.7`. Supplier evidence is also weighted by how well it matches the product: title and image similarity combine as 1 − (1 − title)(1 − image), and an unscored supplier listing counts for nothing. Image similarity is simulated until Phase 1, so it is only ever applied to development sample data.
 
 ## Landed margin model (UK and EU)
 
@@ -107,7 +107,8 @@ its own time; nothing is overwritten.
   - `SignInWithX`: a wallet-based identity, so repeat access needs no new account;
   - `PaymentIdentifier`: ties each payment to exactly one request.
 
-  These are built in Phase 2 against the current x402 specification.
+  `SignInWithX` is built (2026-10-16, for the $2 Dossier; see below). `Upto` and `PaymentIdentifier`
+  are built in Phase 2 against the current x402 specification.
 - **Stripe fiat credit packs:** £10, £25 and £50.
 - **Prices:**
 
@@ -119,7 +120,15 @@ its own time; nothing is overwritten.
 | Shortlist | $12 |
 | Pre-order | $38 |
 
-- **Discovery headers.** Every response from `/api/agent/v2/search` (402, 200 and errors alike) carries
+- **Sign-In-With-X (free reopening).** `/api/agent/v2/dossier/{asin}` offers the x402 `sign-in-with-x`
+  extension in its 402. A wallet that bought that exact path signs the EIP-4361 challenge
+  (`SIGN-IN-WITH-X` header). The server checks it in `src/server/payments/x402/siwx.ts`: site, path,
+  network, 5-minute age, signature, and a nonce that works once. If that wallet has a settled payment
+  for the path, it gets the stored copy of its Dossier back at `x402-price: "0.00"`. Each payment row
+  records the path it bought and the Dossier id (`reference`); the Dossier itself lives in
+  `DossierRecord`, with no payment data. Smart-contract wallets (EIP-1271) aren't supported yet and pay
+  as usual.
+- **Discovery headers.** Every response from the v2 endpoints (402, 200 and errors alike) carries
   `x402-price`, `x402-payment-identifier` (a fresh 256-bit random id per request, which is also the
   Dossier's `id`) and `x402-bazaar` (the paid endpoints on offer, as JSON). They're built in
   `src/server/payments/x402/discovery.ts`. Replay protection is the signed payment's own nonce,
@@ -150,13 +159,13 @@ terms.
 | Path | Job |
 | --- | --- |
 | `src/types/` | The data model: `dossier.ts` (the 8 parts, `Evidence`, `Gated<T>`), `financials.ts` (fee stacks, duties, VAT, landed margin) |
-| `src/engine/` | Pure, tested business logic: `margin.ts`, `confidence.ts`, `compliance.ts`. Next: synonym search and the brand flagger |
-| `src/services/` | Assembly: `dossierService.ts` fetches the listings and offers (the only I/O) and builds the 8-part Dossier from them (pure) |
+| `src/engine/` | Pure, tested business logic: `margin.ts`, `confidence.ts`, `compliance.ts`, `synonyms.ts` (query expansion), `imageMatch.ts` (scaffold: simulated). Next: the brand flagger |
+| `src/services/` | Assembly: `dossierService.ts` fetches the listings and offers (the only I/O) and builds the 8-part Dossier from them (pure); `dossierStore.ts` keeps each delivered Dossier for reopening |
 | `src/jobs/` | Scheduled work: `dailySnapshot.ts` |
 | `src/server/sources/<provider>/` | One adapter per data provider (Rainforest and AliExpress today) |
 | `src/server/payments/` | x402 and Stripe; the only code that knows about money changing hands |
 | `src/server/live/` | The Phase 8 live-search pipeline built on 2026-10-15. Its confidence, margin and matching code moves into `src/engine/` as each engine module is implemented, then this folder goes |
-| `src/app/` | Pages and API routes (`/search`, `/api/agent/v2/search`) |
+| `src/app/` | Pages and API routes (`/search`, `/api/agent/v2/search` at $0.01, `/api/agent/v2/dossier/{asin}` at $2) |
 
 ## Evidence, the product's core (CLAUDE.md Rule 3)
 

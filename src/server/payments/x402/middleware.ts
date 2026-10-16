@@ -2,7 +2,9 @@
 // logic lives here). Wrap a handler with withX402Payment() and it only runs
 // after a valid payment; the handler itself never sees payment details.
 //
-//   no PAYMENT-SIGNATURE      → 402 + PAYMENT-REQUIRED (price, asset, payTo)
+//   SIGN-IN-WITH-X (routes that opt in): a wallet that already bought this exact path proves it
+//                             → `reopen` serves the purchase again, free; nothing is verified or settled
+//   no PAYMENT-SIGNATURE      → 402 + PAYMENT-REQUIRED (price, asset, payTo; the sign-in challenge)
 //   invalid / replayed proof  → 402 + PAYMENT-REQUIRED with `error`
 //   valid proof               → nonce locked → handler runs →
 //        2xx: settle, record, 200 + PAYMENT-RESPONSE
@@ -15,6 +17,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { loadPaymentConfig } from "./config";
 import { FacilitatorUnavailableError } from "./facilitator";
+import { HEADER_SIWX, paidReference, SIWX_EXTENSION, siwxChallenge, spendSiwxNonce, verifySiwx } from "./siwx";
 import {
   decodePaymentSignature,
   encodeHeader,
@@ -29,8 +32,10 @@ import {
 
 const HEADERS_EXPOSED = `${HEADER_REQUIRED}, ${HEADER_RESPONSE}`;
 
-function paymentRequired(resource: ResourceInfo, requirements: PaymentRequirements, error?: string, message?: string) {
-  const body = paymentRequiredBody(resource, requirements, error);
+type Challenge = { resource: ResourceInfo; requirements: PaymentRequirements; extensions?: Record<string, unknown> };
+
+function paymentRequired({ resource, requirements, extensions }: Challenge, error?: string, message?: string) {
+  const body = paymentRequiredBody(resource, requirements, error, extensions);
   // `message` is a human explanation for the JSON body only; the header stays the standard x402 shape.
   return Response.json(message ? { ...body, message } : body, {
     status: 402,
@@ -42,7 +47,7 @@ function paymentRequired(resource: ResourceInfo, requirements: PaymentRequiremen
   });
 }
 
-async function reserveNonce(payment: PaymentPayload, req: PaymentRequirements, payer: string, resourceUrl: string) {
+async function reserveNonce(payment: PaymentPayload, req: PaymentRequirements, payer: string, resourceUrl: URL, reference: string | undefined) {
   const auth = payment.payload.authorization;
   try {
     await db.agentPayment.create({
@@ -53,7 +58,9 @@ async function reserveNonce(payment: PaymentPayload, req: PaymentRequirements, p
         network: req.network,
         asset: req.asset,
         amount: req.amount,
-        resource: resourceUrl,
+        resource: resourceUrl.toString(),
+        resourcePath: resourceUrl.pathname,
+        reference: reference ?? null,
         validBefore: new Date(Number(auth.validBefore) * 1000),
       },
     });
@@ -67,10 +74,21 @@ async function reserveNonce(payment: PaymentPayload, req: PaymentRequirements, p
 const releaseNonce = (nonce: string) =>
   db.agentPayment.deleteMany({ where: { nonce: nonce.toLowerCase(), status: "RESERVED" } });
 
-export function withX402Payment(
-  meta: { description: string; mimeType?: string; priceUsdc?: string },
-  handler: (request: NextRequest) => Promise<Response>,
-) {
+export type PaidRouteMeta = {
+  description: string;
+  mimeType?: string;
+  priceUsdc?: string;
+  /** What this request sells (e.g. the Dossier id), stored with the payment; Sign-In-With-X hands it back. */
+  reference?: string;
+  /**
+   * Sign-In-With-X: a wallet that already paid for this exact path reopens its purchase for free.
+   * `reopen` gets the purchase's reference and returns the response, or null if it can't (then the
+   * caller is asked to pay as usual).
+   */
+  signInWithX?: { reopen: (reference: string, request: NextRequest) => Promise<Response | null> };
+};
+
+export function withX402Payment(meta: PaidRouteMeta, handler: (request: NextRequest) => Promise<Response>) {
   return async function paidHandler(request: NextRequest): Promise<Response> {
     await connection();
     const config = loadPaymentConfig(meta.priceUsdc);
@@ -85,14 +103,38 @@ export function withX402Payment(
       serviceName: "ProductRadar",
     };
 
+    const challenge: Challenge = {
+      resource,
+      requirements,
+      ...(meta.signInWithX ? { extensions: { [SIWX_EXTENSION]: siwxChallenge(request.nextUrl, requirements.network) } } : {}),
+    };
+
+    // A returning buyer first: a valid sign-in for a path this wallet already paid for is served free.
+    let siwxError: string | undefined;
+    const siwxHeader = meta.signInWithX ? request.headers.get(HEADER_SIWX) : null;
+    if (meta.signInWithX && siwxHeader) {
+      const proof = await verifySiwx(siwxHeader, { url: request.nextUrl, network: requirements.network });
+      if (!proof.ok) siwxError = proof.reason;
+      else {
+        const reference = await paidReference(proof.address, request.nextUrl.pathname);
+        if (!reference) siwxError = "siwx_no_purchase";
+        else if (!(await spendSiwxNonce(proof.nonce, proof.address))) siwxError = "invalid_siwx_nonce";
+        else {
+          const reopened = await meta.signInWithX.reopen(reference, request);
+          if (reopened) return reopened;
+          siwxError = "siwx_purchase_unavailable";
+        }
+      }
+    }
+
     const header = request.headers.get(HEADER_SIGNATURE);
-    if (!header) return paymentRequired(resource, requirements);
+    if (!header) return paymentRequired(challenge, siwxError);
 
     let payment: PaymentPayload;
     try {
       payment = decodePaymentSignature(header);
     } catch {
-      return paymentRequired(resource, requirements, "invalid_payment_header");
+      return paymentRequired(challenge, "invalid_payment_header");
     }
 
     let verdict;
@@ -106,10 +148,10 @@ export function withX402Payment(
         { status: 503, headers: { "Retry-After": "30", "Cache-Control": "no-store" } },
       );
     }
-    if (!verdict.isValid) return paymentRequired(resource, requirements, verdict.invalidReason, verdict.invalidMessage);
+    if (!verdict.isValid) return paymentRequired(challenge, verdict.invalidReason, verdict.invalidMessage);
 
-    if (!(await reserveNonce(payment, requirements, verdict.payer, resource.url))) {
-      return paymentRequired(resource, requirements, "nonce_already_used");
+    if (!(await reserveNonce(payment, requirements, verdict.payer, request.nextUrl, meta.reference))) {
+      return paymentRequired(challenge, "nonce_already_used");
     }
 
     const nonce = payment.payload.authorization.nonce;
@@ -154,7 +196,7 @@ export function withX402Payment(
     }
     if (!settlement.success) {
       await releaseNonce(nonce);
-      return paymentRequired(resource, requirements, settlement.errorReason ?? "settlement_failed");
+      return paymentRequired(challenge, settlement.errorReason ?? "settlement_failed");
     }
     await db.agentPayment.update({
       where: { nonce: nonce.toLowerCase() },

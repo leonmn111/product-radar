@@ -3,7 +3,9 @@
 //
 // Each distinct source counts once (its newest capture) and weighs
 //   w = quality / 100 × 0.5^(age in days / 90) × source-type weight × match quality
-// where match quality is the supplier match score (0–1) for supplier evidence, and 1 otherwise.
+// where match quality, for supplier evidence, combines how well its title and its image match the
+// product as 1 − (1 − title)(1 − image) (two independent signals; a missing one counts 0), and is 1
+// for any other evidence. A strong image match can lift a weak title match.
 // Confidence C = 1 − e^(−Σw / 2): more sources, fresher, better matched → closer to 1.
 // Reaching 0.7 takes about four fresh, independent marketplace listings; 0.5 about three.
 
@@ -29,6 +31,8 @@ export const SOURCE_TYPE_WEIGHT: Record<EvidenceSourceType, number> = {
   other: 0.5,
 };
 
+const clamp01 = (n: number) => (Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0);
+
 /** One evidence item's weight at `asOf`; 0 for evidence observed after it. */
 export function evidenceWeight(e: Evidence, asOf: Date): number {
   const observed = new Date(e.observedAt).getTime();
@@ -38,7 +42,7 @@ export function evidenceWeight(e: Evidence, asOf: Date): number {
   const since = Number.isFinite(published) && published < observed ? published : observed;
   const ageDays = (asOf.getTime() - since) / DAY_MS;
   // A supplier listing supports a product only as well as it matches it; unscored, it can't.
-  const match = e.sourceType === "supplier" ? Math.max(0, Math.min(1, e.matchScore ?? 0)) : 1;
+  const match = e.sourceType === "supplier" ? 1 - (1 - clamp01(e.matchScore ?? 0)) * (1 - clamp01(e.imageMatch?.score ?? 0)) : 1;
   const quality = Math.max(0, Math.min(100, e.quality)) / 100;
   return quality * 0.5 ** (ageDays / HALF_LIFE_DAYS) * SOURCE_TYPE_WEIGHT[e.sourceType] * match;
 }

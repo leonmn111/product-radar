@@ -1,5 +1,6 @@
 import { connection, type NextRequest } from "next/server";
 import { z } from "zod";
+import { simulatedImageMatcher } from "@/engine/imageMatch";
 import { BudgetExceededError } from "@/server/live/budget";
 import { liveSources } from "@/server/live/config";
 import { newPaymentIdentifier, withDiscoveryHeaders } from "@/server/payments/x402/discovery";
@@ -13,7 +14,8 @@ const SEARCH_PRICE_USDC = "0.01";
 const Query = z.object({ q: z.string().trim().min(2, "q must be at least 2 characters").max(120) });
 
 // GET /api/agent/v2/search?q=ceramic+coffee+mug
-// Returns the 8-part Dossier for the product most Amazon UK listings agree on. Every response carries
+// Returns the 8-part Dossier for the product most Amazon UK listings agree on (synonyms of the query are
+// searched too when too few listings agree; see engine/synonyms.ts). Every response carries
 // the x402 discovery headers; payment is the standard x402 v2 flow (402 → PAYMENT-SIGNATURE → 200).
 // A bad query, or live sources not being connected, is answered before any payment is asked for. A
 // failed source or a search with no listings is a non-2xx answer, so it isn't charged.
@@ -56,7 +58,8 @@ export async function GET(request: NextRequest) {
         sample: live.sample,
         notes: [...(data.notes ?? []), ...(live.sample ? ["Development sample data: the supplier offers are made up."] : [])],
       },
-      { id: paymentId, now: new Date() },
+      // Image similarity is simulated until a real matcher exists, so it only ever runs on sample data.
+      { id: paymentId, now: new Date(), imageMatcher: live.sample ? simulatedImageMatcher : undefined },
     );
     return Response.json(dossier, { headers: { "Cache-Control": "no-store" } });
   });

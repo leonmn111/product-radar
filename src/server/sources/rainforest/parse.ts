@@ -1,7 +1,7 @@
-// Rainforest API (Amazon) search response → retail listings with evidence. Pure: no network.
-// Response shape per Rainforest's docs (docs.trajectdata.com › Rainforest › Search results).
+// Rainforest API (Amazon) search and product-page responses → retail listings with evidence. Pure: no network.
+// Response shapes per Rainforest's docs (docs.trajectdata.com › Rainforest › Search results, Product data).
 
-import { MARKETS, type Market, type RetailListing } from "@/server/live/types";
+import { MARKETS, type Market, type RetailListing, type RetailProductDetail } from "@/server/live/types";
 
 // Prices and ratings read from Amazon's own result page by a data provider.
 export const RAINFOREST_QUALITY = 80;
@@ -80,4 +80,84 @@ export function parseRainforestSearch(json: RainforestSearchResponse, market: Ma
     });
   }
   return listings;
+}
+
+// ── Product page (type=product) ──────────────────────────────────────────────
+
+export type RainforestProductResponse = {
+  request_info?: { success?: boolean; message?: string };
+  request_metadata?: { processed_at?: string; created_at?: string };
+  product?: {
+    asin?: unknown;
+    title?: unknown;
+    link?: unknown;
+    brand?: unknown;
+    categories_flat?: unknown;
+    feature_bullets?: unknown;
+    description?: unknown;
+    main_image?: { link?: unknown };
+    rating?: unknown;
+    ratings_total?: unknown;
+    recent_sales?: unknown;
+    buybox_winner?: {
+      price?: Price;
+      fulfillment?: { is_sold_by_amazon?: unknown; third_party_seller?: { name?: unknown } };
+    };
+  };
+};
+
+/**
+ * A product page → the listing (buy-box price, never the RRP) plus brand, seller, category and text
+ * for the resellability checks. Null when there's no product or no price in the market's currency.
+ */
+export function parseRainforestProduct(json: RainforestProductResponse, market: Market, fallbackTime: Date): RetailProductDetail | null {
+  const { amazonDomain, currency, label } = MARKETS[market];
+  const p = json.product;
+  const id = str(p?.asin);
+  const title = str(p?.title);
+  const url = str(p?.link);
+  const price = p?.buybox_winner?.price ? sellingPrice({ price: p.buybox_winner.price }) : null;
+  if (!p || !id || !title || !url || !/^https:\/\//.test(url) || !price || price.currency !== currency) return null;
+  const observedAt = str(json.request_metadata?.processed_at) ?? str(json.request_metadata?.created_at) ?? fallbackTime.toISOString();
+  const soldByAmazon = p.buybox_winner?.fulfillment?.is_sold_by_amazon === true;
+  const sellerName = soldByAmazon ? "Amazon" : str(p.buybox_winner?.fulfillment?.third_party_seller?.name);
+  const brand = str(p.brand);
+  const rating = num(p.rating);
+  const ratingsTotal = num(p.ratings_total);
+  const recentSales = str(p.recent_sales);
+  const facts = [
+    `${price.raw ?? `${price.amount.toFixed(2)} ${price.currency}`} in the buy box on ${label}`,
+    sellerName ? `sold by ${sellerName}` : null,
+    brand ? `brand ${brand}` : null,
+    rating !== null && ratingsTotal !== null ? `rated ${rating}/5 from ${ratingsTotal.toLocaleString("en-US")} ratings` : null,
+    recentSales,
+  ].filter(Boolean);
+  return {
+    listing: {
+      market,
+      id,
+      title,
+      url,
+      image: str(p.main_image?.link),
+      price: { amount: price.amount, currency: price.currency },
+      rating: rating !== null && rating >= 0 && rating <= 5 ? rating : null,
+      ratingsTotal: ratingsTotal !== null && ratingsTotal >= 0 ? Math.round(ratingsTotal) : null,
+      sponsored: false,
+      recentSales,
+      evidence: {
+        id: `rainforest:${amazonDomain}:${id}:page`,
+        provider: "rainforest",
+        sourceUrl: url,
+        observedAt,
+        quality: RAINFOREST_QUALITY,
+        claim: `"${title}" (product page): ${facts.join(", ")}`,
+      },
+    },
+    brand,
+    sellerName,
+    soldByAmazon,
+    category: str(p.categories_flat),
+    bulletPoints: Array.isArray(p.feature_bullets) ? p.feature_bullets.map(str).filter((b): b is string => b !== null) : [],
+    description: str(p.description),
+  };
 }
