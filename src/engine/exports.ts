@@ -29,7 +29,8 @@ export class ExportUnavailableError extends Error {
   }
 }
 
-const PLATFORM_NAME: Record<Dossier["supplierMatches"][number]["platform"], string> = { aliexpress: "AliExpress", "1688": "1688" };
+/** The Vendor on every export (owner, 2026-10-16): never the supplier, which shoppers can see in many themes. */
+export const SHOPIFY_VENDOR = "ProductRadar Import";
 
 /** Text from listings is untrusted: neutralise spreadsheet formulas, then quote (RFC 4180). */
 function csvCell(v: string) {
@@ -57,8 +58,9 @@ export function shopifyHandle(title: string) {
 /**
  * The Dossier's product as a Shopify import file (header row and one product row, CRLF line ends).
  * - Variant Price: the Dossier's retail price (the median of the cited Amazon UK listings, VAT included).
- * - Vendor: the platform of the best supplier match (AliExpress / 1688).
- * - Image Src: that supplier's product image, when it lists one.
+ * - Vendor: "ProductRadar Import" (the seller renames it to their own brand).
+ * - Image Src: the best supplier match's product image, when it lists one. Never an Amazon photo,
+ *   and the body is only the title: the seller sources their own creative.
  * - Published FALSE: it imports as a draft, so nothing goes live until the seller reviews it.
  * - Compare-at price is empty: no RRP is captured, and none is invented.
  * Throws ExportUnavailableError when the margin (and so the price) is withheld.
@@ -78,7 +80,7 @@ export function generateShopifyCSV(dossier: Dossier): string {
     Handle: shopifyHandle(title),
     Title: title,
     "Body (HTML)": `<p>${escapeHtml(title)}</p>`,
-    Vendor: supplier ? PLATFORM_NAME[supplier.platform] : "",
+    Vendor: SHOPIFY_VENDOR,
     Type: "",
     Tags: "ProductRadar",
     Published: "FALSE",

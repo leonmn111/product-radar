@@ -45,7 +45,7 @@ describe("generateShopifyCSV", () => {
       Handle: "plain-white-ceramic-coffee-mug-350ml",
       Title: "Plain White Ceramic Coffee Mug 350ml",
       "Body (HTML)": "<p>Plain White Ceramic Coffee Mug 350ml</p>",
-      Vendor: "AliExpress",
+      Vendor: "ProductRadar Import",
       Type: "",
       Tags: "ProductRadar",
       Published: "FALSE",

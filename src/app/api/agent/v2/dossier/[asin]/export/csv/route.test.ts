@@ -126,7 +126,7 @@ describe("GET /api/agent/v2/dossier/{asin}/export/csv", () => {
     expect(csv.split("\r\n")[0]).toBe(
       '"Handle","Title","Body (HTML)","Vendor","Type","Tags","Published","Option1 Name","Option1 Value","Variant Price","Variant Compare At Price","Image Src"',
     );
-    expect(csv).toContain('"AliExpress"');
+    expect(csv).toContain('"ProductRadar Import"');
     expect(csv).toContain('"https://ae01.alicdn.com/kf/mug2.jpg"'); // their copy: its best supplier is offer 2
   });
 
