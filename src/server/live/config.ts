@@ -39,3 +39,12 @@ export function liveSources({ allowSample = false }: { allowSample?: boolean } =
   const history = env.KEEPA_API_KEY ? createKeepaSource({ apiKey: env.KEEPA_API_KEY }) : null;
   return retail && supplier ? { ready: true, sample: false, sources: { retail, supplier, history } } : { ready: false, missing };
 }
+
+export type RetailSourceStatus = { ready: true; sample: boolean; retail: RetailSource } | { ready: false; missing: string[] };
+
+/** Just the retail source (Amazon UK listings), for searches that don't need suppliers. */
+export function liveRetailSource({ allowSample = false }: { allowSample?: boolean } = {}): RetailSourceStatus {
+  if (allowSample && sampleModeOn()) return { ready: true, sample: true, retail: sampleRetailSource };
+  if (!env.RAINFOREST_API_KEY) return { ready: false, missing: ["retail source: RAINFOREST_API_KEY is not set"] };
+  return { ready: true, sample: false, retail: createRainforestSource({ apiKey: env.RAINFOREST_API_KEY }) };
+}

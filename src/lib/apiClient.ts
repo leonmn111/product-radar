@@ -5,12 +5,11 @@
 // and none should be: script can't read the cookie, so it can't leak. Stripe session ids aren't
 // credentials (they only identify a finished checkout), so they never travel here.
 //
-// Who pays how:
-//   people  pay in platform credits, through their session: getDossier() (POST /api/dossier/{asin}),
-//           uploadBulkAgency() (Agency plan).
-//   agents  pay per request in USDC over x402: /api/agent/v2/*. searchProducts() calls the agent
-//           search; without a wallet payment it returns `payment_required` with the x402 terms
-//           rather than failing. (A credits-paid search for people isn't built yet.)
+// Who pays how: people pay in platform credits, through their session (everything here). Agents pay
+// per request in USDC over x402 at /api/agent/v2/*, which this client doesn't call.
+//   searchProducts()   POST /api/search: 1 credit, or one of Pro's 100 free searches a month
+//   getDossier()       POST /api/dossier/{asin}: 4 credits, or 1 on Pro / Agency
+//   uploadBulkAgency() POST /api/agency/bulk-upload: Agency, 1 credit per ASIN
 
 import type { Dossier } from "@/types/dossier";
 
@@ -36,7 +35,27 @@ export type ClientOptions = {
 };
 
 export type DossierPurchase = { dossier: Dossier; creditsCharged: number; creditsRemaining: number; cache: "hit" | "miss" };
-export type SearchResult = { dossier: Dossier; priceUsdc: string | null; paymentId: string | null };
+/** One product a search found: its best-placed Amazon UK listing, with the evidence it came from. */
+export type ProductResult = {
+  asin: string;
+  title: string;
+  url: string;
+  image: string | null;
+  price: { amount: number; currency: string };
+  rating: number | null;
+  ratingsTotal: number | null;
+  recentSales: string | null;
+  sponsored: boolean;
+  sameProductListings: number;
+  evidence: { provider: string; sourceUrl: string; observedAt: string; quality: number; claim: string };
+};
+export type SearchResults = {
+  query: string;
+  sample: boolean;
+  results: ProductResult[];
+  notes: string[];
+  cost: { free: boolean; creditsCharged: number; creditsRemaining: number; freeSearchesLeft: number | null };
+};
 export type BulkUploadAccepted = {
   jobId: string;
   status: "PENDING" | "RUNNING" | "DONE";
@@ -106,9 +125,6 @@ function errorFrom(res: Response, body: unknown): ApiError {
   return fail(res.status, typeof error === "string" ? error : `http_${res.status}`, typeof message === "string" ? message : FALLBACK, details);
 }
 
-/** Base64 of UTF-8 JSON (x402 headers) → the value. */
-const decodeHeader = (h: string) => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(h), (c) => c.charCodeAt(0))));
-
 const num = (v: string | null) => (v !== null && Number.isFinite(Number(v)) ? Number(v) : null);
 
 /**
@@ -136,28 +152,20 @@ export async function getDossier(asin: string, opts: ClientOptions = {}): Promis
 }
 
 /**
- * The agent search (x402, $0.01 USDC). From a browser without a wallet payment this returns
- * `payment_required` (402) with the decoded x402 terms in `details.paymentRequired`; an agent that
- * signs a payment passes it as `paymentSignature`.
+ * Amazon UK products for a search, for the signed-in user: 1 credit, or one of Pro's 100 free
+ * searches this billing cycle (`cost` says which). A search that finds nothing is free. Errors include
+ * "unauthenticated" (401), "insufficient_credits" (402, with `needed` and `balance`) and
+ * "search_unavailable" (503).
  */
-export async function searchProducts(query: string, opts: ClientOptions & { paymentSignature?: string } = {}): Promise<ApiResult<SearchResult>> {
+export async function searchProducts(query: string, opts: ClientOptions = {}): Promise<ApiResult<SearchResults>> {
   const q = query.trim();
   if (q.length < 2 || q.length > 120) return fail(400, "invalid_query", "Search for 2 to 120 characters.");
-  const headers: Record<string, string> = opts.paymentSignature ? { "PAYMENT-SIGNATURE": opts.paymentSignature } : {};
-  const r = await request(`/api/agent/v2/search?${new URLSearchParams({ q })}`, { method: "GET", headers }, opts);
+  const r = await request("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ q }) }, opts);
   if (!("res" in r)) return r;
-  if (r.res.status === 402) {
-    let paymentRequired: unknown = null;
-    try {
-      paymentRequired = decodeHeader(r.res.headers.get("PAYMENT-REQUIRED") ?? "");
-    } catch {
-      paymentRequired = r.body;
-    }
-    return fail(402, "payment_required", "This search is paid per request in USDC (x402), for AI agents with a wallet.", { paymentRequired });
-  }
   if (!r.res.ok) return errorFrom(r.res, r.body);
-  if (!isDossier(r.body)) return fail(r.res.status, "bad_response", FALLBACK);
-  return { ok: true, data: { dossier: r.body, priceUsdc: r.res.headers.get("x402-price"), paymentId: r.res.headers.get("x402-payment-identifier") } };
+  const b = r.body as Partial<SearchResults> | null;
+  if (!Array.isArray(b?.results) || typeof b.cost !== "object") return fail(r.res.status, "bad_response", FALLBACK);
+  return { ok: true, data: b as SearchResults };
 }
 
 /**

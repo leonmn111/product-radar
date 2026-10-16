@@ -21,7 +21,6 @@ const answer = (status: number, body: unknown, headers: Record<string, string> =
   vi.fn<(url: string | URL | Request, init?: RequestInit) => Promise<Response>>(
     async () => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } }),
   );
-const b64 = (v: unknown) => btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(v))));
 
 describe("getDossier", () => {
   it("POSTs to the credits route with the session cookie, and returns the Dossier with what it cost", async () => {
@@ -55,19 +54,27 @@ describe("getDossier", () => {
 });
 
 describe("searchProducts", () => {
-  it("turns the agent search's 402 into payment_required with the decoded x402 terms", async () => {
-    const terms = { x402Version: 2, accepts: [{ scheme: "exact", amount: "10000", network: "eip155:8453" }], resource: { description: "ProductRadar search — 8 parts" } };
-    const fetchImpl = answer(402, terms, { "PAYMENT-REQUIRED": b64(terms) });
-    const r = await searchProducts("ceramic mug", { fetchImpl });
-    expect(r).toMatchObject({ ok: false, status: 402, error: "payment_required", details: { paymentRequired: terms } });
-    expect(String(fetchImpl.mock.calls[0][0])).toBe("/api/agent/v2/search?q=ceramic+mug");
+  const found = {
+    query: "ceramic mug",
+    sample: false,
+    results: [{ asin: "B0MUGAAAA1", title: "Mug", url: "https://www.amazon.co.uk/dp/B0MUGAAAA1", image: null, price: { amount: 12.99, currency: "GBP" }, rating: 4.5, ratingsTotal: 10, recentSales: null, sponsored: false, sameProductListings: 2, evidence: { provider: "rainforest", sourceUrl: "https://www.amazon.co.uk/dp/B0MUGAAAA1", observedAt: "x", quality: 80, claim: "c" } }],
+    notes: [],
+    cost: { free: true, creditsCharged: 0, creditsRemaining: 3, freeSearchesLeft: 99 },
+  };
+
+  it("POSTs the query to the human search route, with the session cookie", async () => {
+    const fetchImpl = answer(200, found);
+    expect(await searchProducts(" ceramic mug ", { fetchImpl })).toEqual({ ok: true, data: found });
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect([url, init?.method, init?.credentials, init?.body]).toEqual(["/api/search", "POST", "same-origin", JSON.stringify({ q: "ceramic mug" })]);
   });
 
-  it("returns the Dossier when a payment is attached", async () => {
-    const fetchImpl = answer(200, dossier, { "x402-price": "0.01", "x402-payment-identifier": "abc" });
-    const r = await searchProducts("ceramic mug", { fetchImpl, paymentSignature: "signed" });
-    expect(r).toEqual({ ok: true, data: { dossier, priceUsdc: "0.01", paymentId: "abc" } });
-    expect((fetchImpl.mock.calls[0][1]?.headers as Record<string, string>)["PAYMENT-SIGNATURE"]).toBe("signed");
+  it("passes the credit gate's 402 through, and checks the query first", async () => {
+    const r = await searchProducts("ceramic mug", { fetchImpl: answer(402, { error: "insufficient_credits", message: "A search costs 1 credit; you have 0.", needed: 1, balance: 0 }) });
+    expect(r).toMatchObject({ ok: false, status: 402, error: "insufficient_credits", details: { needed: 1, balance: 0 } });
+    const fetchImpl = answer(200, found);
+    expect(await searchProducts("x", { fetchImpl })).toMatchObject({ ok: false, error: "invalid_query" });
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 });
 

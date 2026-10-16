@@ -72,6 +72,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   creditEntries       CreditLedgerEntry[]
   bulkJobs            BulkJob[]
+  searches            SearchUsage[]
 
   @@index([subscriptionTier])
 }
@@ -419,6 +420,18 @@ model TrendSnapshot {
 
   @@unique([marketplace, productId, snapshotDate, provider])
   @@index([marketplace, productId, snapshotDate(sort: Desc)])
+}
+
+// One search through /api/search (billing module only): what Pro's 100 free searches a month are
+// counted from. A paid search also has its CreditLedgerEntry; the query itself isn't kept.
+model SearchUsage {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  free      Boolean // true: one of Pro's free searches; false: it cost a credit
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([userId, createdAt])
 }
 
 // ─── Agency bulk jobs ────────────────────────────────────────────────────────

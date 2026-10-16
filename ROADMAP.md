@@ -92,6 +92,12 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
     with too few credits nothing is written.
   - Items are scored in the background (`after()`); a failed item is refunded. Progress at
     `GET /api/agency/bulk-upload/{jobId}`.
+- **Human search, built 2026-10-16:**
+  - `POST /api/search` searches Amazon UK for signed-in people: 1 credit, or free for Pro's first 100
+    searches in each billing cycle (counted in `SearchUsage`). With neither: 402.
+  - The credit is taken first and returned if the search fails or finds nothing.
+  - It returns products (each its best listing, with its evidence) to open as Dossiers.
+  - Only Rainforest is needed, so it works in production before AliExpress is connected.
 - **x402 Bazaar manifest, built 2026-10-16:** `GET /api/agent/v2/bazaar` lists the $0.01 search and the
   $2 Dossier, in the x402 discovery format, with live terms and an LLM-readable description of the 8
   parts. It passes the official `@x402/extensions` bazaar validator.
@@ -120,9 +126,9 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 
 ## Open items
 
-- **Monthly allowances aren't granted yet:** Agency's 500 credits a month and Pro's 100 free searches
-  a month are recorded in `src/server/billing/plans.ts`; granting them on each paid invoice (and
-  counting free searches) is the next billing slice. Agency stays off sale until then.
+- **Agency's 500 monthly credits aren't granted yet:** recorded in `src/server/billing/plans.ts`;
+  granting them on each paid invoice is the next billing slice. Agency stays off sale until then.
+  (Pro's 100 free searches a month are counted and applied, since 2026-10-16.)
 - **Bulk jobs run inside the web server:** fine on one Railway instance (a restart is picked up
   again when the job's status is next read). A queue (e.g. a Railway worker) is the step up if
   uploads get large or the site runs on more than one instance.

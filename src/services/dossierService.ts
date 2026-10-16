@@ -472,3 +472,57 @@ export async function getProductDossier(asin: string, deps: ProductDossierDeps):
   }
   return { dossier, cache: "miss" };
 }
+
+// ── Product search (people, /api/search) ─────────────────────────────────────
+
+/** One product found by a search: its best-placed Amazon UK listing, with the evidence it came from. */
+export type ProductSearchResult = {
+  asin: string;
+  title: string;
+  url: string;
+  image: string | null;
+  price: { amount: number; currency: string };
+  rating: number | null;
+  ratingsTotal: number | null;
+  recentSales: string | null;
+  sponsored: boolean;
+  /** How many listings in the results are this same product (more = better corroborated). */
+  sameProductListings: number;
+  evidence: { provider: string; sourceUrl: string; observedAt: string; quality: number; claim: string };
+};
+
+/**
+ * Amazon UK listings for a query (its synonyms too when too few come back), grouped into products,
+ * most corroborated first. Default budget: 2 calls, the search and one synonym search at most.
+ */
+export async function searchProducts(
+  query: string,
+  retail: RetailSource,
+  { budget = new QueryBudget({ maxCalls: 2, deadlineMs: 25_000 }), maxResults = 20 }: { budget?: QueryBudget; maxResults?: number } = {},
+): Promise<{ results: ProductSearchResult[]; notes: string[] }> {
+  const notes: string[] = [];
+  const terms = expandQuery(query);
+  // A synonym is searched only when fewer than 8 listings come back.
+  const enough = (ls: RetailListing[]) => (ls.length >= 8 ? CORROBORATED : 0);
+  const listings = await searchWithSynonyms(terms.length ? terms : [query], retail, budget, 1, enough, [], notes);
+  const results = groupSameProduct(listings)
+    .slice(0, maxResults)
+    .map((group): ProductSearchResult => {
+      const l = group[0];
+      const e = l.evidence;
+      return {
+        asin: l.id,
+        title: l.title,
+        url: l.url,
+        image: l.image,
+        price: l.price,
+        rating: l.rating,
+        ratingsTotal: l.ratingsTotal,
+        recentSales: l.recentSales,
+        sponsored: l.sponsored,
+        sameProductListings: group.length,
+        evidence: { provider: e.provider, sourceUrl: e.sourceUrl, observedAt: e.observedAt, quality: e.quality, claim: e.claim },
+      };
+    });
+  return { results, notes };
+}

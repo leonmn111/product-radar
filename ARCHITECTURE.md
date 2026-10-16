@@ -140,6 +140,9 @@ for a cached copy. It gets the buyer's own id, a note saying it came from the ca
     a purchase once per Stripe session, a spend never below zero (also a CHECK constraint), and a refund when a
     request fails.
   - `POST /api/dossier/{asin}` spends credits on a Standard Dossier.
+  - `POST /api/search` costs 1 credit, except Pro's 100 free searches in each billing cycle (counted in
+    `SearchUsage`, `src/server/billing/allowances.ts`). The cycle runs from a month before the
+    subscription's period end.
   - Agency bulk uploads (`POST /api/agency/bulk-upload`, up to 100 ASINs) spend 1 credit per ASIN in the
     same transaction that creates the job (`BulkJob`, `BulkJobItem`). Each item's ledger line references
     the Dossier id it's stored under, so its buyer can export it. A failed item is refunded.

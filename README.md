@@ -157,6 +157,8 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
   - `POST /api/stripe/checkout` `{ "tier": "starter" | "growth" | "scale" | "pro" | "agency" }` → a Checkout URL for
     a credit pack (£10 / £25 / £50 for 20 / 55 / 120 credits; 1 credit = £0.50) or a plan. Sold only with a
     Stripe test key outside production until `CREDIT_PACKS_ON_SALE=on` (Agency: test mode only until its 500 monthly credits are granted).
+  - `POST /api/search` `{ "q": "…" }` → Amazon UK products for signed-in people: 1 credit, or one of Pro's
+    100 free searches a billing cycle; nothing found or a failure costs nothing.
   - `POST /api/dossier/{asin}` → a Standard Dossier paid in credits: 4 (£2.00), or 1 on Pro / Agency.
   - `POST /api/agency/bulk-upload` (Agency only) → a CSV of up to 100 ASINs, 1 credit each, scored in the
     background; `GET /api/agency/bulk-upload/{jobId}` shows progress. Too few credits: nothing is charged.
