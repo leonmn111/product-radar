@@ -71,6 +71,7 @@ model User {
   sessions            Session[]
   passwordResetTokens PasswordResetToken[]
   creditEntries       CreditLedgerEntry[]
+  bulkJobs            BulkJob[]
 
   @@index([subscriptionTier])
 }
@@ -418,4 +419,50 @@ model TrendSnapshot {
 
   @@unique([marketplace, productId, snapshotDate, provider])
   @@index([marketplace, productId, snapshotDate(sort: Desc)])
+}
+
+// ─── Agency bulk jobs ────────────────────────────────────────────────────────
+// An Agency upload of up to 100 ASINs, each scored as a Standard Dossier in the background. One credit
+// per ASIN is taken when the job is created (one SPEND ledger entry per item, referencing the item's
+// Dossier id); an item that fails is refunded.
+
+enum BulkJobStatus {
+  PENDING // created, waiting to start
+  RUNNING
+  DONE // every item finished (some may have failed)
+}
+
+enum BulkItemStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+}
+
+model BulkJob {
+  id         String        @id @default(uuid(7)) @db.Uuid
+  userId     String        @db.Uuid
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status     BulkJobStatus @default(PENDING)
+  total      Int
+  createdAt  DateTime      @default(now()) @db.Timestamptz(3)
+  finishedAt DateTime?     @db.Timestamptz(3)
+  items      BulkJobItem[]
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model BulkJobItem {
+  id        String         @id @default(uuid(7)) @db.Uuid
+  jobId     String         @db.Uuid
+  job       BulkJob        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  position  Int // its row in the upload, from 1
+  asin      String
+  status    BulkItemStatus @default(PENDING)
+  dossierId String         @unique // fixed when the job is made: the credit spend and the stored Dossier both use it
+  error     String? // why it failed, in plain words
+  updatedAt DateTime       @updatedAt @db.Timestamptz(3)
+
+  @@unique([jobId, asin])
+  @@index([jobId, status])
 }

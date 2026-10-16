@@ -102,3 +102,20 @@ export async function paidCreditReferences(db: PrismaClient, userId: string, ref
   const refunded = new Set(rows.filter((r) => r.kind === "REFUND").map((r) => r.reference));
   return references.filter((r) => spent.has(r) && !refunded.has(r));
 }
+
+/**
+ * Takes credits for several items inside the caller's transaction: one SPEND entry per item, all or
+ * nothing (if the caller's transaction fails afterwards, the spend rolls back with it). Returns the
+ * balance after. Throws InsufficientCreditsError when the balance can't cover the total.
+ */
+export async function spendCreditsInTransaction(tx: Prisma.TransactionClient, userId: string, items: { credits: number; reference: string }[]): Promise<number> {
+  const total = items.reduce((s, i) => s + positive(i.credits), 0);
+  const { count } = await tx.user.updateMany({ where: { id: userId, platformCredits: { gte: total } }, data: { platformCredits: { decrement: total } } });
+  const { platformCredits } = await tx.user.findUniqueOrThrow({ where: { id: userId }, select: { platformCredits: true } });
+  if (count === 0) throw new InsufficientCreditsError(total, platformCredits);
+  let running = platformCredits + total;
+  await tx.creditLedgerEntry.createMany({
+    data: items.map((i) => ({ userId, kind: "SPEND" as const, delta: -i.credits, balanceAfter: (running -= i.credits), reference: i.reference })),
+  });
+  return platformCredits;
+}

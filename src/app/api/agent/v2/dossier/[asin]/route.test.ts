@@ -184,7 +184,7 @@ describe("GET /api/agent/v2/dossier/{asin}", () => {
     expect(required.accepts[0]).toMatchObject({ scheme: "exact", amount: "2000000" });
     expect(required.extensions["sign-in-with-x"].info).toMatchObject({ domain: "localhost:3457", uri: `${BASE}/${ASIN}` });
     expect(JSON.parse(unpaid.headers.get(HEADER_BAZAAR) ?? "[]")).toContainEqual(
-      expect.objectContaining({ path: "/api/agent/v2/dossier/{asin}", priceUsdc: "2.00", extensions: ["sign-in-with-x"] }),
+      expect.objectContaining({ path: "/api/agent/v2/dossier/:asin", priceUsdc: "2.00", extensions: ["sign-in-with-x"] }),
     );
     expect(retail.product).not.toHaveBeenCalled(); // nothing is fetched before payment
 

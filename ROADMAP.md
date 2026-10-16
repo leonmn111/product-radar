@@ -84,6 +84,17 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
     `GET /api/agent/v2/dossier/{asin}/export/csv` to whoever bought the Dossier: credits (session) or
     USDC (Sign-In-With-X).
   - Only from a shown margin; it imports as a draft.
+  - Vendor is "ProductRadar Import"; no Amazon photos or invented copy (owner, 2026-10-16).
+- **Agency bulk processor, built 2026-10-16:**
+  - `POST /api/agency/bulk-upload` takes a CSV of up to 100 ASINs from an account whose plan in the
+    database is Agency (otherwise 403 with the upsell).
+  - 1 credit per ASIN, taken in the same transaction that creates the `BulkJob` and its PENDING items:
+    with too few credits nothing is written.
+  - Items are scored in the background (`after()`); a failed item is refunded. Progress at
+    `GET /api/agency/bulk-upload/{jobId}`.
+- **x402 Bazaar manifest, built 2026-10-16:** `GET /api/agent/v2/bazaar` lists the $0.01 search and the
+  $2 Dossier, in the x402 discovery format, with live terms and an LLM-readable description of the 8
+  parts. It passes the official `@x402/extensions` bazaar validator.
   *Started 2026-10-16:* `src/components/DossierTerminal.tsx`, the 8 panels in a dense, terminal-style
   layout. A withheld Verdict shows "VERDICT WITHHELD: Insufficient Market Evidence" and blurs the
   margin. Preview at `/dev/terminal` (development only).
@@ -111,8 +122,10 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 
 - **Monthly allowances aren't granted yet:** Agency's 500 credits a month and Pro's 100 free searches
   a month are recorded in `src/server/billing/plans.ts`; granting them on each paid invoice (and
-  counting free searches) is the next billing slice. Agency stays off sale until then. The bulk CSV
-  endpoint for Agency comes later.
+  counting free searches) is the next billing slice. Agency stays off sale until then.
+- **Bulk jobs run inside the web server:** fine on one Railway instance (a restart is picked up
+  again when the job's status is next read). A queue (e.g. a Railway worker) is the step up if
+  uploads get large or the site runs on more than one instance.
 - **Credit packs live:** they sell in Stripe test mode today. Run one test-mode purchase, then set
   `CREDIT_PACKS_ON_SALE=on` on Railway. The buy buttons are built (header balance, the Buy credits
   window, the Dossier terminal at `/terminal`); until then they show "go on sale soon".

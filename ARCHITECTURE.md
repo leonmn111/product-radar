@@ -140,6 +140,9 @@ for a cached copy. It gets the buyer's own id, a note saying it came from the ca
     a purchase once per Stripe session, a spend never below zero (also a CHECK constraint), and a refund when a
     request fails.
   - `POST /api/dossier/{asin}` spends credits on a Standard Dossier.
+  - Agency bulk uploads (`POST /api/agency/bulk-upload`, up to 100 ASINs) spend 1 credit per ASIN in the
+    same transaction that creates the job (`BulkJob`, `BulkJobItem`). Each item's ledger line references
+    the Dossier id it's stored under, so its buyer can export it. A failed item is refunded.
 - **Prices:**
 
 | Product | Price |
@@ -158,6 +161,11 @@ for a cached copy. It gets the buyer's own id, a note saying it came from the ca
   records the path it bought and the Dossier id (`reference`); the Dossier itself lives in
   `DossierRecord`, with no payment data. Smart-contract wallets (EIP-1271) aren't supported yet and pay
   as usual.
+- **Bazaar manifest.** `GET /api/agent/v2/bazaar` is public and free, readable from any origin. It
+  returns the paid endpoints in the x402 Bazaar discovery format (`x402Version`, `items`, `pagination`).
+  Each item carries its live `accepts` (the same terms as its 402) and a `bazaar` extension: example
+  input, a JSON Schema, and `routeTemplate` `/api/agent/v2/dossier/:asin`. It also has a description of
+  the 8 parts, so an agent knows when to call it. Built in `src/server/payments/x402/discovery.ts`.
 - **Discovery headers.** Every response from the v2 endpoints (402, 200 and errors alike) carries
   `x402-price`, `x402-payment-identifier` (a fresh 256-bit random id per request, which is also the
   Dossier's `id`) and `x402-bazaar` (the paid endpoints on offer, as JSON). They're built in
