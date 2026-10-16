@@ -92,6 +92,14 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
     with too few credits nothing is written.
   - Items are scored in the background (`after()`); a failed item is refunded. Progress at
     `GET /api/agency/bulk-upload/{jobId}`.
+- **Landing page for launch, 2026-10-16:**
+  - New headline: "Institutional-grade product research for Amazon & AliExpress", plus the value
+    proposition.
+  - A platform section shows the 8-part Dossier, the Momentum engine and the Agency bulk processor, each
+    with a LIVE / LAUNCHING SOON badge read from the live configuration (`src/components/landing/platform.tsx`),
+    so nothing is claimed before it's on. Meta ad signals are marked in development.
+  - Every "Create a free account" goes through `/get-started`: to the Dossier terminal once live Dossiers
+    are on, to the dashboard until then.
 - **Transactional email, built 2026-10-16:**
   - `src/lib/email.ts` sends through the Resend SDK: `RESEND_API_KEY`, else the existing `AUTH_RESEND_KEY`.
     A `re_mock…` key prints instead of sending, in development only.

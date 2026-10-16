@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 import { Logo } from "@/components/brand/logo";
 import { LiveStats, LiveStatsSkeleton } from "@/components/landing/live-stats";
+import { Platform, PlatformSkeleton } from "@/components/landing/platform";
 import { Showcase } from "@/components/landing/showcase";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SITE_URL } from "@/lib/site";
@@ -14,9 +15,9 @@ import { getShowcase } from "@/server/products/showcase-cache";
 // to /dashboard. Everything here is static except the live counts and the showcase,
 // which stream in from the database (cached for about an hour).
 
-const TITLE = "ProductRadar — Product intelligence for e-commerce arbitrage";
+const TITLE = "ProductRadar — Institutional-grade product research for Amazon & AliExpress";
 const DESCRIPTION =
-  "Rule-based product intelligence and Shopify export tools for serious e-commerce arbitrage: real price gaps, sourced evidence and margins after fees.";
+  "Product research for UK resellers: an 8-part Dossier per product with true landed margin after VAT, duty and fees, resellability checks, supplier matches and every source cited.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -27,9 +28,9 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
 };
 
-// Sign up, then the dashboard: a Free account sees the Pro offer and the showcase there, and
-// upgrades when it wants to. No callbackUrl, so sign-in falls back to /dashboard.
-const GET_STARTED = "/signin?tab=register";
+// Sign up: /get-started sends new accounts to the Dossier terminal once live Dossiers are on, and to
+// the dashboard (Pro offer and showcase) until then. Free to create, nothing to pay up front.
+const GET_STARTED = "/get-started";
 const PRO_PRICE = new Intl.NumberFormat("en-GB", {
   style: "currency",
   currency: "GBP",
@@ -75,7 +76,7 @@ function CallToAction({ className = "" }: { className?: string }) {
   return (
     <div className={`flex flex-col gap-3 sm:flex-row sm:justify-center ${className}`}>
       <Link href={GET_STARTED} className={`group ${primaryButton}`}>
-        Get started
+        Create a free account
         <Arrow />
       </Link>
       <Link href="/signin" className={secondaryButton}>
@@ -88,6 +89,7 @@ function CallToAction({ className = "" }: { className?: string }) {
 // ── Header ───────────────────────────────────────────────────────────────────
 
 const NAV = [
+  ["#platform", "Platform"],
   ["#showcase", "Showcase"],
   ["#how-it-works", "How it works"],
   ["#agents", "For agents"],
@@ -191,6 +193,8 @@ const TRUST = [
 ] as const;
 
 const PRO_FEATURES = [
+  "100 free Amazon UK searches a month",
+  "Standard Dossiers for 1 credit instead of 4",
   "The full catalog: every live product we track, ranked",
   "Add any product page and get it scored in seconds",
   "Price gaps after eBay and Shopify fees, every source linked",
@@ -216,6 +220,10 @@ const FAQ: { q: string; a: ReactNode }[] = [
   {
     q: "What are the two fee routes?",
     a: "When two stores sell the same product at different prices, ProductRadar works out what you'd keep reselling it on eBay, and what you'd keep in your own Shopify shop after card fees. Each fee rule links to its source. Shipping, VAT and advertising aren't included.",
+  },
+  {
+    q: "What's a credit?",
+    a: "Credits pay for searches and Dossiers. A search costs 1 credit and a Standard Dossier 4, or 1 on Pro, and Pro includes 100 free searches a month. A search that finds nothing, or a Dossier that can't be built, costs nothing. Every Dossier you buy stays in your library, and reopening one is free.",
   },
   {
     q: "Can I cancel?",
@@ -270,25 +278,57 @@ export default function Home() {
             <div className="mx-auto max-w-4xl text-center">
               <p className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-zinc-700 ring-1 ring-zinc-200 backdrop-blur ring-inset sm:text-sm dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10">
                 <span aria-hidden="true" className="size-1.5 rounded-full bg-purple-600 dark:bg-purple-400" />
-                Product intelligence for e-commerce operators and buyer agents
+                Product research for UK resellers and buyer agents
               </p>
-              {/* Each sentence wraps as a unit; the smallest phones get a touch less than text-5xl so it fits. */}
-              <h1 className="mt-8 text-5xl leading-[1.05] font-extrabold tracking-tighter text-zinc-950 max-[400px]:text-[2.75rem] md:text-7xl dark:text-zinc-50">
-                <span className="inline-block">Find the spread.</span> <span className="inline-block">Ignore the noise.</span>
+              {/* Each phrase wraps as a unit; the smallest phones get a touch less than text-5xl so it fits. */}
+              <h1 className="mt-8 text-[2.6rem] leading-[1.05] font-extrabold tracking-tighter text-balance text-zinc-950 max-[400px]:text-[2.2rem] sm:text-5xl md:text-6xl dark:text-zinc-50">
+                <span className="inline-block">Institutional-grade</span> <span className="inline-block">product research</span>{" "}
+                <span className="inline-block text-purple-700 dark:text-purple-400">for Amazon &amp; AliExpress.</span>
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-lg/8 text-balance text-zinc-600 sm:text-xl/8 dark:text-zinc-400">
-                Rule-based product intelligence and dual-margin analytics for serious{" "}
-                <span className="whitespace-nowrap">e-commerce</span> operators.
+                One Dossier per product: the true landed margin after VAT, duty and fees, whether you can legally resell it, the
+                best supplier matches, and every number cited. Thin evidence is withheld, never guessed.
               </p>
               <CallToAction className="mt-10" />
               <p className="mt-5 text-sm text-zinc-600 dark:text-zinc-400">
-                Pro is {PRO_PRICE}/month · cancel any time · secure checkout by Stripe
+                Free to create · Pro is {PRO_PRICE}/month · cancel any time · secure checkout by Stripe
+              </p>
+              <p className="mt-6 font-mono text-[11px] tracking-widest text-zinc-500 uppercase dark:text-zinc-400">
+                UK + EU margins · 8 parts · every number cited · confidence-gated
               </p>
             </div>
             <div className="mx-auto mt-14 max-w-5xl">
               <Suspense fallback={<LiveStatsSkeleton />}>
                 <HeroStats />
               </Suspense>
+            </div>
+          </div>
+        </section>
+
+        {/* Platform (the v2 engine) */}
+        <section id="platform" aria-labelledby="platform-title" className="scroll-mt-16 bg-zinc-950 py-16 text-zinc-300 sm:py-20 [color-scheme:dark] dark:border-y dark:border-white/10 dark:bg-black">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl">
+              <p className="font-mono text-xs font-semibold tracking-widest text-purple-300 uppercase">The platform</p>
+              <h2 id="platform-title" className="mt-2 text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">
+                A research terminal for every product you&apos;re thinking of stocking
+              </h2>
+              <p className="mt-4 text-lg/8 text-zinc-400">
+                Search Amazon UK, open a Dossier, and export the winners straight to Shopify. Each part shows only once the
+                evidence is strong enough: a verdict from 0.5 confidence, every number from 0.7.
+              </p>
+            </div>
+            <div className="mt-10">
+              <Suspense fallback={<PlatformSkeleton />}>
+                <Platform />
+              </Suspense>
+            </div>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link href={GET_STARTED} className={`group ${primaryButton}`}>
+                Create a free account
+                <Arrow />
+              </Link>
+              <p className="text-sm text-zinc-400">Searches cost 1 credit (Pro: 100 free a month). A Dossier is 4 credits, or 1 on Pro.</p>
             </div>
           </div>
         </section>
@@ -443,7 +483,7 @@ export default function Home() {
                   ))}
                 </ul>
                 <Link href={GET_STARTED} className={`group mt-8 w-full ${primaryButton}`}>
-                  Get started
+                  Create a free account
                   <Arrow />
                 </Link>
                 <p className="mt-3 text-center text-xs text-zinc-600 dark:text-zinc-400">Free to create · upgrade any time</p>
@@ -501,7 +541,7 @@ export default function Home() {
               Check your next product before you stock it.
             </h2>
             <p className="mt-4 text-lg/8 text-zinc-600 dark:text-zinc-300">
-              Real prices, real fees and every source linked, for {PRO_PRICE} a month.
+              Real prices, real fees and every source linked. Free to create; Pro is {PRO_PRICE} a month.
             </p>
             <CallToAction className="mt-8" />
           </div>
