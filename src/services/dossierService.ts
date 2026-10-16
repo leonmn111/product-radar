@@ -20,14 +20,16 @@ import { checkResellability, isSellable } from "@/engine/compliance";
 import { calculateConfidence, FINANCIAL_THRESHOLD, VERDICT_THRESHOLD } from "@/engine/confidence";
 import type { ImageMatcher } from "@/engine/imageMatch";
 import { calculateEUMargin, calculateUKMargin } from "@/engine/margin";
+import { calculateMomentum } from "@/engine/momentum";
 import { POLICY_EVIDENCE } from "@/engine/policy";
 import { expandQuery } from "@/engine/synonyms";
 import { QueryBudget } from "@/server/live/budget";
 import { median } from "@/server/live/margin";
 import { searchTermFor, titleSimilarity } from "@/server/live/match";
 import { groupSameProduct } from "@/server/live/search";
-import type { RetailListing, RetailProductDetail, SupplierOffer } from "@/server/live/types";
-import type { RetailSource, SupplierSource } from "@/server/sources/types";
+import type { ProductHistory, RetailListing, RetailProductDetail, SupplierOffer } from "@/server/live/types";
+import type { AdDurationSource } from "@/server/sources/metaAds";
+import type { HistorySource, RetailSource, SupplierSource } from "@/server/sources/types";
 import type { DossierCacheStore } from "@/services/dossierCache";
 import type { Dossier, Evidence, Gated, LandedMargins, Momentum, ResellabilityFlags, Saturation, SupplierMatch, SupplierMatches, Verdict } from "@/types/dossier";
 import type { CostInput, FeeStack, ReturnsInput } from "@/types/financials";
@@ -52,6 +54,10 @@ export type DossierInput = {
   productId?: string;
   /** The product page's brand, seller, category and text, when it was read: the resellability checks use them. */
   details?: Omit<RetailProductDetail, "listing"> | null;
+  /** 90 days of sales rank and price (Keepa), fetched only once the evidence clears 0.7: Momentum. */
+  history?: ProductHistory | null;
+  /** Longest-running ad in days. Only ever simulated, on sample data, until the Meta Ad Library connector is real. */
+  adDuration?: { days: number; method: "simulated" } | null;
   /** The caller's own figures; anything missing is excluded from the margin and named. */
   assumptions?: { feeStack?: FeeStack; returns?: ReturnsInput | null; adCostPerSale?: CostInput | null };
   sample?: boolean;
@@ -152,7 +158,7 @@ export async function fetchProductDossierData(
 
 // ── Pure assembly ────────────────────────────────────────────────────────────
 
-const toEvidence = (e: RetailListing["evidence"], sourceType: Evidence["sourceType"], value: number, matchScore?: number): Evidence => ({
+const toEvidence = (e: RetailListing["evidence"], sourceType: Evidence["sourceType"], value: number | null, matchScore?: number): Evidence => ({
   id: e.id,
   provider: e.provider,
   sourceType,
@@ -244,6 +250,8 @@ export function buildDossier(input: DossierInput, ctx: { id: string; now: Date; 
   if (skippedCurrency) notes.push(`${skippedCurrency} supplier offer(s) weren't priced in GBP and were left out (nothing is converted here).`);
 
   const retailEvidence = group.map((l) => toEvidence(l.evidence, "marketplace", l.price.amount));
+  const historyEvidence = input.history ? [toEvidence(input.history.evidence, "marketplace", null)] : [];
+  if (input.adDuration?.method === "simulated" && !input.sample) throw new Error("A simulated ad duration is for development sample data only.");
   if (imageMatcher?.method === "simulated" && matched.some((m) => m.image !== null)) {
     notes.push("Supplier image similarity is SIMULATED (a random 0.6–0.99): development only, never on real data.");
   }
@@ -267,7 +275,7 @@ export function buildDossier(input: DossierInput, ctx: { id: string; now: Date; 
   const sellable = isSellable(flags);
 
   // 2. Confidence over every source, supplier evidence weighed by how well it matches.
-  const confidence = calculateConfidence([...retailEvidence, ...supplierEvidence], ctx.now);
+  const confidence = calculateConfidence([...retailEvidence, ...supplierEvidence, ...historyEvidence], ctx.now);
   const evidenceGap = [
     ...(group.length < 4 ? [`more independent Amazon UK listings of this product (${group.length} found agree on it)`] : []),
     ...(matched.length === 0 ? ["a supplier listing that matches this product"] : matched.length < 3 ? [`more or closer supplier matches (${matched.length} found)`] : []),
@@ -318,12 +326,27 @@ export function buildDossier(input: DossierInput, ctx: { id: string; now: Date; 
           value: { sellerCount: group.length, storeCount: new Set(group.map((l) => new URL(l.url).hostname)).size, adDensity: null },
           evidenceIds: group.map((l) => l.evidence.id),
         };
-  // No trend history, velocity or ad data is collected yet, so momentum can't be shown at any confidence.
-  const momentum: Gated<Momentum> = withheld("Insufficient Data", confidence, [
-    "12 weeks of daily trend history (the daily snapshot job)",
-    "sales velocity (Keepa, Phase 1)",
-    "ad duration (Meta Ad Library, Phase 2)",
-  ]);
+  // Momentum: needs the 0.7 gate and the product's sales-rank history (Keepa), fetched only then.
+  let momentum: Gated<Momentum>;
+  if (confidence < FINANCIAL_THRESHOLD) {
+    momentum = withheld("Insufficient Data", confidence, evidenceGap.length ? evidenceGap : ["more evidence"]);
+  } else if (!input.history) {
+    momentum = withheld("Insufficient Data", confidence, [
+      sellable ? "90 days of sales-rank history (Keepa isn't connected)" : "sales-rank history (not fetched: the product isn't sellable)",
+    ]);
+  } else {
+    const m = calculateMomentum({ history: input.history, recentSales: lead.recentSales, adDuration: input.adDuration });
+    momentum =
+      "missing" in m
+        ? withheld("Insufficient Data", confidence, [m.missing])
+        : {
+            status: "shown",
+            confidence,
+            value: m.momentum,
+            evidenceIds: [input.history.evidence.id, ...(m.momentum.salesVelocity ? [lead.evidence.id] : [])],
+          };
+    if (input.adDuration?.method === "simulated") notes.push("Ad duration is SIMULATED (a random 0–120 days): development only, never on real data.");
+  }
 
   // 5. The verdict gate.
   const verdict: Gated<Verdict> =
@@ -345,13 +368,14 @@ export function buildDossier(input: DossierInput, ctx: { id: string; now: Date; 
       moq: null, // the affiliate API doesn't state one
       deliveryDays: null, // not quoted by the source yet
       matchScore: score,
+      image: offer.image,
       evidenceIds: [offer.evidence.id],
     }),
   ) as SupplierMatches;
 
   // Every evidence item the Dossier rests on, including the tax and fee rules its margins cite.
   const used = new Set(landedMargin.status === "shown" ? landedMargin.evidenceIds : []);
-  const evidence = [...retailEvidence, ...supplierEvidence, ...POLICY_EVIDENCE.filter((e) => used.has(e.id))];
+  const evidence = [...retailEvidence, ...supplierEvidence, ...historyEvidence, ...POLICY_EVIDENCE.filter((e) => used.has(e.id))];
 
   return {
     id: ctx.id,
@@ -373,14 +397,19 @@ export function buildDossier(input: DossierInput, ctx: { id: string; now: Date; 
     saturation,
     supplierMatches,
     evidence,
-    exports: { shopifyCsvUrl: null, pdfUrl: null, shareLink: null },
+    // Exports are built from shown parts only: the Shopify file needs the retail price (the margin).
+    exports: {
+      shopifyCsvUrl: landedMargin.status === "shown" && lead.id ? `/api/agent/v2/dossier/${lead.id}/export/csv` : null,
+      pdfUrl: null,
+      shareLink: null,
+    },
   };
 }
 
 // ── Cached product Dossiers ──────────────────────────────────────────────────
 
 export type ProductDossierDeps = {
-  sources: { retail: RetailSource; supplier: SupplierSource };
+  sources: { retail: RetailSource; supplier: SupplierSource; history?: HistorySource | null; ads?: AdDurationSource | null };
   cache: DossierCacheStore;
   /** Development sample data: only ever served from, and to, sample mode. */
   sample: boolean;
@@ -410,12 +439,32 @@ export async function getProductDossier(asin: string, deps: ProductDossierDeps):
     const note = `From the 48-hour cache: built ${cached.generatedAt}; no data provider was called for this copy.`;
     return { cache: "hit", dossier: { ...cached, id: deps.id, notes: [...cached.notes, note] } };
   }
-  const data = await fetchProductDossierData(asin, deps.sources, deps.budget ? { budget: deps.budget } : {});
+  const budget = deps.budget ?? new QueryBudget({ maxCalls: 6, deadlineMs: 50_000 });
+  const data = await fetchProductDossierData(asin, deps.sources, { budget });
   if (!data) return null;
-  const dossier = buildDossier(
-    { ...data, sample: deps.sample, notes: [...(data.notes ?? []), ...(deps.notes ?? [])] },
-    { id: deps.id, now: clock(), imageMatcher: deps.imageMatcher },
-  );
+  const input: DossierInput = { ...data, sample: deps.sample, notes: [...(data.notes ?? []), ...(deps.notes ?? [])] };
+  let dossier = buildDossier(input, { id: deps.id, now: clock(), imageMatcher: deps.imageMatcher });
+
+  // Momentum's sources are only asked once the product is sellable and the evidence clears 0.7, so
+  // history isn't paid for on a product the Dossier would withhold or avoid anyway.
+  const sellable = !Object.values(dossier.resellability).some((f) => f.value === true);
+  if (sellable && dossier.verdict.confidence >= FINANCIAL_THRESHOLD && (deps.sources.history || deps.sources.ads)) {
+    const notes = [...(input.notes ?? [])];
+    let history: ProductHistory | null = null;
+    if (deps.sources.history) {
+      try {
+        history = await deps.sources.history.history(asin, budget);
+      } catch (e) {
+        notes.push(`Sales-rank history failed (${failure(e)}), so Momentum is withheld.`);
+      }
+    }
+    let adDuration: DossierInput["adDuration"] = null;
+    if (deps.sources.ads?.method === "simulated" && deps.sample) {
+      const days = await deps.sources.ads.longestRunningAdDays(data.details?.brand ?? searchTermFor(dossier.product.title));
+      if (days !== null) adDuration = { days, method: "simulated" };
+    }
+    dossier = buildDossier({ ...input, notes, history, adDuration }, { id: deps.id, now: clock(), imageMatcher: deps.imageMatcher });
+  }
   try {
     await deps.cache.put(dossier, clock());
   } catch (e) {

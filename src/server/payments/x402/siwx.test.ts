@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/db", () => ({ db: {} }));
+vi.mock("@/lib/env", () => ({ env: {} })); // payment config isn't read by these checks
 const { formatSiweMessage, siwxChallenge, verifySiwx, SIWX_MAX_AGE_MS } = await import("./siwx");
 
 // Fixed throwaway test keys: never hold funds.

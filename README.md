@@ -400,6 +400,7 @@ Validated at startup by `src/lib/env.ts` — the app refuses to start with a mis
 | `CDP_API_KEY_SECRET` | for mainnet | That key's secret (Ed25519 base64, or EC PEM) |
 | `SERPAPI_API_KEY` | for `trends:enrich` | SerpApi key (serpapi.com, free plan 250 searches/month). Read by the script only, not the app. |
 | `RAINFOREST_API_KEY` | for live search (v2) | Amazon US + UK via the Rainforest API (rainforestapi.com) |
+| `KEEPA_API_KEY` | optional (v2) | Keepa API (paid): Amazon UK sales-rank and price history for a Dossier's Momentum. Without it, Momentum is withheld |
 | `ALIEXPRESS_APP_KEY`, `ALIEXPRESS_APP_SECRET`, `ALIEXPRESS_TRACKING_ID` | for live search (v2) | AliExpress Open Platform affiliate API. Until all three are set, `/api/agent/v2/search` answers 503 before asking for payment |
 | `LIVE_SAMPLE_DATA` | development | `on` = the `/search` page runs on a recorded Amazon UK search and sample AliExpress offers (try "magnetic power bank"). Refused in production; locally the paid `/api/agent/v2/search` uses it too, and every Dossier it returns says `sample: true` |
 | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | optional | Turns on Plausible analytics (cookieless), e.g. `theproductradar.io`. Read at build time: redeploy after setting. |

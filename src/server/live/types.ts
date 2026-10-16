@@ -49,6 +49,16 @@ export type RetailProductDetail = {
   description: string | null;
 };
 
+/** A product's daily history over a recent window (e.g. from Keepa), with the evidence it came from. */
+export type ProductHistory = {
+  asin: string;
+  from: string; // ISO, start of the window
+  to: string; // ISO, end of the window
+  salesRank: { at: number; value: number }[]; // best-sellers rank in the main category, one per UTC day (Unix ms)
+  newPrice: { at: number; value: number }[]; // lowest new price in pence, one per UTC day
+  evidence: Evidence;
+};
+
 /** A supplier's offer, as delivered to a market. */
 export type SupplierOffer = {
   id: string;

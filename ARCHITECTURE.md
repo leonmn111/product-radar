@@ -85,9 +85,17 @@ An unknown flag stays `null` with the reason. It is never assumed safe.
 
 ## Momentum, saturation, suppliers
 
-- **Momentum:** the 12-week slope of search or sales trend, sales velocity (units per period from a
-  provider, or the change between two dated observations), and ad duration (how long the longest-running
-  ads have run). History comes from the **daily snapshot job**.
+- **Momentum:**
+  - Asked for only once the product is sellable and the evidence clears 0.7, so history isn't paid
+    for on a Dossier that would be withheld or avoided.
+  - Keepa's 90-day sales rank and lowest new price, one value a day. The last 12 weeks are fitted by
+    least squares (`src/engine/trend.ts`, `momentum.ts`). The rank slope as a share of the average rank
+    gives `trendDirection`: below −2% a week (rank falling) is ACCELERATING, above +2% is DECELERATING,
+    otherwise FLAT.
+  - It also gives the price trend (pence a week) and sales velocity (the lower bound of Amazon's "bought
+    in past month" badge, never guessed from rank). Ad duration comes from the Meta Ad Library: simulated
+    and sample-only until the connector is real.
+  - The daily snapshot job will take over the history so Keepa isn't needed per Dossier.
 - **Saturation:** sellers listing the same product, distinct stores, and ad density (active ads per
   seller or per keyword).
 - **SupplierMatches:** the top 3 matches from 1688 and AliExpress by image and title similarity, each
@@ -168,7 +176,7 @@ Paid sources need the owner's approval of cost first (Rule 8), and tests never c
 | Amazon price, rank and sales history | Keepa API (domain 2 = amazon.co.uk) | Connector scaffolded 2026-10-16 (`src/server/sources/keepa/`), tested on made-up data; needs a paid key (about €49/month, owner to approve) |
 | Suppliers | AliExpress Open Platform affiliate API (official) | Connector built, waiting for affiliate approval |
 | Suppliers | 1688 via a licensed provider | Phase 1 |
-| Ad duration and density | Meta Ad Library API | Phase 2 |
+| Ad duration and density | Meta Ad Library API | Phase 2; scaffold is SIMULATED and only feeds development sample data |
 | TikTok Shop UK fees and listings | Published fee rules; listing data via a licensed provider | Fees in Phase 0 types; listings to be chosen |
 | VAT, duty, handling | GOV.UK, EU customs rules | Phase 0 (cited in the margin engine) |
 | Search trend | Google Trends via SerpApi | In use (v1) |
@@ -189,6 +197,7 @@ terms.
 | `src/server/live/` | The Phase 8 live-search pipeline built on 2026-10-15. Its confidence, margin and matching code moves into `src/engine/` as each engine module is implemented, then this folder goes |
 | `src/components/DossierTerminal.tsx` | The Dossier's 8 panels as a dense terminal; enforces the Verdict gate in the UI too (preview: `/dev/terminal`, development only) |
 | `src/components/DossierRunner.tsx`, `/terminal` | Run a Standard Dossier for an ASIN, paid in credits; without enough credits it opens the credit packs instead of calling anything |
+| `src/engine/exports.ts` | `generateShopifyCSV()`: a Dossier with a shown margin as one draft Shopify listing; served at `/api/agent/v2/dossier/{asin}/export/csv` to its buyer |
 | `src/components/CreditPacksModal.tsx` | The three credit packs, bought through Stripe Checkout; opened from the header's credit balance and from the terminal |
 | `src/app/` | Pages and API routes (`/search`, `/api/agent/v2/search` at $0.01, `/api/agent/v2/dossier/{asin}` at $2) |
 

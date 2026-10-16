@@ -2,7 +2,7 @@
 // The engine never sees a provider's SDK or response shapes: only listings with evidence.
 
 import type { QueryBudget } from "@/server/live/budget";
-import type { Market, RetailListing, RetailProductDetail, SupplierOffer } from "@/server/live/types";
+import type { Market, ProductHistory, RetailListing, RetailProductDetail, SupplierOffer } from "@/server/live/types";
 
 export interface RetailSource {
   readonly name: string;
@@ -16,6 +16,12 @@ export interface SupplierSource {
   readonly name: string;
   /** Supplier offers for the search term, priced for delivery to the market. Spends from the budget. */
   search(term: string, shipTo: Market, budget: QueryBudget): Promise<SupplierOffer[]>;
+}
+
+export interface HistorySource {
+  readonly name: string;
+  /** The last 90 days of sales rank and price for one product; null when the provider has none. Spends from the budget. */
+  history(asin: string, budget: QueryBudget): Promise<ProductHistory | null>;
 }
 
 /** A provider answered, but not usefully (bad key, quota, outage). Never retried within a query. */

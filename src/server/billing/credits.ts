@@ -87,3 +87,18 @@ export function createDbCreditStore(db: PrismaClient): CreditStore {
     },
   };
 }
+
+/**
+ * Which of `references` (e.g. Dossier ids) the user paid for in credits and wasn't refunded for,
+ * in the order given.
+ */
+export async function paidCreditReferences(db: PrismaClient, userId: string, references: string[]): Promise<string[]> {
+  if (references.length === 0) return [];
+  const rows = await db.creditLedgerEntry.findMany({
+    where: { userId, reference: { in: references }, kind: { in: ["SPEND", "REFUND"] } },
+    select: { reference: true, kind: true },
+  });
+  const spent = new Set(rows.filter((r) => r.kind === "SPEND").map((r) => r.reference));
+  const refunded = new Set(rows.filter((r) => r.kind === "REFUND").map((r) => r.reference));
+  return references.filter((r) => spent.has(r) && !refunded.has(r));
+}

@@ -49,6 +49,9 @@ const EnvSchema = z
     ALIEXPRESS_APP_KEY: optional,
     ALIEXPRESS_APP_SECRET: optional,
     ALIEXPRESS_TRACKING_ID: optional,
+    // Keepa API key (keepa.com, a paid plan): Amazon UK price and sales-rank history for Momentum.
+    // Without it, Momentum is withheld and says the history is missing.
+    KEEPA_API_KEY: optional,
     // Development only: "on" runs the live-search page on recorded/sample responses (no provider
     // calls, no cost). Refused in production; locally the paid API uses it too, flagged as sample.
     LIVE_SAMPLE_DATA: optional,

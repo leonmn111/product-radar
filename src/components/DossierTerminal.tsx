@@ -9,7 +9,7 @@
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import { FINANCIAL_THRESHOLD, VERDICT_THRESHOLD } from "@/engine/confidence";
-import type { ComplianceFlag, Dossier, Evidence, Gated, ResellabilityFlags, VerdictKind } from "@/types/dossier";
+import type { ComplianceFlag, Dossier, Evidence, Gated, Momentum, ResellabilityFlags, VerdictKind } from "@/types/dossier";
 import type { LandedMargin, LineBasis, Money } from "@/types/financials";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
@@ -245,14 +245,44 @@ function Stat({ label, value, note }: { label: string; value: ReactNode; note?: 
   );
 }
 
+const DIRECTION: Record<Momentum["trendDirection"], { label: string; tone: Tone; note: string }> = {
+  ACCELERATING: { label: "Accelerating", tone: "ok", note: "the sales rank is climbing: more sales" },
+  FLAT: { label: "Flat", tone: "off", note: "the sales rank is steady" },
+  DECELERATING: { label: "Decelerating", tone: "bad", note: "the sales rank is slipping: fewer sales" },
+};
+
 function MomentumPanel({ momentum }: { momentum: Dossier["momentum"] }) {
   if (momentum.status === "withheld") return <WithheldNote part={momentum} gate={FINANCIAL_THRESHOLD} />;
   const m = momentum.value;
+  const dir = DIRECTION[m.trendDirection];
+  const signed = (n: number, unit: string) => `${n > 0 ? "+" : ""}${n.toLocaleString("en-GB")}${unit}`;
   return (
     <dl>
-      <Stat label="12-week trend slope" value={`${m.trendSlope12w >= 0 ? "+" : ""}${m.trendSlope12w.toFixed(2)}/wk`} />
-      <Stat label="Sales velocity" value={`${m.salesVelocity.unitsPerMonth.toLocaleString("en-GB")}/mo`} note={m.salesVelocity.method} />
-      <Stat label="Longest-running ad" value={m.adDurationDays === null ? "—" : `${m.adDurationDays} d`} note={m.adDurationDays === null ? "no ad data" : undefined} />
+      <div className="py-1">
+        <dt className={`font-mono text-[11px] tracking-wider uppercase ${muted}`}>Sales trend, 12 weeks</dt>
+        <dd className="mt-1">
+          <Tag tone={dir.tone}>{dir.label}</Tag>
+        </dd>
+        <dd className={`mt-1 text-xs ${muted}`}>
+          {dir.note}: rank <span className={num}>{signed(m.trendSlope12w, "/wk")}</span> (<span className={num}>{signed(m.rankChangePctPerWeek, "%")}</span> a week) over{" "}
+          <span className={num}>{m.window.rankDays}</span> days
+        </dd>
+      </div>
+      <Stat
+        label="Price trend"
+        value={m.priceSlope12w === null ? "—" : `${m.priceSlope12w > 0 ? "+" : m.priceSlope12w < 0 ? "−" : ""}£${(Math.abs(m.priceSlope12w) / 100).toFixed(2)}/wk`}
+        note={m.priceSlope12w === null ? "too little price history" : "lowest new price"}
+      />
+      <Stat
+        label="Sales velocity"
+        value={m.salesVelocity ? `${m.salesVelocity.unitsPerMonth.toLocaleString("en-GB")}+/mo` : "—"}
+        note={m.salesVelocity ? m.salesVelocity.method : "no source states it"}
+      />
+      <Stat
+        label="Longest-running ad"
+        value={m.adDurationDays === null ? "—" : `${m.adDurationDays} d`}
+        note={m.adDurationDays === null ? "no ad data" : m.adDurationMethod === "simulated" ? "SIMULATED (development only)" : undefined}
+      />
     </dl>
   );
 }

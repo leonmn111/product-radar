@@ -13,10 +13,13 @@
 // would need an on-chain check and fall back to paying.
 
 import { randomBytes } from "node:crypto";
+import type { NextRequest } from "next/server";
 import { getAddress, verifyMessage } from "viem";
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
+import { loadPaymentConfig } from "./config";
+import { encodeHeader, HEADER_REQUIRED } from "./protocol";
 
 export const HEADER_SIWX = "SIGN-IN-WITH-X";
 export const SIWX_EXTENSION = "sign-in-with-x";
@@ -171,4 +174,45 @@ export async function spendSiwxNonce(nonce: string, address: string, now: Date =
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return false;
     throw e;
   }
+}
+
+// ── Proving a purchase on another address (e.g. a Dossier's export) ─────────────────────────────
+
+export type WalletPurchase = { ok: true; reference: string; address: `0x${string}` } | { ok: false; reason: string };
+
+/**
+ * Whether the request's SIGN-IN-WITH-X proof (signed for this request's own URL) comes from a wallet
+ * with a settled purchase of `purchasePath`. Spends the proof's nonce when it does.
+ */
+export async function walletPurchase(request: NextRequest, purchasePath: string): Promise<WalletPurchase> {
+  const header = request.headers.get(HEADER_SIWX);
+  if (!header) return { ok: false, reason: "siwx_required" };
+  const config = loadPaymentConfig();
+  if (!config.ok) return { ok: false, reason: "payments_unavailable" };
+  const proof = await verifySiwx(header, { url: request.nextUrl, network: config.requirements.network });
+  if (!proof.ok) return proof;
+  const reference = await paidReference(proof.address, purchasePath);
+  if (!reference) return { ok: false, reason: "siwx_no_purchase" };
+  if (!(await spendSiwxNonce(proof.nonce, proof.address))) return { ok: false, reason: "invalid_siwx_nonce" };
+  return { ok: true, reference, address: proof.address };
+}
+
+/**
+ * A 402 for an address that only needs a sign-in, not a payment (x402 "auth-only": no `accepts`):
+ * the PAYMENT-REQUIRED header carries the sign-in-with-x challenge for this exact URL.
+ */
+export function signInRequired(request: NextRequest, description: string, error: string, message: string): Response {
+  const config = loadPaymentConfig();
+  if (!config.ok) return Response.json({ error: "payments_unavailable", message: config.reason }, { status: 503 });
+  const body = {
+    x402Version: 2,
+    error,
+    resource: { url: request.nextUrl.toString(), description, serviceName: "ProductRadar" },
+    accepts: [],
+    extensions: { [SIWX_EXTENSION]: siwxChallenge(request.nextUrl, config.requirements.network) },
+  };
+  return Response.json(
+    { ...body, message },
+    { status: 402, headers: { [HEADER_REQUIRED]: encodeHeader(body), "Cache-Control": "no-store", "Access-Control-Expose-Headers": HEADER_REQUIRED } },
+  );
 }

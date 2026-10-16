@@ -2,9 +2,12 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { ImageMatcher } from "@/engine/imageMatch";
-import type { RetailListing, SupplierOffer } from "@/server/live/types";
+import type { RetailListing, RetailProductDetail, SupplierOffer } from "@/server/live/types";
+import { parseKeepaHistory } from "@/server/sources/keepa";
+import type { KeepaProductResponse } from "@/server/sources/keepa/types";
+import { simulatedAdSource, type AdDurationSource } from "@/server/sources/metaAds";
 import { parseRainforestProduct, parseRainforestSearch } from "@/server/sources/rainforest/parse";
-import type { RetailSource, SupplierSource } from "@/server/sources/types";
+import { SourceError, type HistorySource, type RetailSource, type SupplierSource } from "@/server/sources/types";
 import type { FeeStack } from "@/types/financials";
 import type { Dossier } from "@/types/dossier";
 import type { DossierCacheStore } from "./dossierCache";
@@ -287,5 +290,72 @@ describe("getProductDossier (the 48-hour cache)", () => {
     const none = sources();
     none.retail.product.mockResolvedValueOnce(null);
     expect(await getProductDossier("B0NOTHERE1", { sources: none, cache, sample: false, id: "y", now: () => NOW })).toBeNull();
+  });
+});
+
+describe("getProductDossier: Momentum from Keepa (and simulated ads, sample data only)", () => {
+  const keepaSample = JSON.parse(readFileSync(join(__dirname, "../server/sources/keepa/fixtures/SAMPLE-not-real-product-GB.json"), "utf8")) as KeepaProductResponse;
+  const mugPage = (): RetailProductDetail => ({ listing: { ...listing(1, 12.99), id: "B0MUGPAGE1" }, brand: null, sellerName: "Mug Traders Ltd", soldByAmazon: false, category: null, bulletPoints: [], description: null });
+  const history = (asin: string) => parseKeepaHistory({ ...keepaSample, products: keepaSample.products!.map((p) => ({ ...p, asin })) }, asin, NOW)!;
+  const deps = (over: Partial<{ listings: RetailListing[]; history: HistorySource | null; ads: AdDurationSource | null; sample: boolean }> = {}) => {
+    const historySource = over.history === undefined ? ({ name: "keepa (test)", history: vi.fn(async (a: string) => history(a)) } satisfies HistorySource) : over.history;
+    return {
+      sources: {
+        retail: { name: "retail", product: vi.fn(async () => mugPage()), search: vi.fn(async () => over.listings ?? [2, 3, 4].map((n) => listing(n, 13.49))) } satisfies RetailSource,
+        supplier: { name: "supplier", search: vi.fn(async () => [offer(1, 2.1), offer(2, 2.4)]) } satisfies SupplierSource,
+        history: historySource,
+        ads: over.ads ?? null,
+      },
+      cache: { get: vi.fn(async () => null), put: vi.fn(async () => {}) },
+      sample: over.sample ?? false,
+      id: "buyer",
+      now: () => NOW,
+    };
+  };
+
+  it("asks Keepa once the evidence clears 0.7, and shows a real slope and direction", async () => {
+    const d = deps();
+    const r = await getProductDossier("B0MUGPAGE1", d);
+    expect(d.sources.history?.history).toHaveBeenCalledWith("B0MUGPAGE1", expect.anything());
+    const m = r!.dossier.momentum;
+    if (m.status !== "shown") throw new Error(JSON.stringify(m));
+    expect(m.value.trendDirection).toBe("ACCELERATING"); // the sample's rank falls about 52 places a day
+    expect(m.value.trendSlope12w).toBeLessThan(0);
+    expect(m.value.adDurationDays).toBeNull(); // no ad source on real data
+    expect(m.evidenceIds).toContain("keepa:2:B0MUGPAGE1");
+    expect(r!.dossier.evidence.map((e) => e.id)).toContain("keepa:2:B0MUGPAGE1");
+    expect(r!.dossier.exports.shopifyCsvUrl).toBe("/api/agent/v2/dossier/B0MUGPAGE1/export/csv");
+  });
+
+  it("doesn't spend on Keepa below 0.7 or for a product that isn't sellable", async () => {
+    const thin = deps({ listings: [] });
+    const r = await getProductDossier("B0MUGPAGE1", { ...thin, sources: { ...thin.sources, supplier: { name: "s", search: vi.fn(async () => []) } } });
+    expect(thin.sources.history?.history).not.toHaveBeenCalled();
+    expect(r!.dossier.momentum.status).toBe("withheld");
+
+    const branded = deps();
+    branded.sources.retail.product.mockResolvedValue({ ...mugPage(), brand: "Mugco" });
+    await getProductDossier("B0MUGPAGE1", branded);
+    expect(branded.sources.history?.history).not.toHaveBeenCalled();
+  });
+
+  it("says Keepa isn't connected when there's no key, and keeps a Keepa failure as a note", async () => {
+    const none = await getProductDossier("B0MUGPAGE1", deps({ history: null }));
+    expect(none!.dossier.momentum).toMatchObject({ status: "withheld", missing: ["90 days of sales-rank history (Keepa isn't connected)"] });
+    const failing = deps({ history: { name: "keepa", history: vi.fn(async () => Promise.reject(new SourceError("keepa", "out of tokens"))) } });
+    const r = await getProductDossier("B0MUGPAGE1", failing);
+    expect(r!.dossier.momentum.status).toBe("withheld");
+    expect(r!.dossier.notes.join(" ")).toContain("keepa: out of tokens");
+  });
+
+  it("adds a simulated ad duration only on sample data, and labels it", async () => {
+    const real = await getProductDossier("B0MUGPAGE1", deps({ ads: simulatedAdSource }));
+    expect(real!.dossier.momentum.status === "shown" && real!.dossier.momentum.value.adDurationDays).toBeNull();
+    const sample = await getProductDossier("B0MUGPAGE1", deps({ ads: simulatedAdSource, sample: true }));
+    const m = sample!.dossier.momentum;
+    if (m.status !== "shown") throw new Error("momentum should be shown");
+    expect(m.value.adDurationMethod).toBe("simulated");
+    expect(m.value.adDurationDays).toBeGreaterThanOrEqual(0);
+    expect(sample!.dossier.notes.join(" ")).toContain("Ad duration is SIMULATED");
   });
 });

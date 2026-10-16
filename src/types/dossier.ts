@@ -75,10 +75,18 @@ export interface ResellabilityFlags {
 
 // ── Part 4: Momentum ─────────────────────────────────────────────────────────
 
+/** Where sales are heading, read from the best-sellers rank: a falling rank means more sales. */
+export type TrendDirection = "ACCELERATING" | "FLAT" | "DECELERATING";
+
 export interface Momentum {
-  trendSlope12w: number; // change per week over the last 12 weeks (index points or units)
-  salesVelocity: { unitsPerMonth: number; method: string }; // how it was measured
+  trendDirection: TrendDirection;
+  trendSlope12w: number; // best-sellers rank places per week over the last 12 weeks (negative = climbing)
+  rankChangePctPerWeek: number; // that slope as % of the average rank (what the direction is judged on)
+  priceSlope12w: number | null; // lowest new price, pence per week; null = too little price history
+  salesVelocity: { unitsPerMonth: number; method: string } | null; // null = not stated by any source
   adDurationDays: number | null; // longest-running active ad; null = no ad data
+  adDurationMethod: "simulated" | null; // "simulated" only ever on development sample data
+  window: { from: string; to: string; rankDays: number }; // the history the slopes are fitted to
 }
 
 // ── Part 5: Saturation ───────────────────────────────────────────────────────
@@ -99,6 +107,7 @@ export interface SupplierMatch {
   moq: number | null; // minimum order quantity; null = the listing doesn't state one
   deliveryDays: { min: number; max: number } | null; // to the target market; null = not quoted
   matchScore: number; // 0–1, image + title similarity
+  image: string | null; // the supplier's product image (what an export uses); null = none listed
   evidenceIds: string[];
 }
 

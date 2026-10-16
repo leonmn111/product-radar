@@ -5,8 +5,8 @@
 
 import { dailySeries, type TimePoint } from "@/engine/trend";
 import type { QueryBudget } from "@/server/live/budget";
-import type { Evidence } from "@/server/live/types";
-import { SourceError } from "../types";
+import type { Evidence, ProductHistory } from "@/server/live/types";
+import { SourceError, type HistorySource } from "../types";
 import { CSV_TYPE, KEEPA_DOMAIN, keepaMinuteToDate, type KeepaProductResponse } from "./types";
 
 const ENDPOINT = "https://api.keepa.com/product";
@@ -15,12 +15,9 @@ export const HISTORY_DAYS = 90;
 // Amazon's own figures, collected and dated by a data provider (as Rainforest's are).
 export const KEEPA_QUALITY = 80;
 
-/** 90 days of one product's history, one value per UTC day, each series with its evidence. */
-export type KeepaHistory = {
-  asin: string;
+/** 90 days of one product's history, one value per UTC day, with its evidence. */
+export type KeepaHistory = ProductHistory & {
   domain: typeof KEEPA_DOMAIN.GB;
-  from: string; // ISO, start of the window
-  to: string; // ISO, when Keepa last updated the product
   salesRank: TimePoint[]; // best-sellers rank in the main category; lower is better
   newPrice: TimePoint[]; // lowest new price, in pence
   evidence: Evidence;
@@ -89,4 +86,9 @@ export async function fetchKeepaHistory(
     throw new SourceError("keepa", json?.error?.message ? `${why}: ${json.error.message}` : why);
   }
   return parseKeepaHistory(json, asin, (deps.now ?? (() => new Date()))());
+}
+
+/** Keepa as the Dossier's history source (Amazon UK). */
+export function createKeepaSource({ apiKey, fetchImpl, now }: { apiKey: string; fetchImpl?: typeof fetch; now?: () => Date }): HistorySource {
+  return { name: "keepa", history: (asin, budget) => fetchKeepaHistory(asin, KEEPA_DOMAIN.GB, { apiKey, budget, fetchImpl, now }) };
 }

@@ -67,8 +67,23 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
   `POST /api/dossier/{asin}` (4 credits, 1 on Pro).
 - **Prices:** Search $0.01 · Standard $2 · On-Demand up to $4 · Shortlist $12 · Pre-order $38.
   `/api/agent/v2/search` moved from $0.50 to the $0.01 Search tier on 2026-10-16 (see Phase 0).
-- **Meta Ads:** ad duration and density for Momentum and Saturation (Meta Ad Library API).
+- **Momentum, wired 2026-10-16:**
+  - The Standard Dossier asks Keepa for 90 days of history only once the product is sellable and the
+    evidence clears 0.7, so tokens aren't spent on Dossiers that would be withheld or avoided anyway.
+  - It fits the last 12 weeks (`src/engine/momentum.ts`): `trendDirection` ACCELERATING / FLAT /
+    DECELERATING from the rank slope as a share of the average rank (±2% a week is flat). It also
+    gives the price trend and sales velocity (the lower bound of Amazon's "bought in past month" badge).
+  - With no Keepa key, Momentum is withheld and says so.
+- **Meta Ads:** ad duration and density for Momentum and Saturation (Meta Ad Library API). *Scaffolded
+  2026-10-16:* `fetchLongestRunningAd()` in `src/server/sources/metaAds/` is SIMULATED (a random 0–120
+  days). It only feeds development sample Dossiers, labelled; real Dossiers say "no ad data". The real
+  API is free but needs an identity-confirmed Meta account and covers ads shown in the EU and UK.
 - **UI polish:** the Dossier page, exports (Shopify CSV, PDF, share link), and the live-search page.
+  *Shopify CSV built 2026-10-16:*
+  - `generateShopifyCSV()` in `src/engine/exports.ts`, served by
+    `GET /api/agent/v2/dossier/{asin}/export/csv` to whoever bought the Dossier: credits (session) or
+    USDC (Sign-In-With-X).
+  - Only from a shown margin; it imports as a draft.
   *Started 2026-10-16:* `src/components/DossierTerminal.tsx`, the 8 panels in a dense, terminal-style
   layout. A withheld Verdict shows "VERDICT WITHHELD: Insufficient Market Evidence" and blurs the
   margin. Preview at `/dev/terminal` (development only).

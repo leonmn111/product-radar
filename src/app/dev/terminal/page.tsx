@@ -7,7 +7,9 @@ import { env } from "@/lib/env";
 import type { RetailListing, SupplierOffer } from "@/server/live/types";
 import recordedSearch from "@/server/sources/rainforest/fixtures/search-amazon-co-uk-recorded.json";
 import { parseRainforestSearch, type RainforestSearchResponse } from "@/server/sources/rainforest/parse";
-import { SAMPLE_ASIN, sampleRetailSource, sampleSupplierSource } from "@/server/sources/sample";
+import { fetchLongestRunningAd } from "@/server/sources/metaAds";
+import { SAMPLE_ASIN, sampleHistorySource, sampleRetailSource, sampleSupplierSource } from "@/server/sources/sample";
+import { QueryBudget } from "@/server/live/budget";
 import { buildDossier, fetchProductDossierData } from "@/services/dossierService";
 
 // /dev/terminal: development-only preview of the Dossier terminal in its three main states.
@@ -17,7 +19,10 @@ import { buildDossier, fetchProductDossierData } from "@/services/dossierService
 export const metadata: Metadata = { title: "Dossier terminal preview (development)", robots: { index: false, follow: false } };
 
 /** Illustrative only: a made-up unbranded product with enough made-up evidence to show every number. */
-function illustrative(now: Date) {
+async function illustrative(now: Date) {
+  // The SAMPLE Keepa history and a SIMULATED ad duration, so Momentum shows too.
+  const sampleHistory = await sampleHistorySource.history(SAMPLE_ASIN, new QueryBudget({ maxCalls: 1, deadlineMs: 5_000 }));
+  const history = sampleHistory && { ...sampleHistory, asin: "B0EXAMPLE1" };
   const observedAt = now.toISOString();
   const listing = (n: number, price: number): RetailListing => ({
     market: "GB",
@@ -48,6 +53,8 @@ function illustrative(now: Date) {
       ukListings: [listing(1, 12.99), listing(2, 13.49), listing(3, 12.49), listing(4, 14.99)],
       suppliers: [offer(1, 2.1), offer(2, 2.4)],
       sample: true,
+      history,
+      adDuration: { days: fetchLongestRunningAd("illustrative"), method: "simulated" },
       notes: ["ILLUSTRATIVE: every listing, offer and number in this Dossier is made up, to show a fully populated terminal."],
     },
     { id: "preview-illustrative-0000", now },
@@ -72,7 +79,7 @@ async function Previews() {
   const cases = [
     { key: "withheld", label: "Verdict withheld: one real recorded Amazon UK listing, no supplier", dossier: thin },
     { key: "not-sellable", label: "Not sellable: the real recorded UGREEN product page (sample suppliers)", dossier: notSellable },
-    { key: "full", label: "Every part shown: an ILLUSTRATIVE made-up product", dossier: illustrative(now) },
+    { key: "full", label: "Every part shown: an ILLUSTRATIVE made-up product", dossier: await illustrative(now) },
   ];
   return (
     <>
