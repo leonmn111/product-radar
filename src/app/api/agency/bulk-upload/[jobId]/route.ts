@@ -1,4 +1,5 @@
 import { connection, type NextRequest } from "next/server";
+import { appUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
 import { getViewer } from "@/server/auth/entitlements";
 import { liveSources } from "@/server/live/config";
@@ -8,7 +9,7 @@ import { bulkDeps } from "../run";
 
 // GET /api/agency/bulk-upload/{jobId} → the job's progress, and each finished item's verdict and
 // links (owner only). A job a restart interrupted is picked up again here.
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
   await connection();
   const viewer = await getViewer();
   if (!viewer) return Response.json({ error: "unauthenticated", message: "Sign in to see your bulk jobs." }, { status: 401 });
@@ -19,7 +20,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   if (job.status !== "DONE") {
     const live = liveSources({ allowSample: true });
-    if (live.ready) void ensureProcessing(db, job.id, bulkDeps(live)); // no-op while it's already running
+    if (live.ready) void ensureProcessing(db, job.id, bulkDeps(live, appUrl(request.nextUrl.origin))); // no-op while it's already running
   }
 
   const done = job.items.filter((i) => i.status === "DONE").map((i) => i.dossierId);

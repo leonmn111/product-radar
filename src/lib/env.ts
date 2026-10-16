@@ -22,6 +22,9 @@ const EnvSchema = z
       }),
     AUTH_SECRET: z.string().min(32, "must be at least 32 characters (openssl rand -base64 32)"),
     AUTH_RESEND_KEY: optional,
+    // Resend key for every email (receipts, alerts, sign-in, resets); falls back to AUTH_RESEND_KEY.
+    // A "re_mock…" key prints emails instead of sending them (refused in production).
+    RESEND_API_KEY: optional,
     EMAIL_FROM: z.string().trim().min(3).default("ProductRadar <onboarding@resend.dev>"),
     STRIPE_SECRET_KEY: optional.refine((v) => !v || /^(sk|rk)_(test|live)_/.test(v), {
       message: "must start with sk_test_ / sk_live_",

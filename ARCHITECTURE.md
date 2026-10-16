@@ -140,6 +140,9 @@ for a cached copy. It gets the buyer's own id, a note saying it came from the ca
     a purchase once per Stripe session, a spend never below zero (also a CHECK constraint), and a refund when a
     request fails.
   - `POST /api/dossier/{asin}` spends credits on a Standard Dossier.
+  - Emails (`src/lib/email.ts`, Resend; templates in `src/lib/emails/`): a receipt when a pack is first
+    credited, and an alert when an Agency bulk job finishes. A failed send is logged and changes nothing
+    else.
   - `POST /api/search` costs 1 credit, except Pro's 100 free searches in each billing cycle (counted in
     `SearchUsage`, `src/server/billing/allowances.ts`). The cycle runs from a month before the
     subscription's period end.

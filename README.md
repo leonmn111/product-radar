@@ -406,6 +406,7 @@ Validated at startup by `src/lib/env.ts` — the app refuses to start with a mis
 | `CDP_API_KEY_ID` | for mainnet | Coinbase Developer Platform secret API key ID (portal.cdp.coinbase.com) |
 | `CDP_API_KEY_SECRET` | for mainnet | That key's secret (Ed25519 base64, or EC PEM) |
 | `SERPAPI_API_KEY` | for `trends:enrich` | SerpApi key (serpapi.com, free plan 250 searches/month). Read by the script only, not the app. |
+| `RESEND_API_KEY` | optional | Resend key for credit receipts, bulk-job alerts, sign-in links and password resets; falls back to `AUTH_RESEND_KEY`. A `re_mock…` key prints emails to the terminal instead (development only; refused in production) |
 | `RAINFOREST_API_KEY` | for live search (v2) | Amazon US + UK via the Rainforest API (rainforestapi.com) |
 | `KEEPA_API_KEY` | optional (v2) | Keepa API (paid): Amazon UK sales-rank and price history for a Dossier's Momentum. Without it, Momentum is withheld |
 | `ALIEXPRESS_APP_KEY`, `ALIEXPRESS_APP_SECRET`, `ALIEXPRESS_TRACKING_ID` | for live search (v2) | AliExpress Open Platform affiliate API. Until all three are set, `/api/agent/v2/search` answers 503 before asking for payment |

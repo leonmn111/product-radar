@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     );
   }
   const { job, balance } = created;
-  after(() => ensureProcessing(db, job.id, bulkDeps(live)));
+  after(() => ensureProcessing(db, job.id, bulkDeps(live, base)));
   return json(
     {
       jobId: job.id,

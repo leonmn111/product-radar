@@ -13,6 +13,7 @@ const mem = vi.hoisted(() => ({
   items: [] as Row[],
   records: new Map<string, unknown>(),
   after: [] as (() => Promise<unknown> | unknown)[],
+  alerts: [] as Record<string, unknown>[],
   failJobCreate: false,
 }));
 vi.mock("server-only", () => ({}));
@@ -33,6 +34,7 @@ vi.mock("./run", () => ({
       mem.records.set(id, d);
       return d;
     },
+    onDone: async (summary: Record<string, unknown>) => void mem.alerts.push(summary),
     refund: async (userId: string, credits: number, reference: string) => {
       const u = mem.users.get(userId)!;
       u.platformCredits += credits;
@@ -75,6 +77,7 @@ vi.mock("@/lib/db", () => {
         mem.items.filter((i) => i.jobId === where.jobId && i.status === where.status).sort((a, b) => Number(a.position) - Number(b.position))[0] ?? null,
       ),
       update: vi.fn(async ({ where, data }: { where: { id: string }; data: Row }) => Object.assign(mem.items.find((i) => i.id === where.id)!, data)),
+      count: vi.fn(async ({ where }: { where: { jobId: string; status?: string } }) => mem.items.filter((i) => i.jobId === where.jobId && (!where.status || i.status === where.status)).length),
       updateMany: vi.fn(async ({ where, data }: { where: { jobId: string; status: string }; data: Row }) => {
         const hit = mem.items.filter((i) => i.jobId === where.jobId && i.status === where.status);
         hit.forEach((i) => Object.assign(i, data));
@@ -150,6 +153,7 @@ describe("POST /api/agency/bulk-upload", () => {
     expect(s.items[0]).toMatchObject({ asin: "B0MUGAAAA1", status: "DONE", verdict: "TEST", title: "Product B0MUGAAAA1" });
     expect(s.items[1]).toMatchObject({ asin: "B0NOTHERE1", status: "FAILED", error: "Amazon UK has no priced product B0NOTHERE1. Its credit was returned." });
     expect(credits(id)).toBe(8); // the failed item's credit came back
+    expect(mem.alerts.at(-1)).toEqual({ jobId: body.jobId, userId: id, total: 3, done: 2, failed: 1 }); // the owner is told
   });
 
   it("fails the whole upload, charging and queuing nothing, without enough credits", async () => {

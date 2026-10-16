@@ -92,6 +92,12 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
     with too few credits nothing is written.
   - Items are scored in the background (`after()`); a failed item is refunded. Progress at
     `GET /api/agency/bulk-upload/{jobId}`.
+- **Transactional email, built 2026-10-16:**
+  - `src/lib/email.ts` sends through the Resend SDK: `RESEND_API_KEY`, else the existing `AUTH_RESEND_KEY`.
+    A `re_mock…` key prints instead of sending, in development only.
+  - A paid credit pack sends `CreditPurchaseReceipt` once, from the webhook. A finished Agency bulk job
+    sends `BulkJobCompleteAlert`.
+  - A failed email is logged and never undoes the credits.
 - **Dossier library, built 2026-10-16:**
   - `/library` shows the signed-in user's plan, credits, Pro free searches left and a Top up button.
   - Below that, a table of every Dossier they've paid for and kept. `GET /api/user/history` returns it,

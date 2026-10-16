@@ -90,6 +90,8 @@ export type BulkDeps = {
   build: (asin: string, dossierId: string) => Promise<Dossier | null>;
   /** Gives back an item's credits when it fails. */
   refund: (userId: string, credits: number, reference: string) => Promise<unknown>;
+  /** After the last item, e.g. to email the owner. A failure here is logged; the job is still DONE. */
+  onDone?: (summary: { jobId: string; userId: string; total: number; done: number; failed: number }) => Promise<void>;
 };
 
 const plain = (e: unknown) => (e instanceof Error ? e.message : "unknown error").slice(0, 300);
@@ -117,6 +119,14 @@ export async function processBulkJob(db: PrismaClient, jobId: string, deps: Bulk
     }
   }
   await db.bulkJob.update({ where: { id: jobId }, data: { status: "DONE", finishedAt: new Date() } });
+  if (deps.onDone) {
+    const [done, failed, total] = await Promise.all([
+      db.bulkJobItem.count({ where: { jobId, status: "DONE" } }),
+      db.bulkJobItem.count({ where: { jobId, status: "FAILED" } }),
+      db.bulkJobItem.count({ where: { jobId } }),
+    ]);
+    await deps.onDone({ jobId, userId: job.userId, total, done, failed }).catch((e) => console.error("[bulk] after-job step failed", jobId, e));
+  }
 }
 
 const active = new Set<string>();

@@ -1,20 +1,34 @@
-// Transactional email through Resend — the same account that sends sign-in links.
+// Transactional email through Resend (the official SDK): sign-in links, password resets, credit
+// receipts and bulk-job alerts all go out from the same account.
+//
+// Which key: RESEND_API_KEY, else AUTH_RESEND_KEY (the one production already has).
+//   no key, or a mock key ("re_mock…")  development: printed to the terminal, nothing is sent
+//                                       production: refused, so a missing email is never silent
+import { Resend } from "resend";
 import { env } from "@/lib/env";
 
 export type Email = { to: string; subject: string; text: string; html: string };
 
-/** Sends an email. Without AUTH_RESEND_KEY it's printed to the terminal in development and refused in production. */
+const isMockKey = (key: string) => key.startsWith("re_mock");
+
+let client: Resend | null = null;
+let clientKey: string | null = null;
+function resend(key: string) {
+  if (!client || clientKey !== key) {
+    client = new Resend(key);
+    clientKey = key;
+  }
+  return client;
+}
+
+/** Sends an email (see the key rules above). Throws if Resend refuses it. */
 export async function sendEmail(email: Email) {
-  if (!env.AUTH_RESEND_KEY) {
-    if (env.NODE_ENV === "production") throw new Error("Email isn't configured: set AUTH_RESEND_KEY.");
-    console.log(`\n[email] To: ${email.to}\n[email] Subject: ${email.subject}\n\n${email.text}\n`);
+  const key = env.RESEND_API_KEY ?? env.AUTH_RESEND_KEY;
+  if (!key || isMockKey(key)) {
+    if (env.NODE_ENV === "production") throw new Error("Email isn't configured: set RESEND_API_KEY (or AUTH_RESEND_KEY) to a real Resend key.");
+    console.log(`\n[email${key ? " (mock key: not sent)" : ""}] To: ${email.to}\n[email] Subject: ${email.subject}\n\n${email.text}\n`);
     return;
   }
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${env.AUTH_RESEND_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: env.EMAIL_FROM, to: email.to, subject: email.subject, text: email.text, html: email.html }),
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!res.ok) throw new Error(`Resend answered HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const { error } = await resend(key).emails.send({ from: env.EMAIL_FROM, to: email.to, subject: email.subject, text: email.text, html: email.html });
+  if (error) throw new Error(`Resend refused the email: ${error.name ?? "error"}: ${String(error.message).slice(0, 200)}`);
 }

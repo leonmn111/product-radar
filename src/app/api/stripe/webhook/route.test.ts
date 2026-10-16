@@ -1,10 +1,13 @@
 // The Stripe webhook at /api/stripe/webhook, with real Stripe signatures (made with a test secret),
 // writing credit packs through the real ledger code to an in-memory stand-in for PostgreSQL that
 // rolls a failed transaction back, as the database does.
+import { NextRequest } from "next/server";
 import Stripe from "stripe";
 import { describe, expect, it, vi } from "vitest";
 
 const SECRET = "whsec_test_secret_for_signatures";
+const sent = vi.hoisted(() => [] as { to: string; subject: string; text: string }[]);
+vi.mock("@/lib/email", () => ({ sendEmail: vi.fn(async (e: { to: string; subject: string; text: string }) => void sent.push(e)) }));
 const mem = vi.hoisted(() => ({
   users: new Map<string, { platformCredits: number; stripeCustomerId: string | null }>([
     ["user_1", { platformCredits: 0, stripeCustomerId: null }],
@@ -27,6 +30,7 @@ vi.mock("@/lib/db", async () => {
       return { count: 1 };
     }),
     findUniqueOrThrow: vi.fn(async ({ where }: { where: { id: string } }) => ({ ...mem.users.get(where.id)! })),
+    findUnique: vi.fn(async ({ where }: { where: { id: string } }) => (mem.users.has(where.id) ? { email: `${where.id}@example.com`, ...mem.users.get(where.id)! } : null)),
   };
   const creditLedgerEntry = {
     create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
@@ -63,7 +67,7 @@ const completed = (session: Record<string, unknown>) =>
   JSON.stringify({ id: `evt_${++n}`, object: "event", type: "checkout.session.completed", created: 1_800_000_000, data: { object: { object: "checkout.session", ...session } } });
 const send = (payload: string, secret = SECRET) =>
   POST(
-    new Request("http://localhost:3457/api/stripe/webhook", {
+    new NextRequest("http://localhost:3457/api/stripe/webhook", {
       method: "POST",
       body: payload,
       headers: { "stripe-signature": Stripe.webhooks.generateTestHeaderString({ payload, secret }) },
@@ -87,8 +91,23 @@ describe("POST /api/stripe/webhook", () => {
     expect(await first.json()).toEqual({ received: true, type: "checkout.session.completed", result: "credited" });
     const again = await send(completed(pack()));
     expect((await again.json()).result).toBe("already_credited");
+    // The receipt went out once, for the first delivery only.
+    expect(sent.map((e) => [e.to, e.subject])).toEqual([["user_1@example.com", "Receipt: Growth Pack, 55 credits (£25.00)"]]);
+    expect(sent[0].text).toContain("55 credits");
+    expect(sent[0].text).toContain("http://localhost:3457/library");
     expect(balance("user_1")).toBe(55); // the repeat's increment was rolled back with its transaction
     expect(mem.ledger).toEqual([{ userId: "user_1", kind: "PURCHASE", delta: 55, balanceAfter: 55, stripeSessionId: "cs_test_growth", reference: "growth" }]);
+  });
+
+  it("still credits the pack when the receipt can't be sent", async () => {
+    const { sendEmail } = await import("@/lib/email");
+    vi.mocked(sendEmail).mockRejectedValueOnce(new Error("Resend is down"));
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await send(completed(pack({ id: "cs_test_starter", amount_total: 1000, metadata: { kind: "credit_pack", pack: "starter", userId: "user_2" }, client_reference_id: "user_2" })));
+    expect([res.status, (await res.json()).result]).toEqual([200, "credited"]);
+    expect(balance("user_2")).toBe(20);
+    expect(quiet).toHaveBeenCalled();
+    quiet.mockRestore();
   });
 
   it("adds up packs, with the balance after each one on its ledger line", async () => {

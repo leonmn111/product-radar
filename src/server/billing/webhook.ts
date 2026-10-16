@@ -4,7 +4,7 @@
 import Stripe from "stripe";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { UnknownUserError, type CreditStore } from "./credits";
-import { creditGrantFor } from "./plans";
+import { creditGrantFor, type CreditGrant } from "./plans";
 import { applySubscription, snapshotFromStripe, type ApplyResult } from "./subscription";
 
 export class InvalidSignatureError extends Error {}
@@ -20,8 +20,16 @@ export function verifyStripeEvent(rawBody: string, signature: string | null, sec
 
 export type HandledEvent = { type: string; result: ApplyResult | "linked" | "credited" | "already_credited" | "ignored"; reason?: string };
 
-/** `credits` receives paid credit packs (the database ledger, credits.ts). */
-export async function handleStripeEvent(db: PrismaClient, event: Stripe.Event, credits?: CreditStore): Promise<HandledEvent> {
+export type WebhookHooks = {
+  /** After a pack is credited for the first time (never on a repeat delivery), e.g. to send the receipt. */
+  onCredited?: (grant: CreditGrant) => Promise<void>;
+};
+
+/**
+ * `credits` receives paid credit packs (the database ledger, credits.ts). A failing `onCredited`
+ * (e.g. the receipt email) is logged; it doesn't fail the event, since the credits are already in.
+ */
+export async function handleStripeEvent(db: PrismaClient, event: Stripe.Event, credits?: CreditStore, hooks: WebhookHooks = {}): Promise<HandledEvent> {
   const eventTime = new Date(event.created * 1000);
 
   switch (event.type) {
@@ -39,7 +47,11 @@ export async function handleStripeEvent(db: PrismaClient, event: Stripe.Event, c
         const found = creditGrantFor(s);
         if (!found.grant || !credits) return { type: event.type, result: "ignored", reason: found.grant ? "no_credit_store" : found.reason };
         try {
-          return { type: event.type, result: (await credits.grant(found.grant)) ? "credited" : "already_credited" };
+          const credited = await credits.grant(found.grant);
+          if (credited && hooks.onCredited) {
+            await hooks.onCredited(found.grant).catch((e) => console.error("[billing] after-credit step failed (credits are in)", s.id, e));
+          }
+          return { type: event.type, result: credited ? "credited" : "already_credited" };
         } catch (e) {
           if (!(e instanceof UnknownUserError)) throw e; // Stripe retries
           // Paid, but the account is gone: retrying can't help. Logged loudly for a manual refund.
