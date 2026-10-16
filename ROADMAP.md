@@ -54,11 +54,13 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 
 - **x402:** `Upto` (authorise a maximum, charge the actual cost) and `PaymentIdentifier` (one payment
   per request). Payments are `exact` only today. `SignInWithX` was built early, on 2026-10-16, for the $2 Dossier.
-- **Stripe fiat credit packs:** Starter £10 = 20 credits, Growth £25 = 55, Scale £50 = 120, and a
-  £29/month Pro (100 free searches a month; a Standard Dossier costs 1 credit). *Checkout and webhook
+- **Stripe fiat credit packs:** Starter £10 = 20 credits, Growth £25 = 55, Scale £50 = 120 (1 credit =
+  £0.50), Pro £29/month (100 free searches a month; a Standard Dossier costs 1 credit instead of 4) and
+  Agency £149/month. *Checkout and webhook
   built 2026-10-16* (`POST /api/stripe/checkout`, `/api/stripe/webhook`; catalogue in
-  `src/server/billing/plans.ts`). Sold in Stripe test mode only, until the credit ledger exists:
-  credits are held in memory for now (`src/server/billing/credits.ts`).
+  `src/server/billing/plans.ts`). Sold in Stripe test mode until the owner switches it on;
+  credits are a PostgreSQL ledger (`User.platformCredits` + `CreditLedgerEntry`, 2026-10-16), spent by
+  `POST /api/dossier/{asin}` (4 credits, 1 on Pro).
 - **Prices:** Search $0.01 · Standard $2 · On-Demand up to $4 · Shortlist $12 · Pre-order $38.
   `/api/agent/v2/search` moved from $0.50 to the $0.01 Search tier on 2026-10-16 (see Phase 0).
 - **Meta Ads:** ad duration and density for Momentum and Saturation (Meta Ad Library API).
@@ -69,6 +71,10 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 
 ## Decisions log
 
+- **2026-10-16 (later), from the owner:**
+  - **Plans:** Pro £29/month and Agency £149/month are the only subscriptions; the £39 Pro is gone (no
+    paying customers, so nobody is grandfathered).
+  - **Credits:** 1 credit = £0.50. A Standard Dossier costs 4 credits without a plan, 1 on Pro.
 - **2026-10-16, supersedes parts of 2026-10-15:**
   - **Markets:** UK and EU sellers (was US + UK).
   - **Pricing:** the five tiers above (was $0.50 per query).
@@ -80,16 +86,15 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
   - a $50/month provider budget to start;
   - Rainforest for Amazon listings (connected);
   - the official AliExpress affiliate API (applied for, awaiting approval);
-  - current £39/month Pro subscribers grandfathered with 100 free queries a month;
   - the v1 site stays up.
 
 ## Open items
 
-- **Before credit packs go on sale:** a real credit ledger (one row per Stripe session), spending
-  credits on searches and Dossiers, and how many credits a Standard Dossier costs someone without
-  Pro (only Pro's 1 credit is defined).
-- **Pro at £29 or £39:** the live v1 Pro is £39/month; the playbook's v2 Pro is £29/month. Decide
-  whether £29 replaces £39 for new subscribers, and what existing £39 subscribers get.
+- **Agency's allowances:** Agency is £149/month and gets everything Pro does, with a Standard Dossier
+  at 1 credit like Pro. What it adds beyond Pro (seats, more free searches, cheaper Dossiers) isn't set yet.
+- **Credit packs live:** they sell in Stripe test mode today. Run one test-mode purchase, then set
+  `CREDIT_PACKS_ON_SALE=on` on Railway. People also need buttons on the site to buy credits and open
+  Dossiers with them (the API exists: `POST /api/stripe/checkout`, `POST /api/dossier/{asin}`).
 
 - **The playbook itself** isn't in the repository. Sharing it lets these docs match it word for word
   (for example what Shortlist and Pre-order include).

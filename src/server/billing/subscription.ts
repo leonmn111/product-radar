@@ -4,10 +4,12 @@
 import type Stripe from "stripe";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { SubscriptionStatus, SubscriptionTier } from "@/generated/prisma/enums";
+import { PLANS, type PlanId } from "./plans";
 
 export type SubscriptionSnapshot = {
   id: string;
   customerId: string;
+  plan: PlanId;
   status: SubscriptionStatus;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
@@ -25,11 +27,21 @@ const STATUS_MAP: Record<Stripe.Subscription.Status, SubscriptionStatus> = {
 };
 
 /**
- * Which plan a subscription status grants. PAST_DUE keeps Pro while Stripe
+ * Whether a subscription status keeps its plan's access. PAST_DUE keeps it while Stripe
  * retries the card (Stripe then moves it to canceled/unpaid, which drops to FREE).
  */
-export function tierForStatus(status: SubscriptionStatus): SubscriptionTier {
-  return status === "ACTIVE" || status === "TRIALING" || status === "PAST_DUE" ? "PRO" : "FREE";
+export const grantsAccess = (status: SubscriptionStatus) => status === "ACTIVE" || status === "TRIALING" || status === "PAST_DUE";
+
+/** The tier a subscription grants: its plan's (Pro or Agency) while the status keeps access, else FREE. */
+export function tierForStatus(status: SubscriptionStatus, plan: PlanId = "pro"): SubscriptionTier {
+  return grantsAccess(status) ? PLANS[plan].tier : "FREE";
+}
+
+/** Which plan a Stripe subscription is for: the plan our checkout tagged it with, else its price. */
+function planOf(sub: Stripe.Subscription): PlanId {
+  const tagged = sub.metadata?.plan;
+  if (tagged === "agency" || tagged === "pro") return tagged;
+  return sub.items?.data?.[0]?.price?.unit_amount === PLANS.agency.pricePence ? "agency" : "pro";
 }
 
 export function snapshotFromStripe(sub: Stripe.Subscription): SubscriptionSnapshot {
@@ -39,6 +51,7 @@ export function snapshotFromStripe(sub: Stripe.Subscription): SubscriptionSnapsh
   return {
     id: sub.id,
     customerId: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
+    plan: planOf(sub),
     status: STATUS_MAP[sub.status],
     currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
     cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
@@ -64,9 +77,9 @@ export async function applySubscription(
   if (!user) return "unknown_customer";
   if (user.subscriptionSyncedAt && user.subscriptionSyncedAt > eventTime) return "stale";
 
-  const newTier = tierForStatus(snap.status);
-  const currentGrantsPro = user.subscriptionStatus ? tierForStatus(user.subscriptionStatus) === "PRO" : false;
-  if (user.stripeSubscriptionId && user.stripeSubscriptionId !== snap.id && currentGrantsPro && newTier === "FREE") {
+  const newTier = tierForStatus(snap.status, snap.plan);
+  const currentlyPaid = user.subscriptionStatus ? grantsAccess(user.subscriptionStatus) : false;
+  if (user.stripeSubscriptionId && user.stripeSubscriptionId !== snap.id && currentlyPaid && newTier === "FREE") {
     return "superseded";
   }
 

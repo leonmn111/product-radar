@@ -7,7 +7,8 @@ import { newPaymentIdentifier, withDiscoveryHeaders } from "@/server/payments/x4
 import { withX402Payment } from "@/server/payments/x402/middleware";
 import { HEADER_SIWX } from "@/server/payments/x402/siwx";
 import { SourceError } from "@/server/sources/types";
-import { buildDossier, fetchProductDossierData } from "@/services/dossierService";
+import { dbDossierCache } from "@/services/dossierCache";
+import { getProductDossier } from "@/services/dossierService";
 import { loadDossier, saveDossier } from "@/services/dossierStore";
 
 // The Standard Dossier tier (ROADMAP.md, pricing: Standard $2).
@@ -18,9 +19,10 @@ const Asin = z.string().regex(/^[A-Z0-9]{10}$/, "asin must be a 10-character Ama
 
 // GET /api/agent/v2/dossier/B0CH33F5P2
 // The 8-part Dossier for one Amazon UK product: its product page (price, brand, seller), other
-// listings of it, and supplier matches. $2 USDC over x402; a wallet that already bought this Dossier
-// reopens it free with Sign-In-With-X (x402-price "0.00"), served from the copy delivered to it, so
-// no provider is called. Every response carries the x402 discovery headers.
+// listings of it, and supplier matches. $2 USDC over x402, served from the 48-hour cache when a fresh
+// copy exists (X-Dossier-Cache: hit, no provider calls). A wallet that already bought this Dossier
+// reopens it free with Sign-In-With-X (x402-price "0.00"), served from the copy delivered to it.
+// Every response carries the x402 discovery headers.
 export async function GET(request: NextRequest, { params }: { params: Promise<{ asin: string }> }) {
   await connection();
   const paymentId = newPaymentIdentifier();
@@ -67,27 +69,27 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       if (!live.ready) {
         return Response.json({ error: "live_search_unavailable", message: "Live Dossiers aren't switched on yet. You were not charged." }, { status: 503 });
       }
-      let data;
+      let result;
       try {
-        data = await fetchProductDossierData(asin, live.sources);
+        result = await getProductDossier(asin, {
+          sources: live.sources,
+          cache: dbDossierCache,
+          sample: live.sample,
+          notes: live.sample ? ["Development sample data: the supplier offers are made up."] : [],
+          // Image similarity is simulated until a real matcher exists, so it only ever runs on sample data.
+          imageMatcher: live.sample ? simulatedImageMatcher : undefined,
+          id: paymentId,
+        });
       } catch (e) {
         if (!(e instanceof SourceError || e instanceof BudgetExceededError)) throw e;
         return Response.json({ error: "source_unavailable", message: `${e.message} You were not charged.` }, { status: 502 });
       }
-      if (!data) {
+      if (!result) {
         return Response.json({ error: "no_product", message: `Amazon UK has no priced product ${asin}, so you were not charged.` }, { status: 404 });
       }
-      const dossier = buildDossier(
-        {
-          ...data,
-          sample: live.sample,
-          notes: [...(data.notes ?? []), ...(live.sample ? ["Development sample data: the supplier offers are made up."] : [])],
-        },
-        // Image similarity is simulated until a real matcher exists, so it only ever runs on sample data.
-        { id: paymentId, now: new Date(), imageMatcher: live.sample ? simulatedImageMatcher : undefined },
-      );
+      const { dossier } = result;
       await saveDossier(dossier); // before answering: if it can't be kept, the request fails and isn't charged
-      return Response.json(dossier, { headers: { "Cache-Control": "no-store" } });
+      return Response.json(dossier, { headers: { "Cache-Control": "no-store", "X-Dossier-Cache": result.cache } });
     },
   );
 

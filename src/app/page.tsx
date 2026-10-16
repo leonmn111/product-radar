@@ -7,7 +7,7 @@ import { LiveStats, LiveStatsSkeleton } from "@/components/landing/live-stats";
 import { Showcase } from "@/components/landing/showcase";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SITE_URL } from "@/lib/site";
-import { PRO_PLAN } from "@/server/billing/stripe";
+import { PLANS } from "@/server/billing/plans";
 import { getShowcase } from "@/server/products/showcase-cache";
 
 // The public landing page. Signed-in visitors never see it: src/proxy.ts sends them
@@ -32,9 +32,9 @@ export const metadata: Metadata = {
 const GET_STARTED = "/signin?tab=register";
 const PRO_PRICE = new Intl.NumberFormat("en-GB", {
   style: "currency",
-  currency: PRO_PLAN.currency.toUpperCase(),
+  currency: "GBP",
   minimumFractionDigits: 0,
-}).format(PRO_PLAN.unitAmount / 100);
+}).format(PLANS.pro.pricePence / 100);
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
@@ -240,9 +240,9 @@ export default function Home() {
         publisher: { "@id": `${SITE_URL}/#org` },
         offers: {
           "@type": "Offer",
-          name: PRO_PLAN.productName,
-          price: (PRO_PLAN.unitAmount / 100).toFixed(2),
-          priceCurrency: PRO_PLAN.currency.toUpperCase(),
+          name: `ProductRadar ${PLANS.pro.name}`,
+          price: (PLANS.pro.pricePence / 100).toFixed(2),
+          priceCurrency: "GBP",
         },
       },
     ],

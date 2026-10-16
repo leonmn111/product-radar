@@ -12,6 +12,7 @@ import {
   supplierSearchUrls,
   type VerdictKind,
 } from "./dossier";
+import { PLANS, planPriceLabel } from "@/server/billing/plans";
 import { formatPrice } from "./format";
 import { MarginCard } from "./margin";
 import { ProductDetail } from "./product-detail";
@@ -369,7 +370,7 @@ function SupplierAndExport({
             href="/upgrade"
             className={`mt-3 inline-flex rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 dark:hover:bg-purple-700 ${focusRing}`}
           >
-            {viewer.signedIn ? "Upgrade to Pro · £39/month" : "Sign in & upgrade · £39/month"}
+            {viewer.signedIn ? `Upgrade to Pro · ${planPriceLabel(PLANS.pro)}` : `Sign in & upgrade · ${planPriceLabel(PLANS.pro)}`}
           </a>
         </div>
       )}

@@ -3,7 +3,7 @@
 // is an in-memory stand-in and the data sources are fakes, so nothing calls a paid provider (Rule 8).
 
 import { NextRequest } from "next/server";
-import { privateKeyToAccount } from "viem/accounts";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RetailListing, RetailProductDetail, SupplierOffer } from "@/server/live/types";
 import type { RetailSource, SupplierSource } from "@/server/sources/types";
@@ -23,6 +23,7 @@ const mem = vi.hoisted(() => ({
   payments: [] as Record<string, unknown>[],
   nonces: new Set<string>(),
   dossiers: new Map<string, unknown>(),
+  cache: new Map<string, { dossier: unknown; expiresAt: Date }>(),
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), connection: async () => {} }));
@@ -59,6 +60,12 @@ vi.mock("@/lib/db", async () => {
           mem.nonces.add(data.nonce);
           return data;
         }),
+      },
+      dossierCache: {
+        findUnique: vi.fn(async ({ where }: { where: { marketplace_productId: { productId: string } } }) => mem.cache.get(where.marketplace_productId.productId) ?? null),
+        upsert: vi.fn(async ({ where, create }: { where: { marketplace_productId: { productId: string } }; create: { dossier: unknown; expiresAt: Date } }) =>
+          mem.cache.set(where.marketplace_productId.productId, create),
+        ),
       },
       dossierRecord: {
         create: vi.fn(async ({ data }: { data: { id: string; body: unknown } }) => mem.dossiers.set(data.id, data.body)),
@@ -205,6 +212,18 @@ describe("GET /api/agent/v2/dossier/{asin}", () => {
     expect(mem.payments.filter((p) => p.status === "SETTLED")).toHaveLength(1);
   });
 
+  it("serves a second buyer within 48 hours from the cache: paid in full, no provider calls, their own id", async () => {
+    vi.mocked(retail.product).mockClear();
+    const res = await call(ASIN, { [HEADER_SIGNATURE]: await payFor(await challenge(), stranger) });
+    expect([res.status, res.headers.get("x-dossier-cache"), res.headers.get(HEADER_PRICE)]).toEqual([200, "hit", "2.00"]);
+    expect(decode(res.headers.get(HEADER_RESPONSE))).toMatchObject({ success: true });
+    expect([retail.product, retail.search, supplier.search].map((f) => vi.mocked(f).mock.calls.length)).toEqual([0, 0, 0]);
+    const d = await res.json();
+    expect(d.id).toBe(res.headers.get(HEADER_PAYMENT_ID));
+    expect(d.notes.at(-1)).toContain("From the 48-hour cache");
+    expect(mem.dossiers.get(d.id)).toEqual(d); // their copy is kept for reopening
+  });
+
   it("asks for $2.00 again when the sign-in proof is replayed, from another wallet, or for another Dossier", async () => {
     const proof = await signInFor(await challenge());
     expect((await call(ASIN, { [HEADER_SIWX]: proof })).status).toBe(200); // bought in the test above
@@ -212,7 +231,7 @@ describe("GET /api/agent/v2/dossier/{asin}", () => {
     const replay = await call(ASIN, { [HEADER_SIWX]: proof });
     expect([replay.status, replay.headers.get(HEADER_PRICE), (await replay.json()).error]).toEqual([402, "2.00", "invalid_siwx_nonce"]);
 
-    const other = await call(ASIN, { [HEADER_SIWX]: await signInFor(await challenge(), stranger) });
+    const other = await call(ASIN, { [HEADER_SIWX]: await signInFor(await challenge(), privateKeyToAccount(generatePrivateKey())) });
     expect([other.status, (await other.json()).error]).toEqual([402, "siwx_no_purchase"]);
 
     const elsewhere = await call("B0OTHERMUG", { [HEADER_SIWX]: await signInFor(await challenge()) });

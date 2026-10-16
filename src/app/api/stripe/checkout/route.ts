@@ -14,14 +14,15 @@ const checkoutLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
 
 const Body = z.object({ tier: z.enum(CHECKOUT_TIERS as [CheckoutTier, ...CheckoutTier[]]) });
 
-// POST /api/stripe/checkout  { "tier": "starter" | "growth" | "scale" | "pro" }  →  { "url": "https://checkout.stripe.com/…" }
-// Stripe Checkout for a credit pack (£10 / £25 / £50 for 20 / 55 / 120 credits) or the v2 Pro
-// subscription (£29/month), for the signed-in user. Prices are in src/server/billing/plans.ts.
+// POST /api/stripe/checkout  { "tier": "starter" | "growth" | "scale" | "pro" | "agency" }  →  { "url": "https://checkout.stripe.com/…" }
+// Stripe Checkout for a credit pack (£10 / £25 / £50 for 20 / 55 / 120 credits) or a subscription
+// (Pro £29/month, Agency £149/month), for the signed-in user. Prices are in src/server/billing/plans.ts.
+// (Pro is also sold through /upgrade, the site's existing button.)
 //
-// STRIPE TEST MODE ONLY, never production: credits are only recorded in memory until the credit
-// ledger exists (src/server/billing/credits.ts), and the £29 Pro sits beside the live £39 Pro until
-// the owner decides how the two relate. With a live Stripe key (even on a laptop) nothing is sold.
-const onSale = () => env.NODE_ENV !== "production" && /^(sk|rk)_test_/.test(env.STRIPE_SECRET_KEY ?? "");
+// On sale with a Stripe test key outside production, or once the owner sets CREDIT_PACKS_ON_SALE=on
+// after a test-mode run: the checkout parameters haven't been tried against Stripe itself yet.
+const onSale = () =>
+  env.CREDIT_PACKS_ON_SALE === "on" || (env.NODE_ENV !== "production" && /^(sk|rk)_test_/.test(env.STRIPE_SECRET_KEY ?? ""));
 
 export async function POST(request: NextRequest) {
   await connection();

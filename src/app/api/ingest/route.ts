@@ -1,3 +1,4 @@
+import { PLANS, planPriceLabel } from "@/server/billing/plans";
 import { connection, type NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
   }
   if (!canIngest(viewer)) {
     return Response.json(
-      { error: "upgrade_required", message: "Live product analysis is a Pro feature. Upgrade to Pro (£39/month) to use it." },
+      { error: "upgrade_required", message: `Live product analysis is a Pro feature. Upgrade to Pro (${planPriceLabel(PLANS.pro)}) to use it.` },
       { status: 403 },
     );
   }

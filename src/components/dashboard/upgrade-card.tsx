@@ -1,3 +1,5 @@
+import { PLANS } from "@/server/billing/plans";
+
 const BENEFITS = [
   "The full catalog: every live product we track, ranked",
   "Paste any product link and get it scored in seconds",
@@ -39,7 +41,7 @@ export function UpgradeCard({ signedIn, liveProducts }: { signedIn: boolean; liv
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
           <p className="text-zinc-950 dark:text-white">
-            <span className="text-3xl font-semibold tracking-tight">£39</span>
+            <span className="text-3xl font-semibold tracking-tight">£{PLANS.pro.pricePence / 100}</span>
             <span className="text-sm text-zinc-600 dark:text-zinc-400"> / month</span>
           </p>
           <a

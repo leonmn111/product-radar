@@ -102,9 +102,12 @@ its own time; nothing is overwritten. Rows go to the `TrendSnapshot` table (rank
 sales velocity with how it was measured, provider, source, time and quality; one row per product,
 day and provider).
 
-`DossierCache` holds the latest built Dossier per product for 48 hours, so a repeat request can
-reuse its evidence instead of paying the providers again. The table exists; the Dossier service
-starts using it in a later slice.
+`DossierCache` holds the latest built Dossier per product for 48 hours (from when its evidence was
+read), so a repeat request reuses its evidence instead of paying the providers again.
+`getProductDossier()` in `src/services/dossierService.ts` checks it first. Both Dossier routes use it:
+`/api/agent/v2/dossier/{asin}` (USDC) and `/api/dossier/{asin}` (credits). The buyer pays the same
+for a cached copy. It gets the buyer's own id, a note saying it came from the cache, and an
+`X-Dossier-Cache: hit` header. Sample (development) Dossiers are only ever served to sample mode.
 
 ## Monetization
 
@@ -115,12 +118,20 @@ starts using it in a later slice.
 
   `SignInWithX` is built (2026-10-16, for the $2 Dossier; see below). `Upto` and `PaymentIdentifier`
   are built in Phase 2 against the current x402 specification.
-- **Stripe fiat credit packs:** Starter £10 (20 credits), Growth £25 (55), Scale £50 (120), and a £29/month
-  Pro (100 free searches a month, Standard Dossier for 1 credit). Typed in `src/server/billing/plans.ts`
-  and sold through Stripe Checkout (`POST /api/stripe/checkout`) with inline prices. Paid packs are
-  credited by the existing webhook (`/api/billing/webhook`, also served at `/api/stripe/webhook`). The
-  pack, amount and currency must match the catalogue, and each session is credited once. Until the
-  credit ledger table exists, credits are held in memory and checkout only sells in Stripe test mode.
+- **Stripe fiat (humans):**
+  - The only subscriptions are Pro (£29/month: 100 free searches a month, a Standard Dossier for 1 credit)
+    and Agency (£149/month).
+  - Credit packs: Starter £10 (20 credits), Growth £25 (55), Scale £50 (120). 1 credit = £0.50, so a Standard
+    Dossier is 4 credits without a plan.
+  - Typed in `src/server/billing/plans.ts` and sold through Stripe Checkout with inline prices, so nothing is
+    set up in the Stripe dashboard. `/upgrade` sells Pro; `POST /api/stripe/checkout` sells any plan or pack
+    (packs and Agency go live when `CREDIT_PACKS_ON_SALE=on`).
+  - Paid packs are credited by the existing webhook (`/api/billing/webhook`, also at `/api/stripe/webhook`):
+    the pack, amount and currency must match the catalogue.
+  - The balance is `User.platformCredits`. Every change writes a `CreditLedgerEntry` in the same transaction:
+    a purchase once per Stripe session, a spend never below zero (also a CHECK constraint), and a refund when a
+    request fails.
+  - `POST /api/dossier/{asin}` spends credits on a Standard Dossier.
 - **Prices:**
 
 | Product | Price |

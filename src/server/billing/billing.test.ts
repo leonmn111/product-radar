@@ -27,11 +27,22 @@ describe("tierForStatus", () => {
   });
 });
 
+describe("plans", () => {
+  it("grants Agency for an Agency subscription, by its tag or its £149 price", () => {
+    expect(tierForStatus("ACTIVE", "agency")).toBe("AGENCY");
+    expect(tierForStatus("CANCELED", "agency")).toBe("FREE");
+    expect(snapshotFromStripe(sub({ metadata: { plan: "agency" } })).plan).toBe("agency");
+    expect(snapshotFromStripe(sub({ items: { data: [{ current_period_end: 1, price: { unit_amount: 14900 } }] } })).plan).toBe("agency");
+    expect(snapshotFromStripe(sub({ metadata: {} })).plan).toBe("pro"); // untagged (e.g. older) subscriptions are Pro
+  });
+});
+
 describe("snapshotFromStripe", () => {
   it("maps status, customer and the item-level billing period", () => {
     expect(snapshotFromStripe(sub())).toEqual({
       id: "sub_123",
       customerId: "cus_123",
+      plan: "pro",
       status: "ACTIVE",
       currentPeriodEnd: new Date(1_800_000_000 * 1000),
       cancelAtPeriodEnd: false,

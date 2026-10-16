@@ -19,8 +19,8 @@ datasource db {
 
 enum SubscriptionTier {
   FREE
-  PRO
-  BUSINESS
+  PRO // £29/month
+  AGENCY // £149/month
 }
 
 // Mirrors Stripe's subscription.status values.
@@ -65,12 +65,38 @@ model User {
   subscriptionCurrentPeriodEnd  DateTime?           @db.Timestamptz(3)
   subscriptionCancelAtPeriodEnd Boolean             @default(false)
   subscriptionSyncedAt          DateTime?           @db.Timestamptz(3) // Stripe event time last applied (ignores out-of-order events)
+  platformCredits               Int                 @default(0) // fiat credits (1 credit = £0.50); every change is a CreditLedgerEntry
 
   accounts            Account[]
   sessions            Session[]
   passwordResetTokens PasswordResetToken[]
+  creditEntries       CreditLedgerEntry[]
 
   @@index([subscriptionTier])
+}
+
+// ─── Credit ledger (billing module only) ─────────────────────────────────────
+// Every change to User.platformCredits, written in the same transaction as the change. A Stripe
+// purchase is credited once (unique session id); balanceAfter makes the history auditable.
+
+enum CreditEntryKind {
+  PURCHASE // a paid credit pack
+  SPEND // credits spent on a Dossier
+  REFUND // a spend given back because the request failed
+}
+
+model CreditLedgerEntry {
+  id              String          @id @default(uuid(7)) @db.Uuid
+  userId          String          @db.Uuid
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind            CreditEntryKind
+  delta           Int // + purchased or refunded, − spent
+  balanceAfter    Int // the user's balance right after this entry
+  stripeSessionId String?         @unique // PURCHASE: the Checkout Session that paid for it
+  reference       String? // SPEND / REFUND: what it was for (the Dossier id)
+  createdAt       DateTime        @default(now()) @db.Timestamptz(3)
+
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 // One "reset your password" email link. Only a SHA-256 hash of the link's

@@ -37,7 +37,6 @@ Check it works: open http://localhost:3000/api/health
 | `npm run products:import -- <list.json>` | Import real products from a list of store pages, each with optional extra sources (other stores, expert reviews). See "Bulk import" below. |
 | `npm run fx:update` | Refresh the ECB euro reference rates in `src/server/scoring/fx-rates.json` (used only to compare prices across currencies). Commit, deploy, then rescore. |
 | `npm run trends:enrich -- <keywords.json> [--dry-run] [--limit N] [--only text]` | Add Google search-interest evidence (Google Trends via SerpApi) to real products and rescore them. See "Search interest" below. |
-| `npm run stripe:setup` | Create the Pro product + £39/month price in Stripe (uses `STRIPE_SECRET_KEY`). |
 | `npm run agent:test` | Mock AI agent: full x402 402 → pay → 200 flow plus abuse checks against a running server. |
 | `npm run mcp:build` | Bundle the MCP server (`mcp/`) and pack it into `public/mcp/` for download. |
 | `npm test` | Unit tests for scoring, ingestion, billing, x402 verification/facilitator and the agent dossier. |
@@ -103,7 +102,7 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
 
 ## Accounts & plans
 
-| | Signed out / Free | Pro (£39/month) |
+| | Signed out / Free | Pro (£29/month) or Agency (£149/month) |
 | --- | --- | --- |
 | Landing page showcase and its dossiers | ✓ | ✓ |
 | Catalog (`/dashboard`, `/api/products`) | — (sign-in / Pro offer; API 401 / 403) | ✓ |
@@ -151,12 +150,21 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
   - `/billing/manage` → redirects to the same portal (the account page's no-JavaScript fallback)
   - `/billing/success` → confirms the checkout with Stripe and unlocks Pro immediately
   - `POST /api/billing/webhook` → signature-verified; applies `customer.subscription.*` events,
-    ignores out-of-order (older) events. `active`, `trialing`, `past_due` ⇒ Pro; anything else ⇒ Free.
+    ignores out-of-order (older) events. `active`, `trialing`, `past_due` ⇒ the subscription's plan (Pro or
+    Agency); anything else ⇒ Free. A paid credit pack (`checkout.session.completed`, mode `payment`) is added
+    to `User.platformCredits` with a `CreditLedgerEntry`, once per Checkout Session. Also served at
+    `POST /api/stripe/webhook`.
+  - `POST /api/stripe/checkout` `{ "tier": "starter" | "growth" | "scale" | "pro" | "agency" }` → a Checkout URL for
+    a credit pack (£10 / £25 / £50 for 20 / 55 / 120 credits; 1 credit = £0.50) or a plan. Sold only with a
+    Stripe test key outside production until `CREDIT_PACKS_ON_SALE=on`.
+  - `POST /api/dossier/{asin}` → a Standard Dossier paid in credits: 4 (£2.00), or 1 on Pro / Agency.
+    Credits are taken first and returned if the Dossier can't be built. Served from the 48-hour cache when fresh.
 
 ### Turning on Stripe (test mode first)
 
 1. Create a Stripe account → Developers → API keys → copy the **test** secret key into `.env` as `STRIPE_SECRET_KEY`.
-2. `npm run stripe:setup` — creates the "ProductRadar Pro" product and £39/month price (safe to re-run).
+2. Prices need no setup: checkout sets them inline from `src/server/billing/plans.ts` (Pro £29/month,
+   Agency £149/month, the three credit packs).
 3. Webhook: in production add an endpoint `https://<your-site>/api/billing/webhook` in Stripe → Developers →
    Webhooks, listening to `customer.subscription.created`, `.updated`, `.deleted` and
    `checkout.session.completed`; copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
@@ -307,7 +315,7 @@ npx -y @railway/cli@latest ssh --service web "npx -y tsx scripts/enrich-trends.t
 Products ranked by latest OVERALL score. Each includes `bestOffer`, `margin` (see "Margin engine"), `scores`
 (latest per dimension, with `confidence`, `methodologyVersion` and the `evidenceIds` used), `offers`, and
 `evidence` (source, timestamp, quality score, metric). `category` must be a lowercase slug; `limit` is 1–50 (default 20). Invalid input → 400.
-This is the Pro catalog: signed-out → 401 `unauthorized`, Free → 403 `pro_required`. Pro and Business get live and sample products.
+This is the Pro catalog: signed-out → 401 `unauthorized`, Free → 403 `pro_required`. Pro and Agency get live and sample products.
 
 ## Scoring engine
 
@@ -357,7 +365,8 @@ catalog cards, in the dossier, and in both agent endpoints and the MCP tools.
 
 | Model | Purpose |
 | --- | --- |
-| `User` | Account with a `subscriptionTier` (FREE / PRO / BUSINESS). Entitlement only — no payment data. |
+| `User` | Account with a `subscriptionTier` (FREE / PRO / AGENCY) and its `platformCredits` balance. |
+| `CreditLedgerEntry` | Every change to a credit balance: purchase (unique per Stripe session), spend, refund, with the balance after. |
 | `Product` | A tracked product. `category` is a lowercase slug, e.g. `kitchen-appliances`. |
 | `Evidence` | One sourced fact about a product. **Required:** `sourceUrl`, `sourceName`, `sourceType`, `observedAt`, `qualityScore` (0–100). Optional `metric` + `metricValue` (RATING 0–5, REVIEW_COUNT, SENTIMENT −1–1, SEARCH_INTEREST 0–100) feed the scoring engine. |
 | `Offer` | A seller's price/availability. Must cite an `Evidence` row for the same product. |

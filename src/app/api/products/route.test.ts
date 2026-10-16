@@ -16,7 +16,7 @@ const { listProducts } = await import("@/server/products/service");
 const { GET } = await import("./route");
 
 const call = (query = "") => GET(new NextRequest(`http://localhost:3457/api/products${query}`));
-const viewer = (tier: "FREE" | "PRO" | "BUSINESS") => vi.mocked(getViewer).mockResolvedValue({ id: "u1", email: "me@example.com", tier });
+const viewer = (tier: "FREE" | "PRO" | "AGENCY") => vi.mocked(getViewer).mockResolvedValue({ id: "u1", email: "me@example.com", tier });
 
 describe("GET /api/products (the Pro catalog)", () => {
   beforeEach(() => vi.mocked(listProducts).mockClear());
@@ -38,7 +38,7 @@ describe("GET /api/products (the Pro catalog)", () => {
   });
 
   it("lists every product, live ones included, for Pro and Business", async () => {
-    for (const tier of ["PRO", "BUSINESS"] as const) {
+    for (const tier of ["PRO", "AGENCY"] as const) {
       viewer(tier);
       const res = await call("?category=beauty&limit=5");
       expect(res.status).toBe(200);

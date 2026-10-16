@@ -27,7 +27,7 @@ const product = {
 };
 const call = (query = "", id = product.id) =>
   GET(new NextRequest(`http://localhost:3457/api/products/${id}/shopify-csv${query}`), { params: Promise.resolve({ id }) });
-const viewer = (tier: "FREE" | "PRO" | "BUSINESS") => vi.mocked(getViewer).mockResolvedValue({ id: "u1", email: "me@example.com", tier });
+const viewer = (tier: "FREE" | "PRO" | "AGENCY") => vi.mocked(getViewer).mockResolvedValue({ id: "u1", email: "me@example.com", tier });
 
 describe("GET /api/products/:id/shopify-csv (the Pro Shopify export)", () => {
   beforeEach(() => {
@@ -50,7 +50,7 @@ describe("GET /api/products/:id/shopify-csv (the Pro Shopify export)", () => {
   });
 
   it("sends Pro and Business a CSV file to download, named after the product", async () => {
-    for (const tier of ["PRO", "BUSINESS"] as const) {
+    for (const tier of ["PRO", "AGENCY"] as const) {
       viewer(tier);
       const res = await call();
       expect(res.status).toBe(200);

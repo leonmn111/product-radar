@@ -3,8 +3,8 @@
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { checkoutSessionParams, type CheckoutTier } from "./plans";
-import { applySubscription, snapshotFromStripe, tierForStatus } from "./subscription";
-import { proPriceId, stripe } from "./stripe";
+import { applySubscription, grantsAccess, snapshotFromStripe, tierForStatus } from "./subscription";
+import { stripe } from "./stripe";
 
 async function ensureCustomer(db: PrismaClient, userId: string) {
   const user = await db.user.findUniqueOrThrow({
@@ -23,34 +23,18 @@ async function ensureCustomer(db: PrismaClient, userId: string) {
   return { ...user, stripeCustomerId: fresh.stripeCustomerId! };
 }
 
-/** Returns a URL to send the user to: Stripe Checkout, or the billing portal if they're already subscribed. */
+/** Pro checkout (£29/month, plans.ts), or the billing portal if they're already subscribed. */
 export async function createCheckoutUrl(db: PrismaClient, userId: string, baseUrl: string): Promise<string> {
-  const user = await ensureCustomer(db, userId);
-  if (user.subscriptionStatus && tierForStatus(user.subscriptionStatus) === "PRO") {
-    return createPortalUrl(db, userId, baseUrl);
-  }
-
-  const session = await stripe().checkout.sessions.create({
-    mode: "subscription",
-    customer: user.stripeCustomerId,
-    client_reference_id: user.id,
-    line_items: [{ price: await proPriceId(), quantity: 1 }],
-    allow_promotion_codes: true,
-    subscription_data: { metadata: { userId: user.id } },
-    success_url: `${baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${baseUrl}/dashboard?checkout=cancelled`,
-  });
-  if (!session.url) throw new Error("Stripe did not return a checkout URL.");
-  return session.url;
+  return createPlanCheckoutUrl(db, userId, baseUrl, "pro");
 }
 
 /**
- * Stripe Checkout for a credit pack or the v2 Pro subscription (plans.ts). Someone already on Pro who
- * picks Pro gets the billing portal instead, so no one is subscribed twice.
+ * Stripe Checkout for a credit pack or a subscription (plans.ts). Someone already subscribed who
+ * picks a subscription gets the billing portal instead, so no one is subscribed twice.
  */
 export async function createPlanCheckoutUrl(db: PrismaClient, userId: string, baseUrl: string, tier: CheckoutTier): Promise<string> {
   const user = await ensureCustomer(db, userId);
-  if (tier === "pro" && user.subscriptionStatus && tierForStatus(user.subscriptionStatus) === "PRO") {
+  if ((tier === "pro" || tier === "agency") && user.subscriptionStatus && grantsAccess(user.subscriptionStatus)) {
     return createPortalUrl(db, userId, baseUrl);
   }
   const session = await stripe().checkout.sessions.create(checkoutSessionParams(tier, { userId: user.id, customerId: user.stripeCustomerId, baseUrl }));
@@ -88,5 +72,5 @@ export async function confirmCheckout(db: PrismaClient, userId: string, sessionI
   }
   const snap = snapshotFromStripe(session.subscription);
   await applySubscription(db, snap, new Date());
-  return { ok: true as const, tier: tierForStatus(snap.status), periodEnd: snap.currentPeriodEnd };
+  return { ok: true as const, tier: tierForStatus(snap.status, snap.plan), periodEnd: snap.currentPeriodEnd };
 }

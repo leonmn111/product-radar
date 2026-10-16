@@ -5,6 +5,9 @@
 //                              best-corroborated product. One product: its Amazon UK page, other
 //                              listings of it, then supplier offers.
 //   buildDossier()             pure: compliance → confidence → the two gates → margins → the Dossier.
+//   getProductDossier()        one product's Dossier from the 48-hour cache (no provider calls) or,
+//                              when there's no fresh copy, fetched, built and cached. Payment is the
+//                              caller's: a cached Dossier costs the buyer the same as a new one.
 //
 // When the first search finds too few listings of the product, the synonyms of the search term are
 // searched too (engine/synonyms.ts), as far as the query's call budget allows.
@@ -25,6 +28,7 @@ import { searchTermFor, titleSimilarity } from "@/server/live/match";
 import { groupSameProduct } from "@/server/live/search";
 import type { RetailListing, RetailProductDetail, SupplierOffer } from "@/server/live/types";
 import type { RetailSource, SupplierSource } from "@/server/sources/types";
+import type { DossierCacheStore } from "@/services/dossierCache";
 import type { Dossier, Evidence, Gated, LandedMargins, Momentum, ResellabilityFlags, Saturation, SupplierMatch, SupplierMatches, Verdict } from "@/types/dossier";
 import type { CostInput, FeeStack, ReturnsInput } from "@/types/financials";
 
@@ -371,4 +375,51 @@ export function buildDossier(input: DossierInput, ctx: { id: string; now: Date; 
     evidence,
     exports: { shopifyCsvUrl: null, pdfUrl: null, shareLink: null },
   };
+}
+
+// ── Cached product Dossiers ──────────────────────────────────────────────────
+
+export type ProductDossierDeps = {
+  sources: { retail: RetailSource; supplier: SupplierSource };
+  cache: DossierCacheStore;
+  /** Development sample data: only ever served from, and to, sample mode. */
+  sample: boolean;
+  /** Notes added to a newly built Dossier (e.g. that the suppliers are sample data). */
+  notes?: string[];
+  imageMatcher?: ImageMatcher;
+  /** This copy's id (the paid request's identifier). */
+  id: string;
+  /**
+   * The clock. Read again after fetching, so evidence the providers just read isn't "from the
+   * future" (later than the time the Dossier is built at, which would make it count for nothing).
+   */
+  now?: () => Date;
+  budget?: QueryBudget;
+};
+
+/**
+ * One product's Standard Dossier: the cached one while it's under 48 hours old (no provider is
+ * called; the copy gets this request's id and says it came from the cache), otherwise fetched,
+ * built and cached. Null when Amazon UK has no priced product with that ASIN. Failing to write
+ * the cache doesn't fail the request.
+ */
+export async function getProductDossier(asin: string, deps: ProductDossierDeps): Promise<{ dossier: Dossier; cache: "hit" | "miss" } | null> {
+  const clock = deps.now ?? (() => new Date());
+  const cached = await deps.cache.get(asin, clock());
+  if (cached && cached.sample === deps.sample) {
+    const note = `From the 48-hour cache: built ${cached.generatedAt}; no data provider was called for this copy.`;
+    return { cache: "hit", dossier: { ...cached, id: deps.id, notes: [...cached.notes, note] } };
+  }
+  const data = await fetchProductDossierData(asin, deps.sources, deps.budget ? { budget: deps.budget } : {});
+  if (!data) return null;
+  const dossier = buildDossier(
+    { ...data, sample: deps.sample, notes: [...(data.notes ?? []), ...(deps.notes ?? [])] },
+    { id: deps.id, now: clock(), imageMatcher: deps.imageMatcher },
+  );
+  try {
+    await deps.cache.put(dossier, clock());
+  } catch (e) {
+    console.error("[dossier] couldn't cache", asin, e);
+  }
+  return { dossier, cache: "miss" };
 }

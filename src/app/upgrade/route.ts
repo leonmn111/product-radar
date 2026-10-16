@@ -7,7 +7,7 @@ import { BillingNotConfiguredError } from "@/server/billing/stripe";
 
 // GET /upgrade — the single destination for every "Upgrade to Pro" button.
 //   signed out → sign in, then come straight back here
-//   signed in  → Stripe Checkout (£39/month), or the billing portal if already Pro
+//   signed in  → Stripe Checkout for Pro (£29/month, plans.ts), or the billing portal if already subscribed
 export async function GET(request: NextRequest) {
   await connection();
   const base = appUrl(request.nextUrl.origin);

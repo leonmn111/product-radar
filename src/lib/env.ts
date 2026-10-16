@@ -52,6 +52,9 @@ const EnvSchema = z
     // Development only: "on" runs the live-search page on recorded/sample responses (no provider
     // calls, no cost). Refused in production; locally the paid API uses it too, flagged as sample.
     LIVE_SAMPLE_DATA: optional,
+    // "on" sells credit packs and the Agency plan through /api/stripe/checkout with a live Stripe key.
+    // Off by default: until then they're sold only in Stripe test mode, outside production.
+    CREDIT_PACKS_ON_SALE: optional,
     // Coinbase Developer Platform API key, for the Coinbase facilitator (Base mainnet). The secret is an
     // Ed25519 key (base64) or an EC key (PEM); a PEM pasted on one line with literal "\n"s is unfolded.
     CDP_API_KEY_ID: optional,

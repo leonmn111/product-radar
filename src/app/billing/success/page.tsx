@@ -26,9 +26,9 @@ async function Confirmation({ searchParams }: { searchParams: Promise<{ session_
     result = { ok: false, reason: "We couldn't confirm your payment just now — it will update automatically within a minute." };
   }
 
-  return result.ok && result.tier === "PRO" ? (
+  return result.ok && result.tier !== "FREE" ? (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">You&apos;re on Pro 🎉</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">You&apos;re on {result.tier === "AGENCY" ? "Agency" : "Pro"} 🎉</h1>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
         Live product analysis is unlocked and you can now see all live products.
         {result.periodEnd &&

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const env = vi.hoisted(() => ({ NODE_ENV: "development" as string, STRIPE_SECRET_KEY: "sk_test_x" as string }));
+const env = vi.hoisted(() => ({ NODE_ENV: "development" as string, STRIPE_SECRET_KEY: "sk_test_x" as string, CREDIT_PACKS_ON_SALE: undefined as string | undefined }));
 vi.mock("server-only", () => ({}));
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), connection: async () => {} }));
 vi.mock("@/lib/env", () => ({ env }));
@@ -22,12 +22,12 @@ const signedIn = () => vi.mocked(getViewer).mockResolvedValue({ id: `u${++n}`, e
 
 describe("POST /api/stripe/checkout", () => {
   beforeEach(() => {
-    Object.assign(env, { NODE_ENV: "development", STRIPE_SECRET_KEY: "sk_test_x" });
+    Object.assign(env, { NODE_ENV: "development", STRIPE_SECRET_KEY: "sk_test_x", CREDIT_PACKS_ON_SALE: undefined });
     vi.mocked(createPlanCheckoutUrl).mockClear();
   });
 
   it("returns a Stripe Checkout URL for each tier", async () => {
-    for (const tier of ["starter", "growth", "scale", "pro"]) {
+    for (const tier of ["starter", "growth", "scale", "pro", "agency"]) {
       signedIn();
       const res = await call({ tier });
       expect([res.status, (await res.json()).url]).toEqual([200, "https://checkout.stripe.com/c/pay/cs_test_1"]);
@@ -45,6 +45,12 @@ describe("POST /api/stripe/checkout", () => {
     const res = await call({ tier: "starter" });
     expect([res.status, (await res.json()).error]).toEqual([503, "not_on_sale"]);
     expect(createPlanCheckoutUrl).not.toHaveBeenCalled();
+  });
+
+  it("goes on sale for real once the owner switches it on", async () => {
+    Object.assign(env, { NODE_ENV: "production", STRIPE_SECRET_KEY: "rk_live_x", CREDIT_PACKS_ON_SALE: "on" });
+    signedIn();
+    expect((await call({ tier: "growth" })).status).toBe(200);
   });
 
   it("rejects an unknown tier, a signed-out visitor and other sites", async () => {

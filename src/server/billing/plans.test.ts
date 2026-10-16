@@ -1,7 +1,6 @@
 import type Stripe from "stripe";
 import { describe, expect, it } from "vitest";
-import { createMockCreditStore } from "./credits";
-import { checkoutSessionParams, CREDIT_PACKS, creditGrantFor, PRO_SUBSCRIPTION } from "./plans";
+import { checkoutSessionParams, CREDIT_PACKS, CREDIT_VALUE_PENCE, creditGrantFor, PLANS, planPriceLabel, STANDARD_DOSSIER_CREDITS } from "./plans";
 
 const ctx = { userId: "u1", customerId: "cus_1", baseUrl: "https://theproductradar.io" };
 
@@ -19,13 +18,21 @@ const session = (over: Partial<Stripe.Checkout.Session> = {}) =>
   }) as Stripe.Checkout.Session;
 
 describe("the plan catalogue", () => {
-  it("has the three credit packs and the £29 Pro subscription", () => {
+  it("has the three credit packs, Pro at £29 and Agency at £149 a month", () => {
     expect(Object.values(CREDIT_PACKS).map((p) => [p.name, p.pricePence, p.credits])).toEqual([
       ["Starter Pack", 1000, 20],
       ["Growth Pack", 2500, 55],
       ["Scale Pack", 5000, 120],
     ]);
-    expect(PRO_SUBSCRIPTION).toMatchObject({ pricePence: 2900, interval: "month", monthlyFreeSearches: 100, standardDossierCredits: 1 });
+    expect([PLANS.pro.pricePence, PLANS.pro.tier, PLANS.agency.pricePence, PLANS.agency.tier]).toEqual([2900, "PRO", 14900, "AGENCY"]);
+    expect([planPriceLabel(PLANS.pro), planPriceLabel(PLANS.agency)]).toEqual(["£29/month", "£149/month"]);
+  });
+
+  it("prices a credit at £0.50, so a Standard Dossier is 4 credits (£2) without a plan and 1 on Pro", () => {
+    expect(CREDIT_VALUE_PENCE).toBe(50);
+    expect(STANDARD_DOSSIER_CREDITS).toEqual({ FREE: 4, PRO: 1, AGENCY: 1 });
+    expect(STANDARD_DOSSIER_CREDITS.FREE * CREDIT_VALUE_PENCE).toBe(200);
+    expect(CREDIT_PACKS.starter.pricePence / CREDIT_PACKS.starter.credits).toBe(CREDIT_VALUE_PENCE); // bigger packs add bonus credits
   });
 });
 
@@ -49,8 +56,14 @@ describe("checkoutSessionParams", () => {
     const p = checkoutSessionParams("pro", ctx);
     expect(p.mode).toBe("subscription");
     expect(p.line_items?.[0].price_data).toMatchObject({ currency: "gbp", unit_amount: 2900, recurring: { interval: "month" } });
-    expect(p.subscription_data?.metadata).toEqual({ userId: "u1", plan: "pro_v2" });
+    expect(p.subscription_data?.metadata).toEqual({ userId: "u1", plan: "pro" });
     expect(p.success_url).toBe("https://theproductradar.io/billing/success?session_id={CHECKOUT_SESSION_ID}");
+  });
+
+  it("sells Agency as a £149 monthly subscription tagged with its plan", () => {
+    const p = checkoutSessionParams("agency", ctx);
+    expect(p.line_items?.[0].price_data).toMatchObject({ unit_amount: 14900, recurring: { interval: "month" }, product_data: { name: "ProductRadar Agency" } });
+    expect(p.subscription_data?.metadata).toEqual({ userId: "u1", plan: "agency" });
   });
 });
 
@@ -72,16 +85,5 @@ describe("creditGrantFor", () => {
     ["no buyer", { client_reference_id: null, metadata: { kind: "credit_pack", pack: "starter" } }, "no_user"],
   ])("grants nothing for %s", (_label, over, reason) => {
     expect(creditGrantFor(session(over as Partial<Stripe.Checkout.Session>))).toEqual({ grant: null, reason });
-  });
-});
-
-describe("the mock credit store", () => {
-  it("credits each Stripe session once and adds up a user's balance", async () => {
-    const store = createMockCreditStore();
-    const g = { userId: "u1", packId: "starter" as const, credits: 20, sessionId: "cs_1" };
-    expect(await store.grant(g)).toBe(true);
-    expect(await store.grant(g)).toBe(false);
-    expect(await store.grant({ ...g, packId: "scale", credits: 120, sessionId: "cs_2" })).toBe(true);
-    expect([await store.balance("u1"), await store.balance("u2"), store.kind]).toEqual([140, 0, "mock"]);
   });
 });

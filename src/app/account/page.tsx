@@ -6,7 +6,7 @@ import type { SubscriptionTier } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { getAccountProfile, type AccountProfile } from "@/server/auth/account";
 import { getViewer } from "@/server/auth/entitlements";
-import { PRO_PLAN } from "@/server/billing/stripe";
+import { PLANS, planPriceLabel } from "@/server/billing/plans";
 import { getBillingSummary, type BillingSummary } from "@/server/billing/summary";
 import { ManageBillingButton } from "./billing-button";
 import { PasswordForm } from "./password-form";
@@ -25,9 +25,9 @@ const card = "rounded-xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6 da
 const cardTitle = "text-base font-semibold text-zinc-950 dark:text-white";
 const muted = "text-sm text-zinc-600 dark:text-zinc-400";
 
-const TIER_LABEL: Record<SubscriptionTier, string> = { FREE: "Free", PRO: "Pro", BUSINESS: "Business" };
+const TIER_LABEL: Record<SubscriptionTier, string> = { FREE: "Free", PRO: "Pro", AGENCY: "Agency" };
 const longDate = (d: Date) => new Intl.DateTimeFormat("en-GB", { dateStyle: "long" }).format(d);
-const proPrice = `${new Intl.NumberFormat("en-GB", { style: "currency", currency: PRO_PLAN.currency.toUpperCase(), minimumFractionDigits: 0 }).format(PRO_PLAN.unitAmount / 100)}/${PRO_PLAN.interval}`;
+const proPrice = planPriceLabel(PLANS.pro);
 
 function TierBadge({ tier }: { tier: SubscriptionTier }) {
   const paid = tier !== "FREE";

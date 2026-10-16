@@ -3,7 +3,7 @@
 
 import Stripe from "stripe";
 import type { PrismaClient } from "@/generated/prisma/client";
-import type { CreditStore } from "./credits";
+import { UnknownUserError, type CreditStore } from "./credits";
 import { creditGrantFor } from "./plans";
 import { applySubscription, snapshotFromStripe, type ApplyResult } from "./subscription";
 
@@ -20,7 +20,7 @@ export function verifyStripeEvent(rawBody: string, signature: string | null, sec
 
 export type HandledEvent = { type: string; result: ApplyResult | "linked" | "credited" | "already_credited" | "ignored"; reason?: string };
 
-/** `credits` receives paid credit packs (the mock store until the ledger exists; see credits.ts). */
+/** `credits` receives paid credit packs (the database ledger, credits.ts). */
 export async function handleStripeEvent(db: PrismaClient, event: Stripe.Event, credits?: CreditStore): Promise<HandledEvent> {
   const eventTime = new Date(event.created * 1000);
 
@@ -38,7 +38,14 @@ export async function handleStripeEvent(db: PrismaClient, event: Stripe.Event, c
       if (s.mode === "payment") {
         const found = creditGrantFor(s);
         if (!found.grant || !credits) return { type: event.type, result: "ignored", reason: found.grant ? "no_credit_store" : found.reason };
-        return { type: event.type, result: (await credits.grant(found.grant)) ? "credited" : "already_credited" };
+        try {
+          return { type: event.type, result: (await credits.grant(found.grant)) ? "credited" : "already_credited" };
+        } catch (e) {
+          if (!(e instanceof UnknownUserError)) throw e; // Stripe retries
+          // Paid, but the account is gone: retrying can't help. Logged loudly for a manual refund.
+          console.error("[billing] PAID credit pack for a missing user: refund it in Stripe", s.id, found.grant.userId);
+          return { type: event.type, result: "ignored", reason: "unknown_user" };
+        }
       }
       // A subscription: normally the customer is linked when checkout starts; this covers
       // customers created by Stripe itself (e.g. a payment link).

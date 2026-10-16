@@ -1,13 +1,18 @@
-// Fiat plans for humans (x402 serves agents): credit packs and the v2 Pro subscription, as Stripe
-// Checkout sessions. Billing module only. Pure: builds Stripe parameters and reads finished sessions;
+// Fiat plans for humans (x402 serves agents): credit packs and the two subscriptions, Pro £29 and
+// Agency £149 a month (the only plans; the old £39 Pro is gone), as Stripe Checkout sessions. Billing module only. Pure: builds Stripe parameters and reads finished sessions;
 // the Stripe client and the database are used elsewhere (checkout.ts, webhook.ts).
 //
 // Prices are set inline (price_data), so nothing has to be created in the Stripe dashboard first.
 
 import type Stripe from "stripe";
+import type { SubscriptionTier } from "@/generated/prisma/enums";
 
 export type CreditPackId = "starter" | "growth" | "scale";
-export type CheckoutTier = CreditPackId | "pro";
+export type PlanId = "pro" | "agency";
+export type CheckoutTier = CreditPackId | PlanId;
+
+/** 1 credit = £0.50. */
+export const CREDIT_VALUE_PENCE = 50;
 
 export type CreditPack = { id: CreditPackId; name: string; pricePence: number; credits: number };
 
@@ -18,20 +23,32 @@ export const CREDIT_PACKS: Record<CreditPackId, CreditPack> = {
   scale: { id: "scale", name: "Scale Pack", pricePence: 5000, credits: 120 },
 };
 
-/**
- * The v2 Pro subscription. Its allowances are recorded here and enforced when credits are spent
- * (not built yet). The v1 Pro plan (£39/month, stripe.ts › PRO_PLAN) is a separate, live price.
- */
-export const PRO_SUBSCRIPTION = {
-  id: "pro",
-  name: "Pro Subscription",
-  pricePence: 2900,
-  interval: "month",
-  monthlyFreeSearches: 100,
-  standardDossierCredits: 1, // what a Standard Dossier costs a Pro subscriber
-} as const;
+export type Plan = { id: PlanId; tier: Exclude<SubscriptionTier, "FREE">; name: string; pricePence: number; interval: "month"; description: string };
 
-export const CHECKOUT_TIERS: readonly CheckoutTier[] = ["starter", "growth", "scale", "pro"];
+/** The subscriptions. Pro's allowances: 100 free searches a month, and a Standard Dossier for 1 credit. */
+export const PLANS: Record<PlanId, Plan> = {
+  pro: {
+    id: "pro",
+    tier: "PRO",
+    name: "Pro",
+    pricePence: 2900,
+    interval: "month",
+    description: "100 free searches a month; a Standard Dossier costs 1 credit.",
+  },
+  agency: { id: "agency", tier: "AGENCY", name: "Agency", pricePence: 14900, interval: "month", description: "Everything in Pro, for agencies." },
+};
+
+/** "£29/month": a plan's price as the site shows it. */
+export const planPriceLabel = (plan: Plan) =>
+  `${new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 0 }).format(plan.pricePence / 100)}/${plan.interval}`;
+
+/**
+ * What a Standard Dossier costs in credits: 4 (£2.00) without a plan, 1 on Pro. Agency is charged
+ * like Pro (an assumption until its allowances are set: it shouldn't cost more than Pro).
+ */
+export const STANDARD_DOSSIER_CREDITS: Record<SubscriptionTier, number> = { FREE: 4, PRO: 1, AGENCY: 1 };
+
+export const CHECKOUT_TIERS: readonly CheckoutTier[] = ["starter", "growth", "scale", "pro", "agency"];
 const CURRENCY = "gbp";
 const KIND = "credit_pack";
 
@@ -46,7 +63,8 @@ export function checkoutSessionParams(
     cancel_url: `${ctx.baseUrl}/account?checkout=cancelled`,
   } as const;
 
-  if (tier === "pro") {
+  if (tier === "pro" || tier === "agency") {
+    const plan = PLANS[tier];
     return {
       ...common,
       mode: "subscription",
@@ -55,16 +73,14 @@ export function checkoutSessionParams(
           quantity: 1,
           price_data: {
             currency: CURRENCY,
-            unit_amount: PRO_SUBSCRIPTION.pricePence,
-            recurring: { interval: PRO_SUBSCRIPTION.interval },
-            product_data: {
-              name: `ProductRadar ${PRO_SUBSCRIPTION.name}`,
-              description: `${PRO_SUBSCRIPTION.monthlyFreeSearches} free searches a month; a Standard Dossier costs ${PRO_SUBSCRIPTION.standardDossierCredits} credit.`,
-            },
+            unit_amount: plan.pricePence,
+            recurring: { interval: plan.interval },
+            product_data: { name: `ProductRadar ${plan.name}`, description: plan.description },
           },
         },
       ],
-      subscription_data: { metadata: { userId: ctx.userId, plan: "pro_v2" } },
+      allow_promotion_codes: true,
+      subscription_data: { metadata: { userId: ctx.userId, plan: plan.id } },
       success_url: `${ctx.baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     };
   }

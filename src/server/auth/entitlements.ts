@@ -14,7 +14,7 @@ export async function getViewer(): Promise<Viewer> {
   return { id: session.user.id, email: session.user.email, tier: session.user.tier };
 }
 
-const PAID_TIERS: SubscriptionTier[] = ["PRO", "BUSINESS"];
+const PAID_TIERS: SubscriptionTier[] = ["PRO", "AGENCY"];
 
 /** Submit new product URLs for live ingestion. */
 export const canIngest = (v: Viewer) => v !== null && PAID_TIERS.includes(v.tier);

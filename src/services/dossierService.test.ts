@@ -6,7 +6,9 @@ import type { RetailListing, SupplierOffer } from "@/server/live/types";
 import { parseRainforestProduct, parseRainforestSearch } from "@/server/sources/rainforest/parse";
 import type { RetailSource, SupplierSource } from "@/server/sources/types";
 import type { FeeStack } from "@/types/financials";
-import { buildDossier, fetchDossierData, fetchProductDossierData, type DossierInput } from "./dossierService";
+import type { Dossier } from "@/types/dossier";
+import type { DossierCacheStore } from "./dossierCache";
+import { buildDossier, fetchDossierData, fetchProductDossierData, getProductDossier, type DossierInput } from "./dossierService";
 
 const fixture = (name: string) => JSON.parse(readFileSync(join(__dirname, "../server/sources/rainforest/fixtures", name), "utf8"));
 
@@ -232,5 +234,58 @@ describe("fetchProductDossierData (real recorded Amazon UK responses)", () => {
     const retail: RetailSource = { name: "retail", search: vi.fn(async () => []), product: vi.fn(async () => null) };
     expect(await fetchProductDossierData("B0NOTHERE1", { retail, supplier: { name: "s", search: vi.fn(async () => []) } })).toBeNull();
     expect(retail.search).not.toHaveBeenCalled();
+  });
+});
+
+describe("getProductDossier (the 48-hour cache)", () => {
+  const page = parseRainforestProduct(fixture("product-amazon-co-uk-B0CH33F5P2-recorded.json"), "GB", NOW);
+  const memoryCache = () => {
+    const rows = new Map<string, Dossier>();
+    const store: DossierCacheStore & { rows: typeof rows } = {
+      rows,
+      get: vi.fn(async (id: string) => rows.get(id) ?? null),
+      put: vi.fn(async (d: Dossier) => void rows.set(d.product.identifiers.asin!, d)),
+    };
+    return store;
+  };
+  const sources = () => ({
+    retail: { name: "retail", search: vi.fn(async () => []), product: vi.fn(async () => page) } satisfies RetailSource,
+    supplier: { name: "supplier", search: vi.fn(async () => []) } satisfies SupplierSource,
+  });
+
+  it("builds and caches on a miss, then serves the cached copy without calling any provider", async () => {
+    const cache = memoryCache();
+    const first = sources();
+    const miss = await getProductDossier("B0CH33F5P2", { sources: first, cache, sample: false, id: "buyer-1", now: () => NOW });
+    expect(miss?.cache).toBe("miss");
+    expect(first.retail.product).toHaveBeenCalledTimes(1);
+    expect(cache.put).toHaveBeenCalledWith(miss?.dossier, NOW);
+
+    const second = sources();
+    const hit = await getProductDossier("B0CH33F5P2", { sources: second, cache, sample: false, id: "buyer-2", now: () => NOW });
+    expect(hit?.cache).toBe("hit");
+    expect([second.retail.product, second.retail.search, second.supplier.search].map((f) => f.mock.calls.length)).toEqual([0, 0, 0]);
+    // The buyer's own copy: its id, the same evidence and time, and a note that it came from the cache.
+    expect(hit?.dossier).toMatchObject({ id: "buyer-2", generatedAt: miss?.dossier.generatedAt, verdict: miss?.dossier.verdict });
+    expect(hit?.dossier.notes.at(-1)).toContain("From the 48-hour cache");
+  });
+
+  it("never serves sample data to a real request, or the other way round", async () => {
+    const cache = memoryCache();
+    await getProductDossier("B0CH33F5P2", { sources: sources(), cache, sample: true, id: "dev", now: () => NOW });
+    const real = sources();
+    expect((await getProductDossier("B0CH33F5P2", { sources: real, cache, sample: false, id: "prod", now: () => NOW }))?.cache).toBe("miss");
+    expect(real.retail.product).toHaveBeenCalled();
+  });
+
+  it("still answers when the cache can't be written, and finds nothing for an unknown product", async () => {
+    const cache = memoryCache();
+    vi.mocked(cache.put).mockRejectedValueOnce(new Error("db down"));
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await getProductDossier("B0CH33F5P2", { sources: sources(), cache, sample: false, id: "x", now: () => NOW }))?.cache).toBe("miss");
+    quiet.mockRestore();
+    const none = sources();
+    none.retail.product.mockResolvedValueOnce(null);
+    expect(await getProductDossier("B0NOTHERE1", { sources: none, cache, sample: false, id: "y", now: () => NOW })).toBeNull();
   });
 });
