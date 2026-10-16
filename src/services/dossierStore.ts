@@ -12,7 +12,16 @@ const keyFor = (asin: string) => `amazon.co.uk:${asin}`;
 
 export async function saveDossier(dossier: Dossier): Promise<void> {
   await db.dossierRecord.create({
-    data: { id: dossier.id, productKey: productKey(dossier), body: dossier as unknown as Prisma.InputJsonValue, sample: dossier.sample },
+    data: {
+      id: dossier.id,
+      productKey: productKey(dossier),
+      body: dossier as unknown as Prisma.InputJsonValue,
+      sample: dossier.sample,
+      title: dossier.product.title,
+      verdict: dossier.verdict.status === "shown" ? dossier.verdict.value.kind : "WITHHELD",
+      confidence: dossier.verdict.confidence,
+      generatedAt: new Date(dossier.generatedAt),
+    },
   });
 }
 

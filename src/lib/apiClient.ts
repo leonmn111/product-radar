@@ -10,6 +10,7 @@
 //   searchProducts()   POST /api/search: 1 credit, or one of Pro's 100 free searches a month
 //   getDossier()       POST /api/dossier/{asin}: 4 credits, or 1 on Pro / Agency
 //   uploadBulkAgency() POST /api/agency/bulk-upload: Agency, 1 credit per ASIN
+//   getHistory()       GET /api/user/history: the user's Dossiers (free to reopen)
 
 import type { Dossier } from "@/types/dossier";
 
@@ -56,6 +57,19 @@ export type SearchResults = {
   notes: string[];
   cost: { free: boolean; creditsCharged: number; creditsRemaining: number; freeSearchesLeft: number | null };
 };
+/** One Dossier in the user's library. */
+export type LibraryEntry = {
+  dossierId: string;
+  asin: string;
+  title: string;
+  verdict: "LAUNCH" | "TEST" | "AVOID" | "WITHHELD";
+  confidence: number | null;
+  generatedAt: string | null;
+  purchasedAt: string;
+  creditsSpent: number;
+  sample: boolean;
+};
+
 export type BulkUploadAccepted = {
   jobId: string;
   status: "PENDING" | "RUNNING" | "DONE";
@@ -195,4 +209,14 @@ export async function getBulkJob(jobId: string, opts: ClientOptions = {}): Promi
   const b = r.body as Partial<BulkJobStatus> | null;
   if (typeof b?.jobId !== "string" || !Array.isArray(b.items)) return fail(r.res.status, "bad_response", FALLBACK);
   return { ok: true, data: b as BulkJobStatus };
+}
+
+/** The signed-in user's Dossiers, newest purchase first. Reopening one (/terminal?asin=…&id=…) is free. */
+export async function getHistory(opts: ClientOptions = {}): Promise<ApiResult<LibraryEntry[]>> {
+  const r = await request("/api/user/history", { method: "GET" }, opts);
+  if (!("res" in r)) return r;
+  if (!r.res.ok) return errorFrom(r.res, r.body);
+  const items = (r.body as { items?: unknown } | null)?.items;
+  if (!Array.isArray(items)) return fail(r.res.status, "bad_response", FALLBACK);
+  return { ok: true, data: items as LibraryEntry[] };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { getBulkJob, getDossier, isDossier, searchProducts, uploadBulkAgency } from "./apiClient";
+import { getBulkJob, getDossier, getHistory, isDossier, searchProducts, uploadBulkAgency } from "./apiClient";
 
 const dossier = {
   id: "d1",
@@ -100,5 +100,15 @@ describe("uploadBulkAgency and getBulkJob", () => {
     const job = { jobId: "01a1451c-85d4-70a3-8c84-89bc51b5804c", status: "DONE", total: 1, counts: { pending: 0, running: 0, done: 1, failed: 0 }, createdAt: "x", finishedAt: "y", items: [] };
     expect(await getBulkJob(job.jobId, { fetchImpl: answer(200, job) })).toEqual({ ok: true, data: job });
     expect(await getBulkJob("../../etc", { fetchImpl: answer(200, job) })).toMatchObject({ ok: false, error: "not_found" });
+  });
+});
+
+describe("getHistory", () => {
+  it("reads the user's library", async () => {
+    const items = [{ dossierId: "d1", asin: "B0MUGAAAA1", title: "Mug", verdict: "TEST", confidence: 0.8, generatedAt: "x", purchasedAt: "y", creditsSpent: 4, sample: false }];
+    const fetchImpl = answer(200, { items });
+    expect(await getHistory({ fetchImpl })).toEqual({ ok: true, data: items });
+    expect([fetchImpl.mock.calls[0][0], fetchImpl.mock.calls[0][1]?.credentials]).toEqual(["/api/user/history", "same-origin"]);
+    expect(await getHistory({ fetchImpl: answer(401, { error: "unauthenticated", message: "Sign in to see your Dossiers." }) })).toMatchObject({ ok: false, status: 401 });
   });
 });

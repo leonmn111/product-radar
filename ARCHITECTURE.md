@@ -209,6 +209,7 @@ terms.
 | `src/components/DossierTerminal.tsx` | The Dossier's 8 panels as a dense terminal; enforces the Verdict gate in the UI too (preview: `/dev/terminal`, development only) |
 | `src/components/DossierRunner.tsx`, `/terminal` | Run a Standard Dossier for an ASIN, paid in credits; without enough credits it opens the credit packs instead of calling anything |
 | `src/engine/exports.ts` | `generateShopifyCSV()`: a Dossier with a shown margin as one draft Shopify listing; served at `/api/agent/v2/dossier/{asin}/export/csv` to its buyer |
+| `src/services/library.ts`, `/library`, `src/components/DossierLibrary.tsx` | The user's purchased Dossiers: owned = a kept (unrefunded) credit spend that references a delivered Dossier (`DossierRecord`, with summary columns for listing). Reopening at `/terminal?asin=…&id=…` is free, from that copy |
 | `src/components/CreditPacksModal.tsx` | The three credit packs, bought through Stripe Checkout; opened from the header's credit balance and from the terminal |
 | `src/app/` | Pages and API routes (`/search`, `/api/agent/v2/search` at $0.01, `/api/agent/v2/dossier/{asin}` at $2) |
 

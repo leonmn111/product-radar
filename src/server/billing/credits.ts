@@ -119,3 +119,18 @@ export async function spendCreditsInTransaction(tx: Prisma.TransactionClient, us
   });
   return platformCredits;
 }
+
+/** What the user has paid credits for and kept (spends without a refund), newest first. */
+export async function keptCreditSpends(db: PrismaClient, userId: string, limit = 500): Promise<{ reference: string; credits: number; at: Date }[]> {
+  const rows = await db.creditLedgerEntry.findMany({
+    where: { userId, kind: { in: ["SPEND", "REFUND"] }, reference: { not: null } },
+    orderBy: { createdAt: "desc" },
+    select: { reference: true, kind: true, delta: true, createdAt: true },
+    take: limit * 2,
+  });
+  const refunded = new Set(rows.filter((r) => r.kind === "REFUND").map((r) => r.reference));
+  return rows
+    .filter((r) => r.kind === "SPEND" && !refunded.has(r.reference))
+    .slice(0, limit)
+    .map((r) => ({ reference: r.reference!, credits: -r.delta, at: r.createdAt }));
+}

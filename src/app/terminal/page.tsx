@@ -10,6 +10,7 @@ import { STANDARD_DOSSIER_CREDITS } from "@/server/billing/plans";
 import { creditPacksOnSale } from "@/server/billing/sales";
 import { liveSources } from "@/server/live/config";
 import { SAMPLE_ASIN } from "@/server/sources/sample";
+import { ownedDossier } from "@/services/library";
 
 export const metadata: Metadata = {
   title: "Dossier terminal — ProductRadar",
@@ -17,10 +18,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-async function Terminal() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+async function Terminal({ searchParams }: { searchParams: SearchParams }) {
   const viewer = await getViewer();
-  if (!viewer) redirect("/signin?callbackUrl=%2Fterminal");
+  const params = await searchParams;
+  const asin = typeof params.asin === "string" && /^[A-Za-z0-9]{10}$/.test(params.asin) ? params.asin.toUpperCase() : undefined;
+  const id = typeof params.id === "string" && /^[0-9a-f]{32,64}$/.test(params.id) ? params.id : undefined;
+  if (!viewer) redirect(`/signin?callbackUrl=${encodeURIComponent(asin ? `/terminal?asin=${asin}${id ? `&id=${id}` : ""}` : "/terminal")}`);
   const balance = await createDbCreditStore(db).balance(viewer.id);
+  // Free reopening: a Dossier this user already bought is shown from their copy, with no charge.
+  const reopened = asin || id ? await ownedDossier(db, viewer.id, { asin, id }) : null;
   const live = liveSources({ allowSample: true });
   return (
     <DossierRunner
@@ -29,11 +37,13 @@ async function Terminal() {
       onSale={creditPacksOnSale()}
       unavailable={live.ready ? undefined : "Live Dossiers switch on once the supplier connection (AliExpress) is approved. Nothing will be charged until then."}
       example={live.ready && live.sample ? SAMPLE_ASIN : undefined}
+      initialAsin={asin}
+      reopened={reopened}
     />
   );
 }
 
-export default function TerminalPage() {
+export default function TerminalPage({ searchParams }: { searchParams: SearchParams }) {
   return (
     <div className="min-h-full bg-zinc-50 dark:bg-zinc-950">
       <AppHeader />
@@ -45,7 +55,7 @@ export default function TerminalPage() {
           </p>
         </div>
         <Suspense fallback={<div aria-hidden="true" className="h-[4.5rem] animate-pulse rounded-lg bg-zinc-200/70 dark:bg-zinc-800/70" />}>
-          <Terminal />
+          <Terminal searchParams={searchParams} />
         </Suspense>
       </main>
     </div>

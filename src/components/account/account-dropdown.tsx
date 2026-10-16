@@ -59,6 +59,9 @@ export function AccountDropdown({
             <Link href="/dashboard" onClick={() => close()} className={item}>
               Catalog
             </Link>
+            <Link href="/library" onClick={() => close()} className={item}>
+              Dossier library
+            </Link>
             <Link href="/terminal" onClick={() => close()} className={item}>
               Dossier terminal
             </Link>

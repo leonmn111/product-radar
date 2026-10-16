@@ -92,6 +92,12 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
     with too few credits nothing is written.
   - Items are scored in the background (`after()`); a failed item is refunded. Progress at
     `GET /api/agency/bulk-upload/{jobId}`.
+- **Dossier library, built 2026-10-16:**
+  - `/library` shows the signed-in user's plan, credits, Pro free searches left and a Top up button.
+  - Below that, a table of every Dossier they've paid for and kept. `GET /api/user/history` returns it,
+    starting from the user's own credit ledger so no one else's purchases can appear.
+  - "Open Dossier" goes to `/terminal?asin=…&id=…`, which reopens that copy free.
+  - The Pro catalog stays at `/dashboard`.
 - **Human search, built 2026-10-16:**
   - `POST /api/search` searches Amazon UK for signed-in people: 1 credit, or free for Pro's first 100
     searches in each billing cycle (counted in `SearchUsage`). With neither: 402.

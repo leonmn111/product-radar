@@ -163,6 +163,8 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
   - `POST /api/agency/bulk-upload` (Agency only) → a CSV of up to 100 ASINs, 1 credit each, scored in the
     background; `GET /api/agency/bulk-upload/{jobId}` shows progress. Too few credits: nothing is charged.
   - `GET /api/agent/v2/bazaar` → the x402 Bazaar manifest of the paid agent endpoints (public).
+  - `GET /api/user/history` → the signed-in user's Dossiers (the `/library` page); reopening one at
+    `/terminal?asin=…&id=…` is free.
     Credits are taken first and returned if the Dossier can't be built. Served from the 48-hour cache when fresh.
 
 ### Turning on Stripe (test mode first)

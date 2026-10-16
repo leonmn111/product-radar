@@ -371,11 +371,16 @@ model SiwxNonce {
 // src/services/dossierStore.ts; no payment data here (the payment row points at the Dossier id).
 
 model DossierRecord {
-  id         String   @id // the Dossier's id
-  productKey String // marketplace and product id, e.g. "amazon.co.uk:B0CH33F5P2"
-  body       Json     @db.Json // the 8-part Dossier exactly as delivered (json, not jsonb: keeps the text as sent)
-  sample     Boolean  @default(false) // development sample data
-  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  id          String    @id // the Dossier's id
+  productKey  String // marketplace and product id, e.g. "amazon.co.uk:B0CH33F5P2"
+  body        Json      @db.Json // the 8-part Dossier exactly as delivered (json, not jsonb: keeps the text as sent)
+  sample      Boolean   @default(false) // development sample data
+  // A summary of the body, for listing purchases without reading every Dossier.
+  title       String?
+  verdict     String? // LAUNCH / TEST / AVOID, or WITHHELD
+  confidence  Float?
+  generatedAt DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
 
   @@index([productKey, createdAt(sort: Desc)])
 }

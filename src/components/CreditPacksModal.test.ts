@@ -43,6 +43,16 @@ describe("DossierRunner", () => {
     expect(text(runner({ cost: 1 }))).toContain("Run Dossier · 1 credit");
   });
 
+  it("shows a reopened Dossier at once, saying it was free", async () => {
+    const { buildDossier } = await import("@/services/dossierService");
+    const now = new Date("2026-10-16T12:00:00Z");
+    const listing = { market: "GB" as const, id: "B0MUGAAAA1", title: "Mug", url: "https://www.amazon.co.uk/dp/B0MUGAAAA1", image: null, price: { amount: 9.99, currency: "GBP" }, rating: null, ratingsTotal: null, sponsored: false, recentSales: null, evidence: { id: "e", provider: "rainforest", sourceUrl: "https://www.amazon.co.uk/dp/B0MUGAAAA1", observedAt: now.toISOString(), quality: 80, claim: "c" } };
+    const reopened = buildDossier({ query: "B0MUGAAAA1", ukListings: [listing], suppliers: [] }, { id: "d1", now });
+    const t = text(runner({ reopened }));
+    expect(t).toContain("Reopened from your library: the copy you bought on 2026-10-16. No credits used.");
+    expect(t).toContain("VERDICT WITHHELD");
+  });
+
   it("explains, and can't be run, while live Dossiers are off", () => {
     const html = runner({ unavailable: "Live Dossiers switch on soon." });
     expect(text(html)).toContain("Live Dossiers switch on soon.");

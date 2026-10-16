@@ -26,6 +26,8 @@ export function DossierRunner({
   onSale,
   unavailable,
   example,
+  initialAsin = "",
+  reopened,
 }: {
   balance: number;
   /** Credits a Standard Dossier costs this user (4, or 1 on Pro / Agency). */
@@ -35,11 +37,15 @@ export function DossierRunner({
   unavailable?: string;
   /** An ASIN that has data, in development sample mode. */
   example?: string;
+  /** Pre-filled ASIN (e.g. from /terminal?asin=…). */
+  initialAsin?: string;
+  /** A Dossier the user already owns, reopened from their library: shown at once, free. */
+  reopened?: Dossier | null;
 }) {
   const router = useRouter();
   const inputId = useId();
-  const [asin, setAsin] = useState("");
-  const [state, setState] = useState<State>({ kind: "idle" });
+  const [asin, setAsin] = useState(reopened?.product.identifiers.asin ?? initialAsin);
+  const [state, setState] = useState<State>(reopened ? { kind: "done", dossier: reopened, charged: 0, cache: "reopened" } : { kind: "idle" });
   const [packs, setPacks] = useState<{ open: boolean; reason?: string }>({ open: false });
   const short = (have: number) => `A Standard Dossier costs ${cost} credit${cost === 1 ? "" : "s"}; you have ${have}.`;
 
@@ -110,7 +116,12 @@ export function DossierRunner({
           </p>
         )}
         {state.kind === "running" && <p className="text-zinc-600 dark:text-zinc-400">Reading Amazon UK and suppliers for {state.asin}. This can take up to a minute.</p>}
-        {state.kind === "done" && (
+        {state.kind === "done" && state.cache === "reopened" && (
+          <p className="text-zinc-600 dark:text-zinc-400">
+            Reopened from your library: the copy you bought on {state.dossier.generatedAt.slice(0, 10)}. No credits used. Run it again for fresh data.
+          </p>
+        )}
+        {state.kind === "done" && state.cache !== "reopened" && (
           <p className="text-zinc-600 dark:text-zinc-400">
             {state.charged} credit{state.charged === 1 ? "" : "s"} used{state.cache === "hit" ? " (from a copy built in the last 48 hours)" : ""}. You have {balance} left.
           </p>
