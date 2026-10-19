@@ -22,7 +22,7 @@ const SECTIONS: LegalSection[] = [
       <p>
         <Detail value={LEGAL.operator} missing="the operator's legal name" /> runs {LEGAL.tradingName} and is the controller of your personal data under UK
         GDPR and the Data Protection Act 2018. Contact: <ContactEmail />, or <Detail value={LEGAL.postalAddress} missing="postal address" />.
-        {LEGAL.icoRegistration ? ` ICO registration number: ${LEGAL.icoRegistration}.` : ""}
+        {LEGAL.icoRegistration ? ` ICO registration: ${LEGAL.icoRegistration}.` : ""}
       </p>
     ),
   },

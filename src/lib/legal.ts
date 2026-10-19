@@ -8,13 +8,13 @@ export const LEGAL = {
   tradingName: "ProductRadar",
   website: SITE_URL,
   /** The operator's legal name, e.g. "Jane Smith, trading as ProductRadar". */
-  operator: null as string | null,
+  operator: "Leon Menalla, trading as ProductRadar" as string | null,
   /** An inbox someone reads, for legal, privacy and refund requests. */
-  contactEmail: null as string | null,
+  contactEmail: "leonmenalla@yahoo.com" as string | null,
   /** A postal address for legal notices (a business or virtual-office address works). */
-  postalAddress: null as string | null,
-  /** The ICO data protection fee registration number, if registered. */
-  icoRegistration: null as string | null,
+  postalAddress: "25 Dockenfield Close, Havant, PO9 3ST, United Kingdom" as string | null,
+  /** The ICO data protection fee registration number, or its status while registration is pending. */
+  icoRegistration: "Pending Registration" as string | null,
   lastUpdated: "19 October 2026",
 };
 
