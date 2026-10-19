@@ -6,7 +6,12 @@ const { default: sitemap } = await import("./sitemap");
 
 describe("search engine files", () => {
   it("lists only the public pages in the sitemap", () => {
-    expect(sitemap().map((e) => e.url)).toEqual(["https://theproductradar.io", "https://theproductradar.io/docs"]);
+    expect(sitemap().map((e) => e.url)).toEqual([
+      "https://theproductradar.io",
+      "https://theproductradar.io/docs",
+      "https://theproductradar.io/terms",
+      "https://theproductradar.io/privacy",
+    ]);
   });
 
   it("lets crawlers in, keeps private pages out, and points to the sitemap", () => {

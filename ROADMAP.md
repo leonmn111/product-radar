@@ -146,6 +146,11 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 
 ## Open items
 
+- **Legal details before the compliance reviews:** the Terms (`/terms`) and Privacy Policy (`/privacy`)
+  show marked placeholders until `src/lib/legal.ts` has the operator's legal name, a contact email that's
+  read, and a postal address (plus the ICO registration number, if registered). Have both pages reviewed
+  before submitting to Stripe or AliExpress.
+
 - **Agency's 500 monthly credits aren't granted yet:** recorded in `src/server/billing/plans.ts`;
   granting them on each paid invoice is the next billing slice. Agency stays off sale until then.
   (Pro's 100 free searches a month are counted and applied, since 2026-10-16.)

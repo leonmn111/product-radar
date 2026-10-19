@@ -1,3 +1,4 @@
+import { Footer } from "@/components/Footer";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@/components/analytics";
@@ -48,7 +49,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Analytics />
       </head>
       <body className="min-h-full flex flex-col">
-        <ThemeProvider defaultTheme={DEFAULT_THEME}>{children}</ThemeProvider>
+        <ThemeProvider defaultTheme={DEFAULT_THEME}>
+          {children}
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );

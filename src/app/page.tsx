@@ -548,28 +548,6 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-zinc-200 dark:border-white/10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 text-sm text-zinc-600 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 dark:text-zinc-400">
-          <p className="flex items-center gap-2 font-medium text-zinc-950 dark:text-white">
-            <Logo />
-            ProductRadar
-          </p>
-          <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link href="/docs" className={`rounded-sm hover:text-zinc-950 dark:hover:text-white ${focusRing}`}>
-              API docs
-            </Link>
-            <Link href="/signin" className={`rounded-sm hover:text-zinc-950 dark:hover:text-white ${focusRing}`}>
-              Sign in
-            </Link>
-            <Link href={GET_STARTED} className={`rounded-sm hover:text-zinc-950 dark:hover:text-white ${focusRing}`}>
-              Get started
-            </Link>
-          </nav>
-        </div>
-        <p className="mx-auto max-w-7xl px-4 pb-8 text-xs text-zinc-500 sm:px-6 lg:px-8 dark:text-zinc-400">
-          Scores and margins are calculated estimates from cited evidence, not guarantees.
-        </p>
-      </footer>
     </div>
   );
 }
