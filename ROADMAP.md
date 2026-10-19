@@ -100,6 +100,10 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
     so nothing is claimed before it's on. Meta ad signals are marked in development.
   - Every "Create a free account" goes through `/get-started`: to the Dossier terminal once live Dossiers
     are on, to the dashboard until then.
+- **Agency monthly credits, built 2026-10-19:**
+  - `invoice.payment_succeeded` for an Agency subscription (first month and each renewal) adds 500 credits
+    as a `GRANT` ledger entry, unique per invoice, and emails `SubscriptionRenewal`.
+  - Plan changes, manual invoices, unpaid invoices and Pro invoices grant nothing.
 - **Transactional email, built 2026-10-16:**
   - `src/lib/email.ts` sends through the Resend SDK: `RESEND_API_KEY`, else the existing `AUTH_RESEND_KEY`.
     A `re_mock…` key prints instead of sending, in development only.
@@ -151,9 +155,9 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
   read, and a postal address (plus the ICO registration number, if registered). Have both pages reviewed
   before submitting to Stripe or AliExpress.
 
-- **Agency's 500 monthly credits aren't granted yet:** recorded in `src/server/billing/plans.ts`;
-  granting them on each paid invoice is the next billing slice. Agency stays off sale until then.
-  (Pro's 100 free searches a month are counted and applied, since 2026-10-16.)
+- **Stripe dashboard: listen to `invoice.payment_succeeded`.** Agency's 500 monthly credits are granted
+  on that event (since 2026-10-19), so the webhook endpoint in Stripe must include it. Agency then goes on
+  sale with credit packs, when `CREDIT_PACKS_ON_SALE=on`.
 - **Bulk jobs run inside the web server:** fine on one Railway instance (a restart is picked up
   again when the job's status is next read). A queue (e.g. a Railway worker) is the step up if
   uploads get large or the site runs on more than one instance.

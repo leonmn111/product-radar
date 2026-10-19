@@ -3,14 +3,16 @@ import { appUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { CreditPurchaseReceipt } from "@/lib/emails/creditPurchaseReceipt";
+import { SubscriptionRenewal } from "@/lib/emails/subscriptionRenewal";
 import { env } from "@/lib/env";
 import { createDbCreditStore } from "@/server/billing/credits";
-import { CREDIT_PACKS, type CreditGrant } from "@/server/billing/plans";
+import { CREDIT_PACKS, PLANS, type CreditGrant, type PlanGrant } from "@/server/billing/plans";
 import { handleStripeEvent, InvalidSignatureError, verifyStripeEvent } from "@/server/billing/webhook";
 
 // POST /api/billing/webhook — Stripe → us. Signature-verified; idempotent. Subscriptions (Pro) and
 // credit packs. Also served at /api/stripe/webhook: either address works with the same signing secret.
-// A pack's first credit sends the buyer a receipt (CreditPurchaseReceipt).
+// A pack's first credit sends the buyer a receipt (CreditPurchaseReceipt); a plan's monthly credits
+// (Agency, on invoice.payment_succeeded) send SubscriptionRenewal.
 async function sendReceipt(grant: CreditGrant, baseUrl: string) {
   const user = await db.user.findUnique({ where: { id: grant.userId }, select: { email: true, platformCredits: true } });
   if (!user) return;
@@ -25,6 +27,24 @@ async function sendReceipt(grant: CreditGrant, baseUrl: string) {
       newBalance: user.platformCredits,
       purchasedAt: new Date(),
       reference: grant.sessionId,
+      libraryUrl: `${baseUrl}/library`,
+    }),
+  });
+}
+
+async function sendRenewal(grant: PlanGrant, user: { email: string; balance: number }, baseUrl: string) {
+  await sendEmail({
+    to: user.email,
+    ...SubscriptionRenewal({
+      planName: PLANS[grant.planId].name,
+      credits: grant.credits,
+      amountPaid: grant.amountPaid,
+      currency: grant.currency,
+      newBalance: user.balance,
+      periodStart: grant.periodStart,
+      periodEnd: grant.periodEnd,
+      invoiceNumber: grant.invoiceNumber,
+      firstPeriod: grant.firstPeriod,
       libraryUrl: `${baseUrl}/library`,
     }),
   });
@@ -47,7 +67,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const base = appUrl(request.nextUrl.origin);
-    const handled = await handleStripeEvent(db, event, createDbCreditStore(db), { onCredited: (grant) => sendReceipt(grant, base) });
+    const handled = await handleStripeEvent(db, event, createDbCreditStore(db), {
+      onCredited: (grant) => sendReceipt(grant, base),
+      onPlanCredited: (grant, user) => sendRenewal(grant, user, base),
+    });
     return Response.json({ received: true, ...handled });
   } catch (e) {
     console.error("[billing] webhook handling failed", event.type, event.id, e);

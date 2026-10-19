@@ -152,8 +152,9 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
   - `POST /api/billing/webhook` → signature-verified; applies `customer.subscription.*` events,
     ignores out-of-order (older) events. `active`, `trialing`, `past_due` ⇒ the subscription's plan (Pro or
     Agency); anything else ⇒ Free. A paid credit pack (`checkout.session.completed`, mode `payment`) is added
-    to `User.platformCredits` with a `CreditLedgerEntry`, once per Checkout Session. Also served at
-    `POST /api/stripe/webhook`.
+    to `User.platformCredits` with a `CreditLedgerEntry`, once per Checkout Session. A paid Agency invoice
+    (`invoice.payment_succeeded`: first month and each renewal) adds 500 credits, once per invoice, and emails
+    the renewal. Also served at `POST /api/stripe/webhook`.
   - `POST /api/stripe/checkout` `{ "tier": "starter" | "growth" | "scale" | "pro" | "agency" }` → a Checkout URL for
     a credit pack (£10 / £25 / £50 for 20 / 55 / 120 credits; 1 credit = £0.50) or a plan. Sold only with a
     Stripe test key outside production until `CREDIT_PACKS_ON_SALE=on` (Agency: test mode only until its 500 monthly credits are granted).
@@ -173,8 +174,9 @@ Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SEC
 2. Prices need no setup: checkout sets them inline from `src/server/billing/plans.ts` (Pro £29/month,
    Agency £149/month, the three credit packs).
 3. Webhook: in production add an endpoint `https://<your-site>/api/billing/webhook` in Stripe → Developers →
-   Webhooks, listening to `customer.subscription.created`, `.updated`, `.deleted` and
-   `checkout.session.completed`; copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+   Webhooks, listening to `customer.subscription.created`, `.updated`, `.deleted`,
+   `checkout.session.completed` and `invoice.payment_succeeded` (Agency's 500 monthly credits); copy its
+   signing secret into `STRIPE_WEBHOOK_SECRET`.
    Locally you can skip this — the success page confirms the payment directly — or use the Stripe CLI
    (`stripe listen --forward-to localhost:3000/api/billing/webhook`).
 4. Stripe → Settings → Billing → Customer portal: click **Save** once so "Manage Subscription & Billing" works.

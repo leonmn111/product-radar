@@ -142,3 +142,56 @@ export function creditGrantFor(session: Stripe.Checkout.Session): { grant: Credi
   if (!userId) return { grant: null, reason: "no_user" };
   return { grant: { userId, packId: pack.id, credits: pack.credits, sessionId: session.id } };
 }
+
+// ── Monthly plan credits (Agency) ────────────────────────────────────────────
+
+/** Invoices that start or renew a subscription period; others (plan changes, manual) grant nothing. */
+const PERIOD_INVOICES = new Set(["subscription_create", "subscription_cycle", "subscription"]);
+
+export type PlanGrant = {
+  planId: PlanId;
+  credits: number;
+  invoiceId: string;
+  customerId: string;
+  amountPaid: number; // minor units
+  currency: string; // ISO, upper case
+  periodStart: Date | null;
+  periodEnd: Date | null;
+  invoiceNumber: string | null;
+  firstPeriod: boolean; // the subscription's first invoice, not a renewal
+};
+
+/**
+ * The monthly credits a paid subscription invoice brings, or null with the reason it brings none.
+ * The plan is the one our checkout tagged the subscription with (Stripe snapshots the subscription's
+ * metadata onto each invoice); an untagged invoice counts as Agency only by its £149 subscription line.
+ * The credit count always comes from the catalogue.
+ */
+export function planGrantFor(invoice: Stripe.Invoice): { grant: PlanGrant } | { grant: null; reason: string } {
+  if (!PERIOD_INVOICES.has(invoice.billing_reason ?? "")) return { grant: null, reason: "not_a_period_invoice" };
+  if (invoice.status !== "paid") return { grant: null, reason: "not_paid" };
+  const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
+  if (!customerId || !invoice.id) return { grant: null, reason: "no_customer" };
+  const tagged = invoice.parent?.subscription_details?.metadata?.plan;
+  const lines = invoice.lines?.data ?? [];
+  const agencyLine = lines.some((l) => l.amount === PLANS.agency.pricePence && l.parent?.type === "subscription_item_details");
+  const planId: PlanId | null = tagged === "agency" ? "agency" : tagged === "pro" ? "pro" : agencyLine && invoice.currency === CURRENCY ? "agency" : null;
+  if (!planId) return { grant: null, reason: "unknown_plan" };
+  const credits = PLANS[planId].monthly.credits ?? 0;
+  if (credits <= 0) return { grant: null, reason: "plan_has_no_monthly_credits" };
+  const period = lines[0]?.period;
+  return {
+    grant: {
+      planId,
+      credits,
+      invoiceId: invoice.id,
+      customerId,
+      amountPaid: invoice.amount_paid,
+      currency: invoice.currency.toUpperCase(),
+      periodStart: period?.start ? new Date(period.start * 1000) : null,
+      periodEnd: period?.end ? new Date(period.end * 1000) : null,
+      invoiceNumber: invoice.number,
+      firstPeriod: invoice.billing_reason === "subscription_create",
+    },
+  };
+}

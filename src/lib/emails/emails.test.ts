@@ -44,3 +44,27 @@ describe("BulkJobCompleteAlert", () => {
     expect(a.html).toContain('href="https://x.example/&quot;onmouseover=&quot;"');
   });
 });
+
+describe("SubscriptionRenewal", () => {
+  it("states the plan, credits added, amount paid, new balance, period and invoice", async () => {
+    const { SubscriptionRenewal } = await import("./subscriptionRenewal");
+    const r = SubscriptionRenewal({
+      planName: "Agency",
+      credits: 500,
+      amountPaid: 14900,
+      currency: "GBP",
+      newBalance: 512,
+      periodStart: new Date("2026-11-01T00:00:00Z"),
+      periodEnd: new Date("2026-12-01T00:00:00Z"),
+      invoiceNumber: "PR-0002",
+      firstPeriod: false,
+      libraryUrl: "https://theproductradar.io/library",
+    });
+    expect(r.subject).toBe("Your Agency plan renewed: 500 credits added");
+    for (const s of ["Agency", "+500", "£149.00", "512 credits", "2026-11-01 to 2026-12-01", "PR-0002"]) {
+      expect(r.html).toContain(s);
+      expect(r.text).toContain(s);
+    }
+    expect(r.html).not.toMatch(/<img|<script/i);
+  });
+});

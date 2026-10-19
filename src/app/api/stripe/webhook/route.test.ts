@@ -12,6 +12,8 @@ const mem = vi.hoisted(() => ({
   users: new Map<string, { platformCredits: number; stripeCustomerId: string | null }>([
     ["user_1", { platformCredits: 0, stripeCustomerId: null }],
     ["user_2", { platformCredits: 0, stripeCustomerId: null }],
+    ["agency_1", { platformCredits: 7, stripeCustomerId: "cus_agency_1" }],
+    ["pro_1", { platformCredits: 0, stripeCustomerId: "cus_pro_1" }],
   ]),
   ledger: [] as Record<string, unknown>[],
 }));
@@ -30,11 +32,15 @@ vi.mock("@/lib/db", async () => {
       return { count: 1 };
     }),
     findUniqueOrThrow: vi.fn(async ({ where }: { where: { id: string } }) => ({ ...mem.users.get(where.id)! })),
-    findUnique: vi.fn(async ({ where }: { where: { id: string } }) => (mem.users.has(where.id) ? { email: `${where.id}@example.com`, ...mem.users.get(where.id)! } : null)),
+    findUnique: vi.fn(async ({ where }: { where: { id?: string; stripeCustomerId?: string } }) => {
+      const id = where.id ?? [...mem.users].find(([, u]) => u.stripeCustomerId === where.stripeCustomerId)?.[0];
+      return id && mem.users.has(id) ? { id, email: `${id}@example.com`, ...mem.users.get(id)! } : null;
+    }),
   };
   const creditLedgerEntry = {
     create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
-      if (data.stripeSessionId && mem.ledger.some((e) => e.stripeSessionId === data.stripeSessionId)) {
+      const clash = (k: "stripeSessionId" | "stripeInvoiceId") => data[k] && mem.ledger.some((e) => e[k] === data[k]);
+      if (clash("stripeSessionId") || clash("stripeInvoiceId")) {
         throw new Prisma.PrismaClientKnownRequestError("Unique constraint failed", { code: "P2002", clientVersion: "test" });
       }
       mem.ledger.push(data);
@@ -139,5 +145,73 @@ describe("POST /api/stripe/webhook", () => {
     const res = await send(completed(pack({ id: "cs_forged" })), "whsec_someone_else");
     expect(res.status).toBe(400);
     expect(balance("user_1")).toBe(175);
+  });
+});
+
+// ── Agency's monthly credits (invoice.payment_succeeded) ───────────────────────
+
+const invoicePaid = (invoice: Record<string, unknown>) =>
+  JSON.stringify({ id: `evt_${++n}`, object: "event", type: "invoice.payment_succeeded", created: 1_800_000_000, data: { object: { object: "invoice", ...invoice } } });
+const invoice = (over: Record<string, unknown> = {}) => ({
+  id: "in_agency_oct",
+  number: "PR-0001",
+  status: "paid",
+  billing_reason: "subscription_cycle",
+  customer: "cus_agency_1",
+  currency: "gbp",
+  amount_paid: 14900,
+  parent: { type: "subscription_details", subscription_details: { subscription: "sub_1", metadata: { userId: "agency_1", plan: "agency" } } },
+  lines: { object: "list", data: [{ amount: 14900, period: { start: 1_800_000_000, end: 1_802_678_400 }, parent: { type: "subscription_item_details" } }] },
+  ...over,
+});
+
+describe("POST /api/stripe/webhook: Agency renewals", () => {
+  it("adds exactly 500 credits once per paid Agency invoice, and emails the renewal once", async () => {
+    const before = balance("agency_1")!;
+    const first = await send(invoicePaid(invoice()));
+    expect(await first.json()).toEqual({ received: true, type: "invoice.payment_succeeded", result: "credited" });
+    const again = await send(invoicePaid(invoice()));
+    expect((await again.json()).result).toBe("already_credited");
+    expect(balance("agency_1")).toBe(before + 500);
+    expect(mem.ledger.filter((e) => e.stripeInvoiceId === "in_agency_oct")).toEqual([
+      { userId: "agency_1", kind: "GRANT", delta: 500, balanceAfter: before + 500, stripeInvoiceId: "in_agency_oct", reference: "plan:agency" },
+    ]);
+    const renewal = sent.filter((e) => e.to === "agency_1@example.com");
+    expect(renewal.map((e) => e.subject)).toEqual(["Your Agency plan renewed: 500 credits added"]);
+    expect(renewal[0].text).toContain("£149.00");
+    expect(renewal[0].text).toContain(`${before + 500} credits`);
+    expect(renewal[0].text).toContain("PR-0001");
+  });
+
+  it("grants the first month too, welcoming the new subscriber", async () => {
+    await send(invoicePaid(invoice({ id: "in_agency_first", billing_reason: "subscription_create" })));
+    expect(sent.at(-1)?.subject).toBe("Welcome to Agency: 500 credits added");
+  });
+
+  it("knows an untagged Agency invoice by its £149 subscription line", async () => {
+    const res = await send(invoicePaid(invoice({ id: "in_agency_untagged", parent: { type: "subscription_details", subscription_details: { subscription: "sub_1", metadata: {} } } })));
+    expect((await res.json()).result).toBe("credited");
+  });
+
+  it("grants nothing for Pro, for plan changes or manual invoices, or for unpaid ones", async () => {
+    const cases: [Record<string, unknown>, string][] = [
+      [{ id: "in_pro", customer: "cus_pro_1", amount_paid: 2900, parent: { type: "subscription_details", subscription_details: { metadata: { plan: "pro" } } }, lines: { data: [{ amount: 2900, parent: { type: "subscription_item_details" } }] } }, "plan_has_no_monthly_credits"],
+      [{ id: "in_update", billing_reason: "subscription_update" }, "not_a_period_invoice"],
+      [{ id: "in_manual", billing_reason: "manual" }, "not_a_period_invoice"],
+      [{ id: "in_open", status: "open" }, "not_paid"],
+    ];
+    for (const [over, reason] of cases) {
+      const res = await send(invoicePaid(invoice(over)));
+      expect(await res.json()).toMatchObject({ result: "ignored", reason });
+    }
+    expect(balance("pro_1")).toBe(0);
+  });
+
+  it("answers Stripe, without retrying forever, for a paid invoice whose customer has no account", async () => {
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await send(invoicePaid(invoice({ id: "in_orphan", customer: "cus_nobody" })));
+    expect([res.status, (await res.json()).reason]).toEqual([200, "unknown_customer"]);
+    expect(quiet).toHaveBeenCalled();
+    quiet.mockRestore();
   });
 });

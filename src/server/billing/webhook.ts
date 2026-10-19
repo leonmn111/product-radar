@@ -4,7 +4,7 @@
 import Stripe from "stripe";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { UnknownUserError, type CreditStore } from "./credits";
-import { creditGrantFor, type CreditGrant } from "./plans";
+import { creditGrantFor, planGrantFor, type CreditGrant, type PlanGrant } from "./plans";
 import { applySubscription, snapshotFromStripe, type ApplyResult } from "./subscription";
 
 export class InvalidSignatureError extends Error {}
@@ -23,6 +23,8 @@ export type HandledEvent = { type: string; result: ApplyResult | "linked" | "cre
 export type WebhookHooks = {
   /** After a pack is credited for the first time (never on a repeat delivery), e.g. to send the receipt. */
   onCredited?: (grant: CreditGrant) => Promise<void>;
+  /** After a plan's monthly credits are granted for an invoice (once per invoice), e.g. the renewal email. */
+  onPlanCredited?: (grant: PlanGrant, user: { id: string; email: string; balance: number }) => Promise<void>;
 };
 
 /**
@@ -68,6 +70,25 @@ export async function handleStripeEvent(db: PrismaClient, event: Stripe.Event, c
         data: { stripeCustomerId: customerId },
       });
       return { type: event.type, result: count ? "linked" : "ignored" };
+    }
+
+    case "invoice.payment_succeeded": {
+      // A plan's monthly credits (Agency: 500), once per paid subscription invoice.
+      const found = planGrantFor(event.data.object);
+      if (!found.grant || !credits) return { type: event.type, result: "ignored", reason: found.grant ? "no_credit_store" : found.reason };
+      const user = await db.user.findUnique({ where: { stripeCustomerId: found.grant.customerId }, select: { id: true, email: true } });
+      if (!user) {
+        // Paid, but no account has this Stripe customer: retrying can't help. Logged for a manual fix.
+        console.error("[billing] PAID plan invoice for an unknown customer: grant the credits by hand", event.data.object.id, found.grant.customerId);
+        return { type: event.type, result: "ignored", reason: "unknown_customer" };
+      }
+      const { granted, balance } = await credits.grantPlanCredits(user.id, found.grant);
+      if (granted && hooks.onPlanCredited) {
+        await hooks.onPlanCredited(found.grant, { id: user.id, email: user.email, balance }).catch((e) =>
+          console.error("[billing] after-grant step failed (credits are in)", found.grant.invoiceId, e),
+        );
+      }
+      return { type: event.type, result: granted ? "credited" : "already_credited" };
     }
 
     default:

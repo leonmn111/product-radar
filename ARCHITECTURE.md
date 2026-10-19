@@ -140,6 +140,9 @@ for a cached copy. It gets the buyer's own id, a note saying it came from the ca
     a purchase once per Stripe session, a spend never below zero (also a CHECK constraint), and a refund when a
     request fails.
   - `POST /api/dossier/{asin}` spends credits on a Standard Dossier.
+  - Agency's 500 monthly credits come from `invoice.payment_succeeded`. The invoice must start or renew
+    the period and be paid; its plan is the subscription's `plan` tag, else the £149 line.
+    `CreditLedgerEntry.stripeInvoiceId` is unique, so each invoice grants once (a `GRANT` entry).
   - Emails (`src/lib/email.ts`, Resend; templates in `src/lib/emails/`): a receipt when a pack is first
     credited, and an alert when an Agency bulk job finishes. A failed send is logged and changes nothing
     else.

@@ -6,7 +6,7 @@
 // CHECK constraint behind it), and a failed request's spend is refunded.
 
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
-import type { CreditGrant } from "./plans";
+import type { CreditGrant, PlanGrant } from "./plans";
 
 export class InsufficientCreditsError extends Error {
   constructor(
@@ -21,6 +21,8 @@ export class InsufficientCreditsError extends Error {
 export interface CreditStore {
   /** Adds a paid pack's credits. Idempotent per Stripe session: false if it was already credited. */
   grant(grant: CreditGrant): Promise<boolean>;
+  /** Adds a plan's monthly credits for one paid invoice. Idempotent per invoice; returns the balance after. */
+  grantPlanCredits(userId: string, grant: Pick<PlanGrant, "planId" | "credits" | "invoiceId">): Promise<{ granted: boolean; balance: number }>;
   /** Takes `credits` for `reference` (e.g. a Dossier id); the balance after. Throws InsufficientCreditsError. */
   spend(userId: string, credits: number, reference: string): Promise<number>;
   /** Gives back a spend whose request failed; the balance after. */
@@ -42,7 +44,7 @@ const positive = (n: number) => {
 };
 
 export function createDbCreditStore(db: PrismaClient): CreditStore {
-  async function add(userId: string, credits: number, entry: { kind: "PURCHASE" | "REFUND"; stripeSessionId?: string; reference?: string }) {
+  async function add(userId: string, credits: number, entry: { kind: "PURCHASE" | "REFUND" | "GRANT"; stripeSessionId?: string; stripeInvoiceId?: string; reference?: string }) {
     return db.$transaction(async (tx) => {
       const { count } = await tx.user.updateMany({ where: { id: userId }, data: { platformCredits: { increment: positive(credits) } } });
       if (count === 0) throw new UnknownUserError(userId);
@@ -60,6 +62,20 @@ export function createDbCreditStore(db: PrismaClient): CreditStore {
       } catch (e) {
         // The session was credited before: the whole transaction (balance included) rolled back.
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return false;
+        throw e;
+      }
+    },
+
+    async grantPlanCredits(userId, g) {
+      try {
+        const balance = await add(userId, g.credits, { kind: "GRANT", stripeInvoiceId: g.invoiceId, reference: `plan:${g.planId}` });
+        return { granted: true, balance };
+      } catch (e) {
+        // This invoice was granted before: the whole transaction (balance included) rolled back.
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+          const user = await db.user.findUnique({ where: { id: userId }, select: { platformCredits: true } });
+          return { granted: false, balance: user?.platformCredits ?? 0 };
+        }
         throw e;
       }
     },

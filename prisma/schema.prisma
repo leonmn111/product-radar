@@ -85,6 +85,7 @@ enum CreditEntryKind {
   PURCHASE // a paid credit pack
   SPEND // credits spent on a Dossier
   REFUND // a spend given back because the request failed
+  GRANT // a plan's monthly credits (Agency), on a paid subscription invoice
 }
 
 model CreditLedgerEntry {
@@ -95,6 +96,7 @@ model CreditLedgerEntry {
   delta           Int // + purchased or refunded, − spent
   balanceAfter    Int // the user's balance right after this entry
   stripeSessionId String?         @unique // PURCHASE: the Checkout Session that paid for it
+  stripeInvoiceId String?         @unique // GRANT: the subscription invoice it was granted for (once per invoice)
   reference       String? // SPEND / REFUND: what it was for (the Dossier id)
   createdAt       DateTime        @default(now()) @db.Timestamptz(3)
 

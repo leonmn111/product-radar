@@ -13,7 +13,7 @@ const stripeTestMode = () => env.NODE_ENV !== "production" && /^(sk|rk)_test_/.t
 export const creditPacksOnSale = () => env.CREDIT_PACKS_ON_SALE === "on" || stripeTestMode();
 
 /**
- * Stripe test mode only, whatever CREDIT_PACKS_ON_SALE says: Agency includes 500 credits a month,
- * and granting them on each paid invoice isn't built yet.
+ * The same owner switch as credit packs: Agency's 500 monthly credits are granted on each paid
+ * invoice (invoice.payment_succeeded, webhook.ts), so nothing else holds it back.
  */
-export const agencyOnSale = () => stripeTestMode();
+export const agencyOnSale = () => creditPacksOnSale();
