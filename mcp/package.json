@@ -1,7 +1,7 @@
 {
   "name": "productradar-mcp",
-  "version": "0.1.4",
-  "description": "ProductRadar as an MCP tool: evidence-backed product opportunities and dossiers, paid per call in USDC over x402.",
+  "version": "0.2.0",
+  "description": "ProductRadar as an MCP tool: 8-part product Dossiers for UK/EU sellers (landed margin after VAT, duty, fees and ads; every number cites its source), paid per call in USDC over x402.",
   "license": "UNLICENSED",
   "type": "module",
   "bin": {

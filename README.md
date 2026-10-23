@@ -240,9 +240,12 @@ garbage headers are refused and that a failed request isn't charged.
 ### MCP server (`mcp/`)
 
 A stdio MCP server so Claude Desktop, Cursor, Claude Code and agent frameworks can use ProductRadar as
-native tools: `find_product_opportunities`, `get_product_dossier` (both paid, settled automatically with the
-official `@x402/fetch` client from the user's own wallet) and `get_payment_status` (free). Spending caps:
-`PRODUCTRADAR_MAX_PRICE_USDC` (default 0.10 per call) and `PRODUCTRADAR_BUDGET_USDC` (default 1.00 per session).
+native tools, on the v2 agent API since 0.2.0: `search_products` (`/api/agent/v2/search`, $0.01) and
+`get_product_dossier` (`/api/agent/v2/dossier/{asin}`, $2.00), both paid and settled automatically with the
+official `@x402/fetch` client from the user's own wallet, and `get_payment_status` (free). Spending caps:
+`PRODUCTRADAR_MAX_PRICE_USDC` (default 2.00 per call) and `PRODUCTRADAR_BUDGET_USDC` (default 5.00 per session).
+Discovery: `/llms.txt` describes the site and API for language models, and `glama.json` (repo root, also
+served at `/glama.json`) names the maintainer for the Glama MCP directory.
 
 It is a separate package with its own dependencies, bundled into one file and served from this site:
 `npm run mcp:build` → `public/mcp/productradar-mcp-<version>.tgz` (commit it; older versions stay published

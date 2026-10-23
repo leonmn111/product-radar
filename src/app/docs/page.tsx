@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 import { env } from "@/lib/env";
 import { agentPaymentStatus } from "@/server/payments/x402/config";
+import { BAZAAR } from "@/server/payments/x402/discovery";
 import { encodeHeader, paymentRequiredBody } from "@/server/payments/x402/protocol";
 import mcpPackage from "../../../mcp/package.json";
 import { CodeBlock } from "./code-block";
@@ -14,6 +15,7 @@ import { CodeBlock } from "./code-block";
 
 const SITE = (env.APP_URL ?? "https://theproductradar.io").replace(/\/+$/, "");
 const MCP_TARBALL = `${SITE}/mcp/productradar-mcp-${mcpPackage.version}.tgz`;
+const priceOf = (path: string) => BAZAAR.find((e) => e.path === path)?.priceUsdc ?? "?";
 
 const TITLE = "Agent API & MCP docs | ProductRadar";
 // Kept under ~155 characters, the length search results show.
@@ -402,7 +404,7 @@ async function DocsMain() {
       productradar: {
         command: "npx",
         args: ["-y", MCP_TARBALL],
-        env: { PRODUCTRADAR_WALLET_PRIVATE_KEY: "0xYOUR_AGENT_WALLET_KEY", PRODUCTRADAR_BUDGET_USDC: "1.00" },
+        env: { PRODUCTRADAR_WALLET_PRIVATE_KEY: "0xYOUR_AGENT_WALLET_KEY", PRODUCTRADAR_BUDGET_USDC: "5.00" },
       },
     },
   });
@@ -709,18 +711,18 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
           head={["Tool", "Cost", "What it returns"]}
           rows={[
             [
-              <C key="f">find_product_opportunities</C>,
+              <C key="f">search_products</C>,
               <span key="p" className="whitespace-nowrap">
-                {status.priceUsdc} USDC
+                {priceOf("/api/agent/v2/search")} USDC
               </span>,
-              "Plain-words search; ranked products with scores, confidence, best offer, margin and arbitrage ratings (eBay and own shop), and top evidence",
+              "Plain-words search of Amazon UK; the 8-part Dossier for the product most listings agree on",
             ],
             [
               <C key="d">get_product_dossier</C>,
               <span key="p" className="whitespace-nowrap">
-                {status.priceUsdc} USDC
+                {priceOf("/api/agent/v2/dossier/:asin")} USDC
               </span>,
-              "Verdict, every score and its evidence, margin and arbitrage, profit estimate, supplier search, Shopify draft",
+              "The Standard 8-part Dossier for one Amazon UK product (ASIN): verdict, resellability, UK/EU landed margin after VAT, duty, fees and ads, momentum, saturation, supplier matches, cited evidence, exports",
             ],
             [<C key="s">get_payment_status</C>, "Free", "Wallet address, spending caps, payments made this session"],
           ]}
@@ -757,10 +759,10 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
               "none",
               "The wallet that pays. Without it, paid tools explain how to add one.",
             ],
-            [<C key="m">PRODUCTRADAR_MAX_PRICE_USDC</C>, "0.10", "Never pay more than this for a single call."],
+            [<C key="m">PRODUCTRADAR_MAX_PRICE_USDC</C>, "2.00", "Never pay more than this for a single call."],
             [
               <C key="b">PRODUCTRADAR_BUDGET_USDC</C>,
-              "1.00",
+              "5.00",
               "Never spend more than this per session (restart to reset).",
             ],
             [<C key="u">PRODUCTRADAR_API_URL</C>, SITE, "The API to call."],

@@ -1,6 +1,7 @@
 // ProductRadar MCP server (stdio). Gives Claude Desktop, Cursor, Claude Code
-// and any MCP-capable agent framework ProductRadar's product research as native
-// tools. Paid tools settle automatically over x402 in USDC from the wallet in
+// and any MCP-capable agent framework ProductRadar's 8-part product Dossiers as
+// native tools, from the v2 agent API (/api/agent/v2). Paid tools settle
+// automatically over x402 in USDC from the wallet in
 // PRODUCTRADAR_WALLET_PRIVATE_KEY, within a per-call cap and a per-session budget.
 //
 // stdout carries the MCP protocol, so every log line goes to stderr.
@@ -38,8 +39,9 @@ function usdcSetting(name: string, fallback: string): bigint {
 }
 const formatUsdc = (atomic: bigint) => (Number(atomic) / 1e6).toFixed(6).replace(/\.?0+$/, "");
 
-const MAX_PRICE = usdcSetting("PRODUCTRADAR_MAX_PRICE_USDC", "0.10");
-const BUDGET = usdcSetting("PRODUCTRADAR_BUDGET_USDC", "1.00");
+// The defaults let one $2.00 Dossier through, and cap a session at $5.00.
+const MAX_PRICE = usdcSetting("PRODUCTRADAR_MAX_PRICE_USDC", "2.00");
+const BUDGET = usdcSetting("PRODUCTRADAR_BUDGET_USDC", "5.00");
 
 const key = process.env.PRODUCTRADAR_WALLET_PRIVATE_KEY?.trim();
 if (key && !/^0x[0-9a-fA-F]{64}$/.test(key)) fail("PRODUCTRADAR_WALLET_PRIVATE_KEY must be 0x followed by 64 hex characters");
@@ -123,7 +125,8 @@ async function callApi(tool: string, path: string): Promise<CallToolResult> {
     );
   }
   if (!res.ok) {
-    return toolError(`ProductRadar answered ${res.status}: ${String(body?.message ?? body?.error ?? res.statusText)}. Nothing was charged.`);
+    const said = String(body?.message ?? body?.error ?? res.statusText).replace(/\s*$/, "");
+    return toolError(`ProductRadar answered ${res.status}: ${said}${/not (been )?charged|not asked to pay/i.test(said) ? "" : " Nothing was charged."}`);
   }
 
   const content = [text(JSON.stringify(body, null, 2))];
@@ -150,61 +153,45 @@ const server = new McpServer(
   { name: "productradar", title: "ProductRadar", version: pkg.version },
   {
     instructions:
-      "ProductRadar ranks e-commerce product opportunities using scores calculated from sourced, timestamped evidence. " +
-      "Start with find_product_opportunities (search in plain words), then call get_product_dossier for the few products " +
-      "worth a closer look. " +
-      "Both are paid per call in USDC; get_payment_status is free. Scores, verdicts and margins are estimates, not guarantees: " +
-      "cite the evidence sources when you report them. A margin's wholesale range is a US Census store-type average, " +
-      "not a supplier quote; its two arbitrage ratings (reselling on eBay, or in your own shop at card fees) come only from " +
-      "store prices ProductRadar captured.",
+      "ProductRadar builds an 8-part Dossier for an Amazon UK product: verdict, resellability, UK/EU landed margin, " +
+      "momentum, saturation, supplier matches, evidence and exports. Start with search_products (plain words, $0.01) to " +
+      "find the product most Amazon UK listings agree on; call get_product_dossier ($2.00) with an ASIN for one product. " +
+      "Both are paid per call in USDC over x402; get_payment_status is free. The landed margin is calculated after VAT, " +
+      "import duty, marketplace fees and advertising, from sourced supplier and retail prices: every number cites its " +
+      "source in the evidence list, and a component that can't be sourced is left out and named, never guessed. Parts " +
+      "below their confidence gate (0.5 for the verdict, 0.7 for every number) are withheld with what evidence is missing. " +
+      "Scores, verdicts and margins are calculated estimates, not guarantees: cite the evidence when you report them.",
   },
 );
 
 const paid = { readOnlyHint: true, openWorldHint: true, idempotentHint: false } as const;
+const DOSSIER_PARTS =
+  "verdict (LAUNCH / TEST / AVOID, with its confidence), resellability flags, UK/EU landed margin (after VAT, duty, " +
+  "fees and ads), momentum, saturation, up to 3 supplier matches, the evidence list (source URL, time, quality) and " +
+  "exports (a Shopify import CSV link, once the parts it needs are shown)";
 
 server.registerTool(
-  "find_product_opportunities",
+  "search_products",
   {
-    title: "Find product opportunities",
+    title: "Search products",
     description:
-      "Search and rank e-commerce product opportunities. Describe what you want in plain words (query), optionally within a " +
-      "category. Each result has an opportunity score (0–100, a calculated estimate) with a confidence (0–1), " +
-      "quality/value/demand/sentiment/trend scores, the best current offer, the top cited evidence (source URL, timestamp, " +
-      "quality score) and the query words it matched. Each also has margin insights: an estimated wholesale cost range and " +
-      "gross margin spread (amount and %) from US Census retail benchmarks, and two arbitrage ratings (High Arbitrage / " +
-      "Moderate / Retail Only) from real price gaps between stores: margin.arbitrage after eBay fees and " +
-      "margin.arbitrageOwnStore after own-shop card fees, each with its sources. " +
-      "Every response lists availableCategories. Pass a result's product.id " +
-      "to get_product_dossier for the full picture. Paid: one x402 micro-payment in USDC per call.",
+      "Search Amazon UK in plain words and get the 8-part ProductRadar Dossier for the product most listings agree on " +
+      "(synonyms are searched too when too few agree): " +
+      DOSSIER_PARTS +
+      ". Parts below their confidence gate are withheld, with what evidence is missing. Use product.identifiers.asin " +
+      "with get_product_dossier for a specific product. Paid: one x402 micro-payment of 0.01 USDC per call; nothing is " +
+      "charged when no listing matches or a source fails.",
     inputSchema: {
       query: z
         .string()
-        .max(200)
-        .optional()
-        .describe(
-          'What to look for, in plain words, e.g. "wireless earbuds", "pizza oven" or "moisturizer". Matches product names, ' +
-            "brands, categories and descriptions, ignoring case, plurals and British/American spelling; products matching " +
-            "more of the words rank first. Omit to rank everything.",
-        ),
-      category: z
-        .string()
-        .max(100)
-        .optional()
-        .describe(
-          "Optional category to narrow to, e.g. beauty, gadgets or tech-accessories. A value that isn't one of " +
-            "availableCategories is searched for like query words instead.",
-        ),
-      limit: z.number().int().min(1).max(25).default(10).describe("How many products to return (1–25)."),
-      includeSample: z.boolean().default(false).describe("Also include ProductRadar's demo products (marked isSample)."),
+        .trim()
+        .min(2)
+        .max(120)
+        .describe('What to look for, in plain words, e.g. "ceramic coffee mug", "magnetic power bank" or "pet hair remover".'),
     },
     annotations: paid,
   },
-  async ({ query, category, limit, includeSample }) => {
-    const q = new URLSearchParams({ limit: String(limit), includeSample: String(includeSample) });
-    if (query) q.set("q", query);
-    if (category) q.set("category", category);
-    return callApi("find_product_opportunities", `/api/agent/v1/opportunity?${q}`);
-  },
+  async ({ query }) => callApi("search_products", `/api/agent/v2/search?${new URLSearchParams({ q: query })}`),
 );
 
 server.registerTool(
@@ -212,17 +199,20 @@ server.registerTool(
   {
     title: "Get product dossier",
     description:
-      "The full Opportunity Dossier for one product: a rule-based verdict (High Potential / Moderate Risk / Crowded Market) " +
-      "with its confidence, every score and the evidence it used, all observed offers, the margin insights (wholesale range, " +
-      "gross margin spread, arbitrage ratings for eBay and for your own shop), a profit estimate from the observed " +
-      "retail price (assumptions stated), supplier search keywords and links, a draft Shopify import CSV, and up to 50 cited " +
-      "sources. Paid: one x402 micro-payment in USDC per call.",
+      "The Standard 8-part ProductRadar Dossier for one Amazon UK product, by its ASIN: its product page (price, brand, " +
+      "seller, category), other listings of it and supplier matches, giving " +
+      DOSSIER_PARTS +
+      ". Served from a 48-hour cache when a fresh copy exists. Paid: one x402 payment of 2.00 USDC per call.",
     inputSchema: {
-      productId: z.uuid().describe("A product.id returned by find_product_opportunities."),
+      asin: z
+        .string()
+        .trim()
+        .regex(/^[A-Za-z0-9]{10}$/, "a 10-character Amazon ASIN")
+        .describe("The Amazon UK ASIN, e.g. B0CH33F5P2 (from an amazon.co.uk link, or product.identifiers.asin in a search result)."),
     },
     annotations: paid,
   },
-  async ({ productId }) => callApi("get_product_dossier", `/api/agent/v1/dossier?${new URLSearchParams({ productId })}`),
+  async ({ asin }) => callApi("get_product_dossier", `/api/agent/v2/dossier/${asin.toUpperCase()}`),
 );
 
 server.registerTool(
