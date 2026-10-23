@@ -257,7 +257,7 @@ describe("GET /api/agent/v2/dossier/{asin}", () => {
   });
 
   it("says live Dossiers aren't on yet, before payment, unless a buyer is reopening one", async () => {
-    vi.mocked(liveSources).mockReturnValue({ ready: false, missing: ["supplier source: the AliExpress affiliate API isn't connected yet"] });
+    vi.mocked(liveSources).mockReturnValue({ ready: false, missing: ["supplier source: the AliExpress Drop Shipping API isn't connected yet"] });
     const res = await call(ASIN);
     expect([res.status, res.headers.get(HEADER_PRICE)]).toEqual([503, "2.00"]);
   });

@@ -135,7 +135,7 @@ const SECTIONS: LegalSection[] = [
         <ul>
           <li>Amazon listings and product pages, through the Rainforest API;</li>
           <li>Amazon price and sales-rank history, through Keepa;</li>
-          <li>Supplier listings, through the AliExpress Open Platform (affiliate) API;</li>
+          <li>Supplier listings, through the AliExpress Open Platform (Drop Shipping) API;</li>
           <li>Search interest, from Google Trends through SerpApi.</li>
         </ul>
         <p>

@@ -41,8 +41,9 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 
 ### Phase 1: suppliers and history (weeks 2–4, to 13 Nov)
 
-- **Supplier matching:** the top 3 1688 / AliExpress matches with MOQ and delivery days. The AliExpress
-  connector exists and waits for affiliate approval; 1688 needs a licensed provider.
+- **Supplier matching:** the top 3 1688 / AliExpress matches with MOQ and delivery days. AliExpress is
+  connected through its Drop Shipping API (2026-10-23); its shipping quote (`aliexpress.ds.freight.query`,
+  verified live) is the next step for the shipping line of the margin. 1688 needs a licensed provider.
 - **Image matching:** proves a supplier listing shows the exact white-label item. *Scaffolded
   2026-10-16:* `src/engine/imageMatch.ts` has the typed interface and a SIMULATED score (random
   0.6–0.99), and confidence already counts image similarity alongside title similarity. The simulated
@@ -145,7 +146,8 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 - **Still standing from 2026-10-15:**
   - a $50/month provider budget to start;
   - Rainforest for Amazon listings (connected);
-  - the official AliExpress affiliate API (applied for, awaiting approval);
+  - the official AliExpress Open Platform: app 555220 is a Drop Shipping app (the affiliate API
+    refuses it), connected on 2026-10-23;
   - the v1 site stays up.
 
 ## Open items
@@ -154,6 +156,13 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
   show marked placeholders until `src/lib/legal.ts` has the operator's legal name, a contact email that's
   read, and a postal address (plus the ICO registration number, if registered). Have both pages reviewed
   before submitting to Stripe or AliExpress.
+
+- **AliExpress: authorize the app again before 22 December 2026.** The Drop Shipping API acts for the
+  owner's AliExpress account through an access token (30 days), which the app renews by itself with the
+  refresh token. Renewing doesn't extend the refresh token, which ends 60 days after authorization
+  (2026-10-23 → 2026-12-22). Before then, open the authorization link (`client_id=555220`,
+  `redirect_uri=https://theproductradar.io`), exchange the code within minutes, and set the four
+  `ALIEXPRESS_*TOKEN*` variables in Railway. Without it, supplier searches fail from that date.
 
 - **Stripe dashboard: listen to `invoice.payment_succeeded`.** Agency's 500 monthly credits are granted
   on that event (since 2026-10-19), so the webhook endpoint in Stripe must include it. Agency then goes on

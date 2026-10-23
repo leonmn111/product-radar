@@ -1,15 +1,15 @@
 // Development sample sources for the live-search page: no provider calls, no cost. Retail is
 // REAL recorded Rainforest responses (amazon.co.uk: the "magnetic power bank" search, 2026-10-15,
 // and the product page of B0CH33F5P2, 2026-10-16); the
-// AliExpress side is SAMPLE data until the affiliate account is approved. Only the recorded
+// AliExpress side is SAMPLE (made-up) offers in the Drop Shipping API's shape. Only the recorded
 // query and product have data; anything else returns nothing. Keepa history is SAMPLE (made-up)
 // data too, for the sample product. Never used in production.
 
 import type { QueryBudget } from "@/server/live/budget";
 import type { Market } from "@/server/live/types";
-import { parseProductQuery, type ProductQueryResponse } from "./aliexpress/parse";
-import aliexpressGB from "./aliexpress/fixtures/sample-product-query-GB.json";
-import aliexpressUS from "./aliexpress/fixtures/sample-product-query-US.json";
+import aliexpressGB from "./aliexpress/fixtures/sample-text-search-GB.json";
+import aliexpressUS from "./aliexpress/fixtures/sample-text-search-US.json";
+import { parseTextSearch, type TextSearchResponse } from "./aliexpress/parse";
 import keepaSample from "./keepa/fixtures/SAMPLE-not-real-product-GB.json";
 import { parseKeepaHistory } from "./keepa/index";
 import type { KeepaProductResponse } from "./keepa/types";
@@ -42,7 +42,7 @@ export const sampleSupplierSource: SupplierSource = {
   async search(term: string, shipTo: Market, budget: QueryBudget) {
     budget.spendCall();
     if (!isSampleQuery(term)) return [];
-    const offers = parseProductQuery((shipTo === "GB" ? aliexpressGB : aliexpressUS) as ProductQueryResponse, shipTo, new Date());
+    const offers = parseTextSearch((shipTo === "GB" ? aliexpressGB : aliexpressUS) as TextSearchResponse, shipTo, new Date());
     return offers.map((o) => ({ ...o, evidence: { ...o.evidence, provider: "aliexpress (sample)" } }));
   },
 };

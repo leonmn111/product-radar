@@ -365,7 +365,7 @@ export function buildDossier(input: DossierInput, ctx: { id: string; now: Date; 
       listingUrl: offer.url,
       title: offer.title,
       unitPrice: { amount: offer.unitPrice.amount, currency: "GBP" },
-      moq: null, // the affiliate API doesn't state one
+      moq: null, // the Drop Shipping search doesn't state one
       deliveryDays: null, // not quoted by the source yet
       matchScore: score,
       image: offer.image,

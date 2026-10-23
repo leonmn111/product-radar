@@ -1,37 +1,34 @@
-// AliExpress Open Platform adapter (official affiliate API). One search = one API call.
-// Requests are signed with the app secret (HMAC-SHA256 over the sorted parameters, as the
-// platform's SDK does); the secret and signature are never logged.
-// UNVERIFIED against the live API until the affiliate account is approved (ROADMAP.md).
+// AliExpress Open Platform adapter: the Drop Shipping API, which app 555220 is registered for.
+// One search = one `aliexpress.ds.text.search` call, priced in the market's currency for delivery to
+// it. Calls act for the owner's AliExpress account through an OAuth access token (see tokens.ts).
+// Requests are signed with the app secret (HMAC-SHA256 over the sorted parameters, as the platform's
+// SDK does); the secret, the token and the signature are never logged.
 
-import { createHmac } from "node:crypto";
 import type { QueryBudget } from "@/server/live/budget";
 import { MARKETS, type Market } from "@/server/live/types";
 import { SourceError, type SupplierSource } from "../types";
-import { aliexpressError, parseProductQuery, type ProductQueryResponse } from "./parse";
+import { aliexpressError, parseTextSearch, tokenRejected, type TextSearchResponse } from "./parse";
+import { signParams } from "./sign";
+import type { TokenKeeper } from "./tokens";
+
+export { signParams } from "./sign";
 
 const GATEWAY = "https://api-sg.aliexpress.com/sync";
-const METHOD = "aliexpress.affiliate.product.query";
+const METHOD = "aliexpress.ds.text.search";
+const LOCALE: Record<Market, string> = { US: "en_US", GB: "en_GB" };
+const PAGE_SIZE = "20";
 const MAX_CALL_MS = 15_000;
-
-/** The platform's request signature: HMAC-SHA256(secret, k1v1k2v2… sorted by key), upper-case hex. */
-export function signParams(params: Record<string, string>, secret: string): string {
-  const base = Object.keys(params)
-    .sort()
-    .map((k) => `${k}${params[k]}`)
-    .join("");
-  return createHmac("sha256", secret).update(base, "utf8").digest("hex").toUpperCase();
-}
 
 export function createAliexpressSource({
   appKey,
   appSecret,
-  trackingId,
+  tokens,
   fetchImpl = fetch,
   now = () => new Date(),
 }: {
   appKey: string;
   appSecret: string;
-  trackingId: string;
+  tokens: TokenKeeper;
   fetchImpl?: typeof fetch;
   now?: () => Date;
 }): SupplierSource {
@@ -39,17 +36,20 @@ export function createAliexpressSource({
     name: "aliexpress",
     async search(term: string, shipTo: Market, budget: QueryBudget) {
       budget.spendCall();
+      // Renewing the token, when it's due, is account upkeep rather than a search: it isn't budgeted.
+      const accessToken = await tokens.accessToken();
       const params: Record<string, string> = {
         app_key: appKey,
         method: METHOD,
         timestamp: String(now().getTime()),
         sign_method: "sha256",
-        keywords: term,
-        ship_to_country: shipTo, // ISO country code: US, GB
-        target_currency: MARKETS[shipTo].currency, // prices come back in the market's currency
-        target_language: "EN",
-        page_size: "20",
-        tracking_id: trackingId,
+        access_token: accessToken,
+        keyWord: term,
+        local: LOCALE[shipTo],
+        countryCode: shipTo, // ISO country code: US, GB
+        currency: MARKETS[shipTo].currency, // prices come back in the market's currency
+        pageSize: PAGE_SIZE,
+        pageIndex: "1",
       };
       const body = new URLSearchParams({ ...params, sign: signParams(params, appSecret) });
       let res: Response;
@@ -63,10 +63,11 @@ export function createAliexpressSource({
       } catch (e) {
         throw new SourceError("aliexpress", e instanceof Error && e.name === "TimeoutError" ? "timed out" : "network error");
       }
-      const json = (await res.json().catch(() => null)) as ProductQueryResponse | null;
+      const json = (await res.json().catch(() => null)) as TextSearchResponse | null;
+      if (json && tokenRejected(json)) tokens.invalidate();
       const error = json ? aliexpressError(json) : `HTTP ${res.status}`;
       if (!res.ok || !json || error) throw new SourceError("aliexpress", error ?? `HTTP ${res.status}`);
-      return parseProductQuery(json, shipTo, now());
+      return parseTextSearch(json, shipTo, now());
     },
   };
 }

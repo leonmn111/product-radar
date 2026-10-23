@@ -100,7 +100,7 @@ async function LiveSearch({ searchParams }: { searchParams: SearchParams }) {
       {live.sample && (
         <p className="rounded-xl bg-purple-50 px-4 py-3 text-sm text-purple-950 ring-1 ring-purple-600/20 ring-inset dark:bg-purple-500/10 dark:text-purple-100 dark:ring-purple-400/20">
           <strong className="font-semibold">Sample data (development).</strong> Amazon results are a real recorded Amazon UK search
-          from 15 October 2026; AliExpress offers are made-up samples until the affiliate API is approved. Try &ldquo;
+          from 15 October 2026; AliExpress offers are made-up samples. Try &ldquo;
           {SAMPLE_QUERY}&rdquo;.
         </p>
       )}

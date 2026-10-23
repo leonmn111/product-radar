@@ -403,6 +403,18 @@ model DossierCache {
   @@index([expiresAt])
 }
 
+// OAuth tokens a data provider issued for the owner's own account (today: AliExpress Drop Shipping).
+// The app renews them before they expire and keeps the newest pair here, so a restart or deploy doesn't
+// fall back to the older pair in the environment. The tokens themselves are encrypted (AES-256-GCM, key
+// derived from AUTH_SECRET); only their expiry times are readable.
+model ProviderToken {
+  provider         String    @id // e.g. "aliexpress"
+  sealed           String // the encrypted { accessToken, refreshToken }
+  accessExpiresAt  DateTime? @db.Timestamptz(3)
+  refreshExpiresAt DateTime? @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
+}
+
 // ─── Daily snapshots (src/jobs/dailySnapshot.ts) ─────────────────────────────
 // One product's day: best-sellers rank, price and sales velocity, each with its source (CLAUDE.md
 // Rule 3). Twelve weeks of these give Momentum its slope. Appended once per product, day and

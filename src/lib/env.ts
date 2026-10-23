@@ -48,10 +48,15 @@ const EnvSchema = z
       .default("0.01"),
     // Live search (v2): Rainforest API key for Amazon US + UK (rainforestapi.com).
     RAINFOREST_API_KEY: optional,
-    // Live search (v2): AliExpress Open Platform affiliate API (openservice.aliexpress.com).
+    // Live search (v2): AliExpress Open Platform, Drop Shipping API (openservice.aliexpress.com).
+    // The access token comes from the owner authorizing the app (30 days); the refresh token renews it
+    // (60 days), and renewed pairs are kept in the database (ProviderToken). The expiry times are ISO.
     ALIEXPRESS_APP_KEY: optional,
     ALIEXPRESS_APP_SECRET: optional,
-    ALIEXPRESS_TRACKING_ID: optional,
+    ALIEXPRESS_ACCESS_TOKEN: optional,
+    ALIEXPRESS_REFRESH_TOKEN: optional,
+    ALIEXPRESS_TOKEN_EXPIRES_AT: optional.refine((v) => !v || !Number.isNaN(Date.parse(v)), { message: "must be an ISO date-time" }),
+    ALIEXPRESS_REFRESH_EXPIRES_AT: optional.refine((v) => !v || !Number.isNaN(Date.parse(v)), { message: "must be an ISO date-time" }),
     // Keepa API key (keepa.com, a paid plan): Amazon UK price and sales-rank history for Momentum.
     // Without it, Momentum is withheld and says the history is missing.
     KEEPA_API_KEY: optional,

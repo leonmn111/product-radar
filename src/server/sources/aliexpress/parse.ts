@@ -1,8 +1,7 @@
-// AliExpress Open Platform affiliate API: `aliexpress.affiliate.product.query` response →
-// supplier offers with evidence. Pure: no network. Field names follow the official product
-// model (product_id, product_title, target_sale_price, target_sale_price_currency,
-// product_detail_url, product_main_image_url, lastest_volume, evaluate_rate).
-// UNVERIFIED against a live response until the affiliate account is approved (ROADMAP.md).
+// AliExpress Open Platform, Drop Shipping API: `aliexpress.ds.text.search` response → supplier
+// offers with evidence. Pure: no network. Field names follow the live response, recorded in
+// fixtures/recorded-text-search-GB.json (itemId, title, targetSalePrice, targetOriginalPriceCurrency,
+// itemMainPic, orders, evaluateRate, score).
 
 import type { Market, SupplierOffer } from "@/server/live/types";
 
@@ -10,22 +9,21 @@ import type { Market, SupplierOffer } from "@/server/live/types";
 export const ALIEXPRESS_QUALITY = 85;
 
 type Product = {
-  product_id?: unknown;
-  product_title?: unknown;
-  target_sale_price?: unknown;
-  target_sale_price_currency?: unknown;
-  product_detail_url?: unknown;
-  product_main_image_url?: unknown;
-  lastest_volume?: unknown; // sic: the API's own spelling
-  evaluate_rate?: unknown;
+  itemId?: unknown;
+  title?: unknown;
+  targetSalePrice?: unknown; // in the currency asked for
+  targetOriginalPriceCurrency?: unknown; // that currency
+  originMinPrice?: unknown; // a JSON string that also names it: {"currencyCode":"GBP",…}
+  itemMainPic?: unknown;
+  orders?: unknown; // AliExpress's own words, e.g. "84" or "50,000+"
+  evaluateRate?: unknown; // positive feedback, % ("96.2")
+  score?: unknown; // star rating out of 5 ("4.8")
 };
-export type ProductQueryResponse = {
-  aliexpress_affiliate_product_query_response?: {
-    resp_result?: {
-      resp_code?: number;
-      resp_msg?: string;
-      result?: { current_record_count?: number; products?: { product?: Product[] } };
-    };
+export type TextSearchResponse = {
+  aliexpress_ds_text_search_response?: {
+    code?: string;
+    msg?: string;
+    data?: { totalCount?: number; products?: { selection_search_product?: Product[] } };
   };
   error_response?: { code?: string; msg?: string };
 };
@@ -33,34 +31,54 @@ export type ProductQueryResponse = {
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : typeof v === "number" ? String(v) : null);
 
 /** The AliExpress error message, or null when the response is a success. */
-export function aliexpressError(json: ProductQueryResponse): string | null {
+export function aliexpressError(json: TextSearchResponse): string | null {
   if (json.error_response) return json.error_response.msg ?? json.error_response.code ?? "error";
-  const r = json.aliexpress_affiliate_product_query_response?.resp_result;
+  const r = json.aliexpress_ds_text_search_response;
   if (!r) return "unexpected response";
-  return r.resp_code === undefined || r.resp_code === 200 ? null : (r.resp_msg ?? `code ${r.resp_code}`);
+  return r.code === "00" ? null : (r.msg ?? `code ${r.code ?? "missing"}`);
 }
 
-export function parseProductQuery(json: ProductQueryResponse, shipTo: Market, observedAt: Date): SupplierOffer[] {
-  const products = json.aliexpress_affiliate_product_query_response?.resp_result?.result?.products?.product ?? [];
+/** True when AliExpress refused the access token (invalid, expired or revoked). */
+export const tokenRejected = (json: TextSearchResponse) => json.error_response?.code === "IllegalAccessToken";
+
+function currencyOf(p: Product): string | null {
+  const named = str(p.targetOriginalPriceCurrency);
+  if (named) return named.toUpperCase();
+  try {
+    return str(JSON.parse(String(p.originMinPrice)).currencyCode)?.toUpperCase() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function parseTextSearch(json: TextSearchResponse, shipTo: Market, observedAt: Date): SupplierOffer[] {
+  const products = json.aliexpress_ds_text_search_response?.data?.products?.selection_search_product ?? [];
   const offers: SupplierOffer[] = [];
   for (const p of products) {
-    const id = str(p.product_id);
-    const title = str(p.product_title);
-    const amount = Number(str(p.target_sale_price));
-    const currency = str(p.target_sale_price_currency)?.toUpperCase();
-    // A shareable product page, never the affiliate tracking link, is the citation.
-    const url = str(p.product_detail_url) ?? (id ? `https://www.aliexpress.com/item/${id}.html` : null);
-    if (!id || !title || !url || !/^https:\/\//.test(url) || !Number.isFinite(amount) || amount <= 0 || !currency) continue;
-    const sold = str(p.lastest_volume);
-    const positive = str(p.evaluate_rate);
-    const facts = [`${amount.toFixed(2)} ${currency} on AliExpress, ships to ${shipTo}`, sold ? `${sold} sold recently` : null, positive ? `${positive} positive feedback` : null];
+    const id = str(p.itemId);
+    const title = str(p.title);
+    const amount = Number(str(p.targetSalePrice));
+    const currency = currencyOf(p);
+    if (!id || !/^\d+$/.test(id) || !title || !Number.isFinite(amount) || amount <= 0 || !currency) continue;
+    // The plain product page is the citation: the search's own link carries tracking parameters.
+    const url = `https://www.aliexpress.com/item/${id}.html`;
+    const image = str(p.itemMainPic);
+    const orders = str(p.orders);
+    const positive = str(p.evaluateRate)?.replace(/%$/, "");
+    const stars = str(p.score);
+    const facts = [
+      `${amount.toFixed(2)} ${currency} on AliExpress, ships to ${shipTo}`,
+      orders ? `${orders} orders` : null,
+      positive ? `${positive}% positive feedback` : null,
+      stars ? `rated ${stars}/5` : null,
+    ];
     offers.push({
       id,
       title,
       url,
-      image: str(p.product_main_image_url),
+      image: image && /^https:\/\//.test(image) ? image : null,
       unitPrice: { amount, currency },
-      shipping: null, // the affiliate product query doesn't quote shipping
+      shipping: null, // the search doesn't quote shipping (aliexpress.ds.freight.query does, per item)
       shipsTo: shipTo,
       evidence: {
         id: `aliexpress:${id}:${shipTo}`,

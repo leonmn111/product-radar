@@ -140,7 +140,7 @@ describe("GET /api/agent/v2/search", () => {
   });
 
   it("says live search isn't on yet, before asking for payment", async () => {
-    vi.mocked(liveSources).mockReturnValue({ ready: false, missing: ["supplier source: the AliExpress affiliate API isn't connected yet"] });
+    vi.mocked(liveSources).mockReturnValue({ ready: false, missing: ["supplier source: the AliExpress Drop Shipping API isn't connected yet"] });
     const res = await call("?q=ceramic+coffee+mug");
     expect(res.status).toBe(503);
     expect((await res.json()).missing).toHaveLength(1);

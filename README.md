@@ -411,7 +411,8 @@ Validated at startup by `src/lib/env.ts` — the app refuses to start with a mis
 | `RESEND_API_KEY` | optional | Resend key for credit receipts, bulk-job alerts, sign-in links and password resets; falls back to `AUTH_RESEND_KEY`. A `re_mock…` key prints emails to the terminal instead (development only; refused in production) |
 | `RAINFOREST_API_KEY` | for live search (v2) | Amazon US + UK via the Rainforest API (rainforestapi.com) |
 | `KEEPA_API_KEY` | optional (v2) | Keepa API (paid): Amazon UK sales-rank and price history for a Dossier's Momentum. Without it, Momentum is withheld |
-| `ALIEXPRESS_APP_KEY`, `ALIEXPRESS_APP_SECRET`, `ALIEXPRESS_TRACKING_ID` | for live search (v2) | AliExpress Open Platform affiliate API. Until all three are set, `/api/agent/v2/search` answers 503 before asking for payment |
+| `ALIEXPRESS_APP_KEY`, `ALIEXPRESS_APP_SECRET`, `ALIEXPRESS_ACCESS_TOKEN` | for live search (v2) | AliExpress Open Platform, Drop Shipping API. The access token comes from the owner authorizing the app. Until all three are set, `/api/agent/v2/search` answers 503 before asking for payment |
+| `ALIEXPRESS_REFRESH_TOKEN`, `ALIEXPRESS_TOKEN_EXPIRES_AT`, `ALIEXPRESS_REFRESH_EXPIRES_AT` | with the access token | Let the app renew the access token three days before it expires (ISO times). Renewed pairs are kept encrypted in the `ProviderToken` table, so restarts don't lose them |
 | `LIVE_SAMPLE_DATA` | development | `on` = the `/search` page runs on a recorded Amazon UK search and sample AliExpress offers (try "magnetic power bank"). Refused in production; locally the paid `/api/agent/v2/search` uses it too, and every Dossier it returns says `sample: true` |
 | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | optional | Turns on Plausible analytics (cookieless), e.g. `theproductradar.io`. Read at build time: redeploy after setting. |
 | `NEXT_PUBLIC_PLAUSIBLE_SRC` | optional | A self-hosted Plausible script URL instead of plausible.io's |

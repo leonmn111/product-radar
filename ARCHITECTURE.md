@@ -191,7 +191,7 @@ Paid sources need the owner's approval of cost first (Rule 8), and tests never c
 | --- | --- | --- |
 | Amazon listings (UK) | Rainforest API | Connected; trial key set (2026-10-15) |
 | Amazon price, rank and sales history | Keepa API (domain 2 = amazon.co.uk) | Connector scaffolded 2026-10-16 (`src/server/sources/keepa/`), tested on made-up data; needs a paid key (about €49/month, owner to approve) |
-| Suppliers | AliExpress Open Platform affiliate API (official) | Connector built, waiting for affiliate approval |
+| Suppliers | AliExpress Open Platform, Drop Shipping API (official): `aliexpress.ds.text.search` | Connected 2026-10-23 (app 555220, owner's OAuth token renewed automatically; re-authorize by 2026-12-22) |
 | Suppliers | 1688 via a licensed provider | Phase 1 |
 | Ad duration and density | Meta Ad Library API | Phase 2; scaffold is SIMULATED and only feeds development sample data |
 | TikTok Shop UK fees and listings | Published fee rules; listing data via a licensed provider | Fees in Phase 0 types; listings to be chosen |
