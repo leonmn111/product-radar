@@ -15,4 +15,8 @@ is still v1 (a static catalog), documented in [README.md](README.md).
 - Rule 7: Sellable products only. Exclude brand-restricted and branded items; target unbranded / white-label products with a matching supplier. Record why each item was excluded.
 - Rule 8: Data access within the rules. Use official APIs or licensed providers within their terms; respect robots.txt; never scrape behind a login or bypass a CAPTCHA or bot block. Every provider call is budgeted, timed out and cached. Adding a paid provider needs the owner's approval of its cost first, and tests never call paid providers.
 
+## Tooling
+
+- Run external tools and documentation lookups as command-line tools (with `--json` output where supported), not as persistent MCP server registrations. A registered server loads its tool list into every session's context window; a CLI uses context only when it runs. For MCP and x402 checks use `mcpc` (installed globally) and `npx -y @modelcontextprotocol/inspector --cli`.
+
 @AGENTS.md
