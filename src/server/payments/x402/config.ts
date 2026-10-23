@@ -59,20 +59,20 @@ export function loadPaymentConfig(priceUsdc: string = env.X402_PRICE_USDC): Paym
 }
 
 /**
- * What the public docs may show about payments — the same terms every 402
- * response publishes, never secrets or config errors. When payments are off,
- * `requirements` is an illustrative example.
+ * What the public docs may show about payments at one price (default: the v1
+ * agent API's) — the same terms every 402 response publishes, never secrets or
+ * config errors. When payments are off, `requirements` is an illustrative example.
  */
-export function agentPaymentStatus() {
-  const config = loadPaymentConfig();
+export function agentPaymentStatus(priceUsdc: string = env.X402_PRICE_USDC) {
+  const config = loadPaymentConfig(priceUsdc);
   const requirements = config.ok
     ? config.requirements
-    : requirementsFor(env.X402_NETWORK ?? TESTNET, env.X402_PAY_TO ?? PLACEHOLDER_PAY_TO, env.X402_PRICE_USDC);
+    : requirementsFor(env.X402_NETWORK ?? TESTNET, env.X402_PAY_TO ?? PLACEHOLDER_PAY_TO, priceUsdc);
   const usdc = USDC[requirements.network];
   return {
     enabled: config.ok,
     mock: config.ok && config.facilitator.kind === "mock",
-    priceUsdc: env.X402_PRICE_USDC,
+    priceUsdc,
     networkLabel: usdc.label,
     testnet: usdc.testnet,
     requirements,

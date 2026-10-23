@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 import { env } from "@/lib/env";
 import { agentPaymentStatus } from "@/server/payments/x402/config";
-import { BAZAAR } from "@/server/payments/x402/discovery";
+import { BAZAAR, DOSSIER_PRICE_USDC, SEARCH_PRICE_USDC } from "@/server/payments/x402/discovery";
 import { encodeHeader, paymentRequiredBody } from "@/server/payments/x402/protocol";
 import mcpPackage from "../../../mcp/package.json";
 import { CodeBlock } from "./code-block";
@@ -48,6 +48,13 @@ function C({ children }: { children: ReactNode }) {
     <code className="rounded bg-zinc-800/80 px-1.5 py-0.5 font-mono text-[0.85em] text-zinc-100 [overflow-wrap:anywhere]">
       {children}
     </code>
+  );
+}
+
+/** A field name that never breaks across lines, for narrow table columns. */
+function Part({ children }: { children: ReactNode }) {
+  return (
+    <code className="rounded bg-zinc-800/80 px-1.5 py-0.5 font-mono text-[0.85em] whitespace-nowrap text-zinc-100">{children}</code>
   );
 }
 
@@ -132,183 +139,40 @@ function WideTable({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
 
 const json = (v: unknown) => JSON.stringify(v, null, 2);
 
-// Real responses from ProductRadar (a live product page ingested on 2026-10-08), shortened.
-const OPPORTUNITY_EXAMPLE = json({
-  generatedAt: "2026-10-09T01:23:21.102Z",
-  methodologyVersion: "1.2.0",
-  disclaimer:
-    "opportunityScore is a calculated estimate (0–100) with a confidence (0–1), derived only from the cited evidence. margin is a rule-based estimate: the wholesale range comes from US Census store-type averages (not supplier quotes), and the arbitrage ratings (reselling on eBay, or in your own shop at card fees) only from store prices we captured. Neither is a guarantee.",
-  query: { category: "earplugs", limit: 1, includeSample: false },
-  count: 1,
-  opportunities: [
-    {
-      rank: 1,
-      product: {
-        id: "01a11b1e-f44e-740a-8b84-0a08f4befa7d",
-        name: "Loop Quiet™ 2",
-        brand: "Loop Earplugs",
-        category: "earplugs",
-        isSample: false,
+// The shape of a v2 Dossier (src/types/dossier.ts). Placeholders, not data: a real Dossier carries the
+// numbers and the evidence it was built from.
+const DOSSIER_SHAPE = json({
+  id: "<64 hex: this request's payment identifier>",
+  generatedAt: "<ISO time>",
+  product: { title: "<Amazon UK title>", query: "ceramic coffee mug", market: "UK", country: "GB", currency: "GBP", identifiers: { asin: "<ASIN>" } },
+  sample: false,
+  notes: ["<what isn't covered, in plain words>"],
+  verdict: { status: "shown", confidence: "<0.5–1>", value: { kind: "LAUNCH | TEST | AVOID", reasons: ["…"] }, evidenceIds: ["…"] },
+  resellability: { brandDirect: { value: "<true | false | null>", reason: "…", evidenceIds: ["…"] }, trademarkRisk: "…", requiresUKCA: "…", cosmetics: "…", batteries: "…" },
+  landedMargin: {
+    status: "shown",
+    confidence: "<0.7–1>",
+    value: {
+      uk: {
+        retailPrice: { amount: "<median of the matching listings>", currency: "GBP" },
+        lines: [{ kind: "supplier | shipping | duty | handling | vat | platform_fee | returns | ad_cost", label: "…", amount: { amount: "…", currency: "GBP" }, basis: "sourced | caller_supplied | estimate", evidenceIds: ["…"] }],
+        landedCost: "…",
+        netProfit: "…",
+        netMarginPct: "…",
+        roiPercentage: "…",
+        breakEvenAdCost: "…",
+        excluded: [{ kind: "…", label: "<a cost that couldn't be sourced>", reason: "…" }],
+        complete: "<false when anything is excluded>",
       },
-      opportunityScore: { value: 64.23, confidence: 0.157, calculatedAt: "2026-10-08T11:03:34.831Z" },
-      dimensions: {
-        value: { value: 70.17, confidence: 0.16 },
-        quality: { value: 61.03, confidence: 0.213 },
-        demand: { value: 62.39, confidence: 0.213 },
-      },
-      bestOffer: {
-        merchant: "loopearplugs.com",
-        url: "https://www.loopearplugs.com/products/quiet",
-        price: { amount: "19.95", currency: "EUR" },
-        availability: "IN_STOCK",
-        observedAt: "2026-10-08T10:46:15.722Z",
-      },
-      margin: {
-        methodologyVersion: "1.2.0",
-        currency: "EUR",
-        retailPrice: { merchant: "loopearplugs.com", price: 19.95, currency: "EUR", observedAt: "2026-10-08T10:46:15.722Z", "…": "…" },
-        wholesaleEstimate: { low: 13.39, high: 14.3 },
-        grossSpread: { low: 5.65, high: 6.56, lowPct: 28.3, highPct: 32.9 },
-        benchmark: {
-          storeType: "Health and personal care stores",
-          naicsCode: "4461",
-          years: "2018–2022",
-          grossMarginPct: { low: 28.3, high: 32.9 },
-          source: {
-            name: "US Census Bureau, Annual Retail Trade Survey: Gross Margin as a Percentage of Sales (1993–2022)",
-            url: "https://www2.census.gov/programs-surveys/arts/tables/2022benchmarked/gmper.xlsx",
-            publishedAt: "2026-08-31",
-            retrievedAt: "2026-10-12",
-            qualityScore: 60,
-          },
-        },
-        arbitrage: {
-          channel: "MARKETPLACE",
-          channelLabel: "Resell on eBay",
-          rating: "RETAIL_ONLY",
-          label: "Retail Only",
-          summary: "Only one store's current price has been captured (loopearplugs.com), so there's no price gap to resell.",
-          buy: null,
-          sell: null,
-          netProfit: null,
-          returnPct: null,
-          feeRule: "13.6% of the sale plus 0.40 per order (0.30 on orders of 10.00 or less), eBay US standard rate",
-          feeSource: { name: "eBay, Selling fees (US, most categories)", url: "https://www.ebay.com/help/selling/fees-credits-invoices/selling-fees?id=4822", "…": "…" },
-          "…": "…",
-        },
-        arbitrageOwnStore: {
-          channel: "OWN_STORE",
-          channelLabel: "Resell in your own shop",
-          rating: "RETAIL_ONLY",
-          label: "Retail Only",
-          summary: "Only one store's current price has been captured (loopearplugs.com), so there's no price gap to resell.",
-          feeRule: "2.9% of the sale plus 0.30 per order, Shopify Payments US online card rate (Basic plan)",
-          feeSource: { name: "CraftShift, Shopify Basic plan 2026: price, fees, and what you actually pay (US card rate)", url: "https://craftshift.com/shopify-basic-plan-2026/", "…": "…" },
-          "…": "same fields as arbitrage",
-        },
-        caveats: ["The wholesale range is the US Census average gross margin for the store type that sells this category, not a supplier quote.", "…"],
-      },
-      evidence: {
-        count: 8,
-        oldestObservedAt: "2026-10-08T10:46:15.722Z",
-        newestObservedAt: "2026-10-08T10:46:18.884Z",
-        top: [
-          {
-            claim: "Average rating 4.2 / 5 on loopearplugs.com",
-            sourceUrl: "https://www.loopearplugs.com/products/quiet",
-            sourceName: "loopearplugs.com",
-            sourceType: "RETAILER",
-            observedAt: "2026-10-08T10:46:18.884Z",
-            qualityScore: 60,
-            metric: { type: "RATING", value: 4.2 },
-          },
-          "… up to 5 per product",
-        ],
-      },
+      eu: "<the same for an EU market, or null>",
     },
-  ],
-});
-
-const DOSSIER_EXAMPLE = json({
-  generatedAt: "2026-10-09T01:23:21.129Z",
-  methodologyVersion: "1.2.0",
-  disclaimer:
-    "Scores, the verdict, the margin insight and the profit figures are rule-based estimates calculated only from the cited evidence and benchmarks. They are not guarantees.",
-  product: {
-    id: "01a11b1e-f44e-740a-8b84-0a08f4befa7d",
-    name: "Loop Quiet™ 2",
-    brand: "Loop Earplugs",
-    category: "earplugs",
-    isSample: false,
-    "…": "…",
+    evidenceIds: ["…"],
   },
-  verdict: {
-    kind: "MODERATE_RISK",
-    label: "Moderate Risk",
-    summary:
-      "Buyers rate it 4.2/5 (1 source) and it has about 14,000 reviews. We only have limited evidence so far (16% confidence), so treat this as an early read rather than a green light.",
-    confidence: 0.157,
-    confidenceLevel: "low",
-    sourceCount: 3,
-    method: "rule-based",
-  },
-  scores: {
-    overall: {
-      value: 64.23,
-      confidence: 0.157,
-      confidenceLevel: "low",
-      calculatedAt: "2026-10-08T11:03:34.831Z",
-      methodologyVersion: "1.2.0",
-      evidenceIds: ["01a11b1e-f453-7037-b272-0558155253db", "…"],
-    },
-    "…": "value, quality, demand, sentiment, trend",
-  },
-  margin: "{ … the same margin object as in the opportunity response }",
-  profitEstimate: {
-    currency: "EUR",
-    retailPrice: 19.95,
-    retailPriceSource: {
-      merchant: "loopearplugs.com",
-      url: "https://www.loopearplugs.com/products/quiet",
-      observedAt: "2026-10-08T10:46:15.722Z",
-    },
-    assumedWholesaleCost: 13.85,
-    netProfitPerUnit: 6.1,
-    marginPct: 30.6,
-    assumptions: [
-      "Wholesale cost assumed at the middle of the estimate in margin.wholesaleEstimate (US Census gross margin for Health and personal care stores, 2018–2022): replace it with a real supplier quote.",
-      "Advertising, shipping, platform fees and taxes are not included.",
-    ],
-  },
-  sourcing: {
-    keywords: "Quiet 2 earplugs",
-    searchUrls: {
-      aliexpress: "https://www.aliexpress.com/wholesale?SearchText=Quiet+2+earplugs",
-      alibaba: "https://www.alibaba.com/trade/search?SearchText=Quiet+2+earplugs",
-    },
-    note: "Search links only: ProductRadar has not vetted any supplier.",
-  },
-  shopifyImportCsv: '"Handle","Title","Body (HTML)",… (one draft product)',
-  bestOffer: "{ … }",
-  offers: ["…"],
-  evidence: {
-    count: 8,
-    included: 8,
-    items: [
-      {
-        id: "01a11b1f-0063-7372-abd0-1f29587a430d",
-        claim: 'Product listing: "Loop Quiet™ 2"',
-        sourceUrl: "https://www.loopearplugs.com/products/quiet",
-        sourceName: "loopearplugs.com",
-        sourceType: "RETAILER",
-        observedAt: "2026-10-08T10:46:18.884Z",
-        publishedAt: null,
-        qualityScore: 80,
-        metric: null,
-      },
-      "…",
-    ],
-  },
+  momentum: { status: "withheld", reason: "Insufficient Data", confidence: "…", missing: ["90 days of sales-rank history (…)"] },
+  saturation: { status: "shown", confidence: "…", value: { sellerCount: "…", storeCount: "…", adDensity: null }, evidenceIds: ["…"] },
+  supplierMatches: [{ platform: "aliexpress", listingUrl: "https://www.aliexpress.com/item/<id>.html", title: "…", unitPrice: { amount: "…", currency: "GBP" }, moq: null, deliveryDays: null, matchScore: "<0–1>", image: "…", evidenceIds: ["…"] }],
+  evidence: [{ id: "…", provider: "rainforest | aliexpress | keepa | gov.uk | …", sourceType: "marketplace | supplier | official | …", sourceUrl: "…", observedAt: "<ISO time>", quality: "<0–100>", claim: "…", value: "…" }],
+  exports: { shopifyCsvUrl: "/api/agent/v2/dossier/<ASIN>/export/csv", pdfUrl: null, shareLink: null },
 });
 
 export default function DocsPage() {
@@ -384,13 +248,13 @@ function DocsMainFallback() {
 async function DocsMain() {
   // Read per request, not at build time: the terms shown always match what the API charges right now.
   await connection();
-  const status = agentPaymentStatus();
+  const status = agentPaymentStatus(SEARCH_PRICE_USDC);
   const req = status.requirements;
-  const exampleUrl = `${SITE}/api/agent/v1/opportunity?q=wireless+earbuds&limit=5`;
+  const exampleUrl = `${SITE}/api/agent/v2/search?q=ceramic+coffee+mug`;
   const challenge = paymentRequiredBody(
     {
       url: exampleUrl,
-      description: "ProductRadar ranked product opportunities with evidence-backed scores",
+      description: "ProductRadar search: an 8-part product Dossier with cited evidence",
       mimeType: "application/json",
       serviceName: "ProductRadar",
     },
@@ -416,7 +280,10 @@ async function DocsMain() {
     description: DESCRIPTION,
     documentation: `${SITE}/docs`,
     provider: { "@type": "Organization", name: "ProductRadar", url: SITE },
-    offers: { "@type": "Offer", price: status.priceUsdc, priceCurrency: "USDC" },
+    offers: [
+      { "@type": "Offer", name: "Search", price: SEARCH_PRICE_USDC, priceCurrency: "USDC" },
+      { "@type": "Offer", name: "Standard Dossier", price: DOSSIER_PRICE_USDC, priceCurrency: "USDC" },
+    ],
   };
 
   return (
@@ -431,8 +298,10 @@ async function DocsMain() {
           Product research your agent can buy by the request
         </h1>
         <p className="text-lg leading-relaxed text-zinc-300">
-          Ranked product opportunities and full Opportunity Dossiers, with every score calculated from sourced,
-          timestamped evidence. No account and no API key: your agent pays a small fee in USDC per request using the{" "}
+          An 8-part Dossier for any Amazon UK product: verdict, resellability, UK/EU landed margin after VAT, duty,
+          fees and advertising, momentum, saturation, supplier matches, evidence and exports. Every number is
+          calculated from sourced, timestamped evidence, and a part without enough of it is withheld, never estimated.
+          No account and no API key: your agent pays in USDC per request using the{" "}
           <a href="https://x402.org" className={link}>
             x402 protocol
           </a>
@@ -456,7 +325,10 @@ async function DocsMain() {
         <dl className="grid gap-px overflow-hidden rounded-xl border border-zinc-800 bg-zinc-800 sm:grid-cols-3">
           <div className="bg-zinc-950 p-4">
             <dt className="text-xs uppercase tracking-wide text-zinc-400">Price</dt>
-            <dd className="mt-1 font-semibold text-white">{status.priceUsdc} USDC per request</dd>
+            <dd className="mt-1 font-semibold text-white">
+              {SEARCH_PRICE_USDC} USDC per search
+              <span className="block text-sm font-normal text-zinc-400">{DOSSIER_PRICE_USDC} USDC per Standard Dossier</span>
+            </dd>
           </div>
           <div className="bg-zinc-950 p-4">
             <dt className="text-xs uppercase tracking-wide text-zinc-400">Network</dt>
@@ -561,7 +433,7 @@ async function DocsMain() {
           <CodeBlock
             title="Response (abridged)"
             copy={false}
-            code={`HTTP/2 200\ncontent-type: application/json\npayment-response: eyJzdWNjZXNzIjp0cnVl…\n\n{ "count": 5, "opportunities": [ … ] }`}
+            code={`HTTP/2 200\ncontent-type: application/json\npayment-response: eyJzdWNjZXNzIjp0cnVl…\n\n{ "id": "…", "product": { … }, "verdict": { … }, "landedMargin": { … }, … }`}
           />
           <p>
             We verify the authorization, run the request and settle the payment through the x402 facilitator, which
@@ -584,8 +456,7 @@ async function DocsMain() {
       <Section id="automatic-payments" title="Automatic payments in TypeScript">
         <p>
           In code you don&apos;t handle the three steps yourself. The official x402 client wraps <C>fetch</C>: it sees
-          the 402, signs the payment and retries, so a paid request is one line. This example is tested against this
-          API.
+          the 402, signs the payment and retries, so a paid request is one line.
         </p>
         <CodeBlock title="Install" code="npm install @x402/fetch @x402/evm viem" />
         <CodeBlock
@@ -599,19 +470,20 @@ const account = privateKeyToAccount(process.env.AGENT_PRIVATE_KEY as \`0x\${stri
 
 const fetchWithPayment = wrapFetchWithPaymentFromConfig(fetch, {
   schemes: [{ network: "eip155:*", client: new ExactEvmScheme(account) }],
-  spendControls: { maxAmountPerPayment: "$0.10" }, // never pay more than this per request
+  spendControls: { maxAmountPerPayment: "$${DOSSIER_PRICE_USDC}" }, // never pay more than this per request
 });
 
-const res = await fetchWithPayment("${SITE}/api/agent/v1/opportunity?q=wireless+earbuds&limit=5");
-const data = await res.json();
+// A search (${SEARCH_PRICE_USDC} USDC): the Dossier for the product most Amazon UK listings agree on.
+const res = await fetchWithPayment("${SITE}/api/agent/v2/search?q=ceramic+coffee+mug");
+const found = await res.json();
 const receipt = decodePaymentResponseHeader(res.headers.get("PAYMENT-RESPONSE")!);
+console.log(found.product.title, found.verdict.status === "shown" ? found.verdict.value.kind : found.verdict.missing, "tx", receipt.transaction);
 
-console.log(data.opportunities[0].product.name, "paid in tx", receipt.transaction);
-
-// Then the full dossier for the top pick:
-const top = data.opportunities[0].product.id;
-const dossier = await (await fetchWithPayment("${SITE}/api/agent/v1/dossier?productId=" + top)).json();
-console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
+// Then the Standard Dossier for that product (${DOSSIER_PRICE_USDC} USDC), by its ASIN:
+const asin = found.product.identifiers.asin;
+const dossier = await (await fetchWithPayment(\`${SITE}/api/agent/v2/dossier/\${asin}\`)).json();
+const margin = dossier.landedMargin;
+console.log(margin.status === "shown" ? margin.value.uk.netProfit : margin.missing);`}
         />
         <p>
           Any x402 v2 client works the same way. Python, Go and other clients are listed at{" "}
@@ -624,77 +496,86 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
 
       <Section id="endpoints" title="Endpoints">
         <p>
-          Both endpoints are <C>GET</C>, return JSON, and cost {status.priceUsdc} USDC per successful request. Live
-          (ingested) products are included. Demo products are excluded unless you ask for them.
+          The paid endpoints are <C>GET</C> and return JSON: an 8-part Dossier. You pay only for a successful answer: a
+          search with no listings, an unknown product, or a data source failing part-way is answered with an error and
+          not charged. The same list, with input and output schemas, is at{" "}
+          <a href={`${SITE}/api/agent/v2/bazaar`} className={link}>
+            /api/agent/v2/bazaar
+          </a>{" "}
+          (x402 Bazaar format, free).
         </p>
 
-        <div id="opportunity" className="scroll-mt-6 space-y-4">
-          <h3 className="font-mono text-base font-semibold text-white">GET /api/agent/v1/opportunity</h3>
+        <div id="search" className="scroll-mt-6 space-y-4">
+          <h3 className="font-mono text-base font-semibold text-white">GET /api/agent/v2/search · {priceOf("/api/agent/v2/search")} USDC</h3>
           <p>
-            Products ranked by opportunity score, with the evidence behind each one. Search in plain words with{" "}
-            <C>q</C>: products matching more of the words come first, and each result lists its{" "}
-            <C>matchedWords</C>. Every response also lists <C>availableCategories</C>. A search that matches
-            nothing returns <C>404</C> with <C>error: &quot;no_results&quot;</C> and a hint, and is not charged.
-          </p>
-          <p>
-            Each result also has <C>margin</C>, a rule-based estimate with every source named. It has an estimated
-            wholesale cost range and gross margin spread (amount and %), taken from US Census retail gross margins for
-            the store type that sells the category; these are averages, not supplier quotes. It also has two arbitrage
-            ratings, each <C>HIGH_ARBITRAGE</C>, <C>MODERATE</C> or <C>RETAIL_ONLY</C>, worked out from real price gaps
-            between stores, using each store&apos;s newest price from the last 30 days, in the same currency: <C>arbitrage</C> after eBay&apos;s
-            standard selling fees, and <C>arbitrageOwnStore</C> after Shopify Payments card fees for reselling in your
-            own shop (advertising not included). It is <C>null</C> when a product has no current price.
-          </p>
-          <Table
-            head={["Parameter", "Type", "Default", "Meaning"]}
-            rows={[
-              [
-                <C key="q">q</C>,
-                "text",
-                "none",
-                <>
-                  What to look for, e.g. <C>wireless earbuds</C> or <C>pizza oven</C>. Matches names, brands, categories
-                  and descriptions, ignoring case, plurals and British/American spelling
-                </>,
-              ],
-              [
-                <C key="c">category</C>,
-                "text",
-                "all",
-                <>
-                  Narrow to one category, e.g. <C>beauty</C> or <C>tech-accessories</C>. A value that isn&apos;t a
-                  category is searched for like <C>q</C>
-                </>,
-              ],
-              [<C key="l">limit</C>, "1–25", "10", "How many products to return"],
-              [<C key="s">includeSample</C>, "true | false", "false", "Also include ProductRadar's demo products"],
-            ]}
-          />
-          <CodeBlock title="Example response (real data, abridged)" copy={false} code={OPPORTUNITY_EXAMPLE} />
-        </div>
-
-        <div id="dossier" className="scroll-mt-6 space-y-4">
-          <h3 className="font-mono text-base font-semibold text-white">GET /api/agent/v1/dossier</h3>
-          <p>
-            The full Opportunity Dossier for one product: a rule-based verdict (High Potential, Moderate Risk or Crowded
-            Market) with its confidence, every score and the evidence it used, all observed offers, the{" "}
-            <C>margin</C> insight, a profit estimate with its assumptions spelled out, supplier search links, a draft
-            Shopify import file, and up to 50 cited sources.
+            Searches Amazon UK for <C>q</C> and returns the Dossier for the product most listings agree on. When too
+            few listings agree, a synonym of the query is searched too. A search with no listings answers{" "}
+            <C>404 no_results</C>.
           </p>
           <Table
             head={["Parameter", "Type", "Meaning"]}
             rows={[
               [
-                <C key="p">productId</C>,
-                "UUID",
+                <C key="q">q</C>,
+                "text, 2–120",
                 <>
-                  A <C>product.id</C> from the opportunity endpoint (required)
+                  What to look for, in plain words, e.g. <C>ceramic coffee mug</C> (required)
                 </>,
               ],
             ]}
           />
-          <CodeBlock title="Example response (real data, abridged)" copy={false} code={DOSSIER_EXAMPLE} />
         </div>
+
+        <div id="dossier" className="scroll-mt-6 space-y-4">
+          <h3 className="font-mono text-base font-semibold text-white">GET /api/agent/v2/dossier/{"{asin}"} · {priceOf("/api/agent/v2/dossier/:asin")} USDC</h3>
+          <p>
+            The Standard Dossier for one Amazon UK product: its product page (price, brand, seller, category), other
+            listings of it, and supplier matches. A copy built in the last 48 hours is reused (header{" "}
+            <C>X-Dossier-Cache: hit</C>, no new provider calls); you pay the same. The wallet that bought a Dossier
+            reopens it free with Sign-In-With-X. A product Amazon UK doesn&apos;t have answers <C>404 no_product</C>.
+          </p>
+          <Table
+            head={["Parameter", "Type", "Meaning"]}
+            rows={[[<C key="a">asin</C>, "10 characters", "The Amazon UK ASIN, in the path, e.g. B0CH33F5P2"]]}
+          />
+          <p>
+            <C>GET /api/agent/v2/dossier/{"{asin}"}/export/csv</C> returns a bought Dossier as a Shopify product import
+            file, free for its buyer (Sign-In-With-X). It answers <C>409 export_unavailable</C> while the parts it needs
+            are withheld.
+          </p>
+        </div>
+
+        <div id="dossier-parts" className="scroll-mt-6 space-y-4">
+          <h3 className="text-base font-semibold text-white">What a Dossier holds</h3>
+          <p>
+            Parts with a gate are either <C>{`{ status: "shown", confidence, value, evidenceIds }`}</C> or{" "}
+            <C>{`{ status: "withheld", reason, confidence, missing }`}</C>, where <C>missing</C> says what evidence would
+            show them. Nothing below its gate is estimated.
+          </p>
+          <Table
+            head={["Part", "Gate", "What it holds"]}
+            rows={[
+              [<Part key="v">verdict</Part>, "0.5", "LAUNCH, TEST or AVOID, with plain-words reasons"],
+              [<Part key="r">resellability</Part>, "none", "Brand-direct seller, trademark risk, UKCA/CE marking, cosmetics and battery rules: each true, false or not checkable, with its reason"],
+              [
+                <Part key="l">landedMargin</Part>,
+                "0.7",
+                "UK (and, with EU listings, EU) margin: retail price, every cost line (supplier, shipping, duty, VAT, platform fees, advertising) with its evidence, landed cost, net profit, margin %, ROI and break-even ad cost. A cost that can't be sourced is listed in excluded, never guessed",
+              ],
+              [<Part key="m">momentum</Part>, "0.7", "12-week sales-rank and price trend from Keepa: ACCELERATING, FLAT or DECELERATING"],
+              [<Part key="s">saturation</Part>, "0.7", "Sellers and stores listing the same product"],
+              [<Part key="u">supplierMatches</Part>, "none", "Up to three AliExpress listings of the same product, with unit price and match score"],
+              [<Part key="e">evidence</Part>, "none", "Every source behind the numbers: provider, URL, observed time, quality (0–100) and the claim"],
+              [<Part key="x">exports</Part>, "none", "The Shopify CSV link, once the parts it needs are shown"],
+            ]}
+          />
+          <CodeBlock title="Response shape (placeholders, not data)" copy={false} code={DOSSIER_SHAPE} />
+        </div>
+
+        <p className="text-sm text-zinc-400">
+          The v1 catalog endpoints (<C>/api/agent/v1/opportunity</C>, <C>/api/agent/v1/dossier</C>) still answer for
+          MCP installs from before 0.2.0, but are retired: build on v2.
+        </p>
       </Section>
 
       <Section id="mcp" title="MCP server for Claude, Cursor and agent frameworks">
@@ -831,7 +712,22 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
                 A parameter is wrong. <C>issues</C> says which. Not charged.
               </>,
             ],
-            ["404", <C key="8">not_found</C>, "No product with that id. Not charged."],
+            [
+              "404",
+              <>
+                <C key="8">no_results</C>, <C key="8b">no_product</C>
+              </>,
+              "The search matched no Amazon UK listings, or Amazon UK has no priced product with that ASIN. Not charged.",
+            ],
+            [
+              "503",
+              <C key="13">source_unavailable</C>,
+              <>
+                A data source (Amazon UK or AliExpress) failed while your request ran, so no Dossier was built: never a
+                verdict made from missing data. Not charged. Retry after <C>Retry-After</C>.
+              </>,
+            ],
+            ["503", <C key="14">live_search_unavailable</C>, "Live sources aren't connected. Answered before payment."],
             ["503", <C key="9">payments_unavailable</C>, "Payments aren't switched on for this server."],
             [
               "503",
@@ -857,30 +753,30 @@ console.log(dossier.verdict.label, dossier.profitEstimate?.marginPct);`}
       <Section id="guarantees" title="What you can rely on">
         <ul className="list-disc space-y-3 pl-5 marker:text-zinc-600">
           <li>
-            <strong className="text-white">Evidence first.</strong> Every score cites the evidence it was calculated
+            <strong className="text-white">Evidence first.</strong> Every number cites the evidence it was calculated
             from, and every piece of evidence has a source URL, an observed-at timestamp and a quality score. Nothing is
-            invented: a product with no usable evidence gets no score.
+            invented: a part without enough evidence is withheld and says what&apos;s missing.
           </li>
           <li>
-            <strong className="text-white">Estimates, not guarantees.</strong> Scores (0–100) come with a confidence
-            (0–1). Verdicts and profit figures are rule-based calculations from the same evidence, with their
-            assumptions stated.
+            <strong className="text-white">Estimates, not guarantees.</strong> Every gated part comes with a confidence
+            (0–1). Verdicts and margins are rule-based calculations from the same evidence, with every cost line and
+            every excluded cost named.
           </li>
           <li>
-            <strong className="text-white">Pay only for answers.</strong> Failed requests are never settled, and each
-            signed payment can be used once.
+            <strong className="text-white">Pay only for answers.</strong> Failed requests are never settled, including
+            one where a data source fails part-way, and each signed payment can be used once.
           </li>
           <li>
             <strong className="text-white">The 402 is the price list.</strong> Always pay what the challenge says. The
-            price on this page is shown for convenience.
+            prices on this page are shown for convenience.
           </li>
         </ul>
         <p>
-          Prefer a dashboard? The same data is in the{" "}
-          <Link href="/dashboard" className={link}>
-            ProductRadar app
+          Prefer to click? People run the same Dossiers in the{" "}
+          <Link href="/terminal" className={link}>
+            Dossier terminal
           </Link>
-          .
+          , paid in credits.
         </p>
       </Section>
     </main>
