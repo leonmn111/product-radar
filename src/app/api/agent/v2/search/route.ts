@@ -1,15 +1,11 @@
 import { connection, type NextRequest } from "next/server";
 import { z } from "zod";
 import { simulatedImageMatcher } from "@/engine/imageMatch";
-import { BudgetExceededError } from "@/server/live/budget";
 import { liveSources } from "@/server/live/config";
-import { newPaymentIdentifier, withDiscoveryHeaders } from "@/server/payments/x402/discovery";
+import { isSourceFailure, reportSourceFailure, RETRY_AFTER_SECONDS } from "@/server/live/unavailable";
+import { newPaymentIdentifier, SEARCH_PRICE_USDC, withDiscoveryHeaders } from "@/server/payments/x402/discovery";
 import { withX402Payment } from "@/server/payments/x402/middleware";
-import { SourceError } from "@/server/sources/types";
 import { buildDossier, fetchDossierData } from "@/services/dossierService";
-
-// The base search price (ROADMAP.md, pricing: Search $0.01).
-const SEARCH_PRICE_USDC = "0.01";
 
 const Query = z.object({ q: z.string().trim().min(2, "q must be at least 2 characters").max(120) });
 
@@ -46,8 +42,15 @@ export async function GET(request: NextRequest) {
     try {
       data = await fetchDossierData(parsed.data.q, live.sources);
     } catch (e) {
-      if (!(e instanceof SourceError || e instanceof BudgetExceededError)) throw e;
-      return Response.json({ error: "source_unavailable", message: `${e.message} You were not charged.` }, { status: 502 });
+      // A source that fails (e.g. AliExpress with a lapsed token) aborts the search: 503, not charged.
+      if (!isSourceFailure(e)) throw e;
+      return Response.json(
+        {
+          error: "source_unavailable",
+          message: `${reportSourceFailure("v2/search", e)} You were not charged; try again in a few minutes.`,
+        },
+        { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": String(RETRY_AFTER_SECONDS) } },
+      );
     }
     if (data.ukListings.length === 0) {
       return Response.json({ error: "no_results", message: "No Amazon UK listings matched this search, so you were not charged." }, { status: 404 });

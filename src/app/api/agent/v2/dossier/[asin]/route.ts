@@ -1,18 +1,16 @@
 import { connection, type NextRequest } from "next/server";
 import { z } from "zod";
 import { simulatedImageMatcher } from "@/engine/imageMatch";
-import { BudgetExceededError } from "@/server/live/budget";
 import { liveSources } from "@/server/live/config";
-import { newPaymentIdentifier, withDiscoveryHeaders } from "@/server/payments/x402/discovery";
+import { isSourceFailure, reportSourceFailure, RETRY_AFTER_SECONDS } from "@/server/live/unavailable";
+import { DOSSIER_PRICE_USDC, newPaymentIdentifier, withDiscoveryHeaders } from "@/server/payments/x402/discovery";
 import { withX402Payment } from "@/server/payments/x402/middleware";
 import { HEADER_SIWX } from "@/server/payments/x402/siwx";
-import { SourceError } from "@/server/sources/types";
 import { dbDossierCache } from "@/services/dossierCache";
 import { getProductDossier } from "@/services/dossierService";
 import { loadDossier, saveDossier } from "@/services/dossierStore";
 
-// The Standard Dossier tier (ROADMAP.md, pricing: Standard $2).
-const DOSSIER_PRICE_USDC = "2.00";
+// A wallet reopening a Dossier it bought (Sign-In-With-X) pays nothing.
 const REOPEN_PRICE_USDC = "0.00";
 
 const Asin = z.string().regex(/^[A-Z0-9]{10}$/, "asin must be a 10-character Amazon ASIN, e.g. B0CH33F5P2");
@@ -81,8 +79,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           id: paymentId,
         });
       } catch (e) {
-        if (!(e instanceof SourceError || e instanceof BudgetExceededError)) throw e;
-        return Response.json({ error: "source_unavailable", message: `${e.message} You were not charged.` }, { status: 502 });
+        // A source that fails (e.g. AliExpress with a lapsed token) aborts the Dossier: 503, not charged.
+        if (!isSourceFailure(e)) throw e;
+        return Response.json(
+          {
+            error: "source_unavailable",
+            message: `${reportSourceFailure("v2/dossier", e)} You were not charged; try again in a few minutes.`,
+          },
+          { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": String(RETRY_AFTER_SECONDS) } },
+        );
       }
       if (!result) {
         return Response.json({ error: "no_product", message: `Amazon UK has no priced product ${asin}, so you were not charged.` }, { status: 404 });

@@ -1,6 +1,6 @@
 {
   "name": "productradar-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "ProductRadar as an MCP tool: 8-part product Dossiers for UK/EU sellers (landed margin after VAT, duty, fees and ads; every number cites its source), paid per call in USDC over x402.",
   "license": "UNLICENSED",
   "type": "module",
@@ -26,6 +26,6 @@
     "esbuild": "^0.25.0",
     "typescript": "^5",
     "viem": "2.57.4",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   }
 }

@@ -154,7 +154,7 @@ const server = new McpServer(
   {
     instructions:
       "ProductRadar builds an 8-part Dossier for an Amazon UK product: verdict, resellability, UK/EU landed margin, " +
-      "momentum, saturation, supplier matches, evidence and exports. Start with search_products (plain words, $0.01) to " +
+      "momentum, saturation, supplier matches, evidence and exports. Start with search_products (plain words, $0.05) to " +
       "find the product most Amazon UK listings agree on; call get_product_dossier ($2.00) with an ASIN for one product. " +
       "Both are paid per call in USDC over x402; get_payment_status is free. The landed margin is calculated after VAT, " +
       "import duty, marketplace fees and advertising, from sourced supplier and retail prices: every number cites its " +
@@ -179,7 +179,7 @@ server.registerTool(
       "(synonyms are searched too when too few agree): " +
       DOSSIER_PARTS +
       ". Parts below their confidence gate are withheld, with what evidence is missing. Use product.identifiers.asin " +
-      "with get_product_dossier for a specific product. Paid: one x402 micro-payment of 0.01 USDC per call; nothing is " +
+      "with get_product_dossier for a specific product. Paid: one x402 micro-payment of 0.05 USDC per call; nothing is " +
       "charged when no listing matches or a source fails.",
     inputSchema: {
       query: z
@@ -202,7 +202,8 @@ server.registerTool(
       "The Standard 8-part ProductRadar Dossier for one Amazon UK product, by its ASIN: its product page (price, brand, " +
       "seller, category), other listings of it and supplier matches, giving " +
       DOSSIER_PARTS +
-      ". Served from a 48-hour cache when a fresh copy exists. Paid: one x402 payment of 2.00 USDC per call.",
+      ". Served from a 48-hour cache when a fresh copy exists. Paid: one x402 payment of 2.00 USDC per call; nothing " +
+      "is charged when Amazon UK has no such product or a source fails.",
     inputSchema: {
       asin: z
         .string()

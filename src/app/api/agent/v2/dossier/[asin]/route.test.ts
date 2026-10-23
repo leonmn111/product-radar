@@ -6,7 +6,7 @@ import { NextRequest } from "next/server";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RetailListing, RetailProductDetail, SupplierOffer } from "@/server/live/types";
-import type { RetailSource, SupplierSource } from "@/server/sources/types";
+import { SourceError, type RetailSource, type SupplierSource } from "@/server/sources/types";
 
 vi.hoisted(() => {
   Object.assign(process.env, {
@@ -244,6 +244,21 @@ describe("GET /api/agent/v2/dossier/{asin}", () => {
     expect(res.status).toBe(404);
     expect(res.headers.get(HEADER_RESPONSE)).toBeNull();
     expect(mem.payments.some((p) => p.resourcePath === "/api/agent/v2/dossier/B0NOTHERE1")).toBe(false); // reservation released
+  });
+
+  it("aborts with 503 and doesn't charge when AliExpress fails after payment, instead of an AVOID verdict", async () => {
+    mem.cache.delete(ASIN); // a fresh build, not a cached copy
+    vi.mocked(supplier.search).mockRejectedValueOnce(new SourceError("aliexpress", "The specified access token is invalid or expired"));
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const required = await challenge(ASIN);
+    const res = await call(ASIN, { [HEADER_SIGNATURE]: await payFor(required) });
+    const body = await res.json();
+    expect([res.status, body.error, res.headers.get("retry-after")]).toEqual([503, "source_unavailable", "120"]);
+    expect(body.message).not.toMatch(/token/i); // the cause is logged for the owner, not told to the caller
+    expect(res.headers.get(HEADER_RESPONSE)).toBeNull(); // not settled
+    expect(mem.payments.some((p) => p.resourcePath === `/api/agent/v2/dossier/${ASIN}` && p.status !== "SETTLED")).toBe(false); // reservation released
+    expect(mem.cache.has(ASIN)).toBe(false); // nothing half-built is cached
+    errors.mockRestore();
   });
 
   it("checks the ASIN before payment, and gives each Dossier one address", async () => {

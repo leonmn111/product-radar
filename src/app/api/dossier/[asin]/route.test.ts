@@ -165,7 +165,13 @@ describe("POST /api/dossier/{asin}", () => {
     const missing = await call("B0NOTHERE1");
     expect([missing.status, (await missing.json()).message]).toEqual([404, "Amazon UK has no priced product B0NOTHERE1. Your 4 credits were returned."]);
     vi.mocked(retail.product).mockRejectedValueOnce(new SourceError("rainforest", "timed out"));
-    expect((await call()).status).toBe(502);
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failed = await call();
+    expect([failed.status, (await failed.json()).message]).toEqual([
+      503,
+      "A data source (rainforest) didn't answer properly, so no Dossier was built. Try again in a few minutes. Your 4 credits were returned.",
+    ]);
+    errors.mockRestore();
     expect(credits(user)).toBe(8);
     expect(mem.ledger.filter((e) => e.userId === user).map((e) => [e.kind, e.delta, e.balanceAfter])).toEqual([
       ["SPEND", -4, 4],

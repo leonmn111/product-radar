@@ -26,19 +26,27 @@ export type BazaarEndpoint = {
   extensions?: string[]; // x402 extensions the endpoint supports, e.g. "sign-in-with-x" (free reopening)
 };
 
+/**
+ * The v2 prices in USDC (ROADMAP.md, pricing), the one place they're set. A search spends at least one
+ * Rainforest credit (about $0.046 on the Hobbyist plan) plus an AliExpress call, so it's priced at $0.05,
+ * not the $0.01 it launched at (2026-10-23).
+ */
+export const SEARCH_PRICE_USDC = "0.05";
+export const DOSSIER_PRICE_USDC = "2.00";
+
 /** The paid endpoints that exist today. Each future price tier is added here when its endpoint ships. */
 export const BAZAAR: BazaarEndpoint[] = [
   {
     method: "GET",
     path: "/api/agent/v2/search",
-    priceUsdc: "0.01",
+    priceUsdc: SEARCH_PRICE_USDC,
     scheme: "exact",
     description: "8-part product Dossier for a search: verdict, resellability, landed margin, momentum, saturation, supplier matches, evidence, exports",
   },
   {
     method: "GET",
     path: "/api/agent/v2/dossier/:asin",
-    priceUsdc: "2.00",
+    priceUsdc: DOSSIER_PRICE_USDC,
     scheme: "exact",
     description: "Standard Dossier for one Amazon UK product (ASIN): its product page, other listings of it and supplier matches. Reopen it free with Sign-In-With-X",
     extensions: ["sign-in-with-x"],
@@ -80,7 +88,7 @@ export const DOSSIER_CAPABILITIES =
   "Parts without enough evidence are withheld and say what's missing; nothing is estimated.";
 
 /** When the endpoints or their terms last changed. */
-export const BAZAAR_UPDATED = "2026-10-16T00:00:00.000Z";
+export const BAZAAR_UPDATED = "2026-10-23T00:00:00.000Z";
 
 type ManifestEndpoint = {
   path: string;
@@ -99,7 +107,7 @@ type ManifestEndpoint = {
 const MANIFEST: ManifestEndpoint[] = [
   {
     path: "/api/agent/v2/search",
-    priceUsdc: "0.01",
+    priceUsdc: SEARCH_PRICE_USDC,
     description: `Search Amazon UK for a product idea and get the Dossier for the product most listings agree on. Call it to answer "is this worth selling in the UK?" from a keyword. ${DOSSIER_CAPABILITIES}`,
     tags: ["ecommerce", "amazon-uk", "product-research", "dropshipping", "margins"],
     input: { queryParams: { q: "ceramic coffee mug" } },
@@ -109,7 +117,7 @@ const MANIFEST: ManifestEndpoint[] = [
   },
   {
     path: "/api/agent/v2/dossier/:asin",
-    priceUsdc: "2.00",
+    priceUsdc: DOSSIER_PRICE_USDC,
     description: `The Standard Dossier for one Amazon UK product (by ASIN): its product page, other listings of it, supplier matches and 12-week momentum. Call it once a product is chosen, before ordering stock. A wallet that bought it reopens it free with Sign-In-With-X, and downloads its Shopify CSV at /export/csv. ${DOSSIER_CAPABILITIES}`,
     tags: ["ecommerce", "amazon-uk", "product-research", "supplier-sourcing", "margins"],
     input: { pathParams: { asin: "B0CH33F5P2" } },

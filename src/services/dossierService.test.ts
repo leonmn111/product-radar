@@ -197,20 +197,30 @@ describe("fetchDossierData", () => {
     expect(retail.search).toHaveBeenCalledTimes(1);
   });
 
-  it("asks the supplier source for the best-corroborated product, and keeps a supplier failure as a note", async () => {
+  it("asks the supplier source for the best-corroborated product", async () => {
     const retail: RetailSource = { name: "retail", search: vi.fn(async () => strong.ukListings), product: vi.fn(async () => null) };
-    const supplier: SupplierSource = {
-      name: "supplier",
-      search: vi.fn(async () => {
-        throw new Error("rate limited");
-      }),
-    };
+    const supplier: SupplierSource = { name: "supplier", search: vi.fn(async () => [offer(1, 2.1)]) };
     const data = await fetchDossierData("ceramic coffee mug", { retail, supplier });
     expect(retail.search).toHaveBeenCalledWith("ceramic coffee mug", "GB", expect.anything());
     expect(supplier.search).toHaveBeenCalledWith(expect.stringContaining("mug"), "GB", expect.anything());
     expect(data.ukListings).toHaveLength(4);
-    expect(data.suppliers).toEqual([]);
-    expect(data.notes?.[0]).toContain("rate limited");
+    expect(data.suppliers).toHaveLength(1);
+  });
+
+  it("never turns a supplier failure into 'no supplier' (which would read as AVOID): it throws", async () => {
+    const retail: RetailSource = { name: "retail", search: vi.fn(async () => strong.ukListings), product: vi.fn(async () => null) };
+    for (const failure of [
+      new SourceError("aliexpress", "The specified access token is invalid or expired"),
+      new SourceError("aliexpress", "network error"),
+      new SourceError("aliexpress", "App call limited"),
+    ]) {
+      const supplier: SupplierSource = { name: "aliexpress", search: vi.fn(async () => Promise.reject(failure)) };
+      await expect(fetchDossierData("ceramic coffee mug", { retail, supplier })).rejects.toBe(failure);
+      await expect(fetchProductDossierData("B0MUGPAGE1", { retail: { ...retail, product: vi.fn(async () => ({ listing: listing(1, 12.99), brand: null, sellerName: null, soldByAmazon: false, category: null, bulletPoints: [], description: null })) }, supplier })).rejects.toBe(failure);
+    }
+    // A search that works and finds nothing is the only "no supplier".
+    const empty = await fetchDossierData("ceramic coffee mug", { retail, supplier: { name: "aliexpress", search: vi.fn(async () => []) } });
+    expect(empty.suppliers).toEqual([]);
   });
 });
 
@@ -346,6 +356,12 @@ describe("getProductDossier: Momentum from Keepa (and simulated ads, sample data
     const r = await getProductDossier("B0MUGPAGE1", failing);
     expect(r!.dossier.momentum.status).toBe("withheld");
     expect(r!.dossier.notes.join(" ")).toContain("keepa: out of tokens");
+    // Momentum doesn't feed the verdict, so the Dossier stands; but that copy isn't cached for 48 hours.
+    expect(r!.dossier.verdict.status === "shown" && r!.dossier.verdict.value.kind).not.toBe("AVOID");
+    expect(failing.cache.put).not.toHaveBeenCalled();
+    const ok = deps();
+    await getProductDossier("B0MUGPAGE1", ok);
+    expect(ok.cache.put).toHaveBeenCalledOnce();
   });
 
   it("adds a simulated ad duration only on sample data, and labels it", async () => {

@@ -102,13 +102,14 @@ async function searchWithSynonyms(
   return [...byId.values()];
 }
 
-async function supplierOffers(title: string, supplier: SupplierSource, budget: QueryBudget, notes: string[]) {
-  try {
-    return await supplier.search(searchTermFor(title), "GB", budget);
-  } catch (e) {
-    notes.push(`Supplier search failed (${failure(e)}), so no supplier evidence was used.`);
-    return [];
-  }
+/**
+ * Supplier offers for a product. A supplier source that fails (token refused or expired, network,
+ * rate limit, the query's budget) throws: it is never read as "no supplier matches", which would turn an
+ * outage into an AVOID verdict. The caller answers with an error instead, so nobody is charged for it.
+ * Only a search that succeeds and finds nothing means there's no supplier.
+ */
+function supplierOffers(title: string, supplier: SupplierSource, budget: QueryBudget): Promise<SupplierOffer[]> {
+  return supplier.search(searchTermFor(title), "GB", budget);
 }
 
 /**
@@ -125,7 +126,7 @@ export async function fetchDossierData(
   const terms = expandQuery(query);
   const ukListings = await searchWithSynonyms(terms.length ? terms : [query], sources.retail, budget, maxExtraSearches, (ls) => groupSameProduct(ls)[0]?.length ?? 0, [], notes);
   const top = groupSameProduct(ukListings)[0];
-  const suppliers = top ? await supplierOffers(top[0].title, sources.supplier, budget, notes) : [];
+  const suppliers = top ? await supplierOffers(top[0].title, sources.supplier, budget) : [];
   return { query, ukListings, suppliers, notes };
 }
 
@@ -152,7 +153,7 @@ export async function fetchProductDossierData(
   } catch (e) {
     notes.push(`The search for other listings of this product failed (${failure(e)}), so only its own page was used.`);
   }
-  const suppliers = await supplierOffers(listing.title, sources.supplier, budget, notes);
+  const suppliers = await supplierOffers(listing.title, sources.supplier, budget);
   return { query: asin, productId: listing.id, details, ukListings, suppliers, notes };
 }
 
@@ -441,6 +442,7 @@ export async function getProductDossier(asin: string, deps: ProductDossierDeps):
   }
   const budget = deps.budget ?? new QueryBudget({ maxCalls: 6, deadlineMs: 50_000 });
   const data = await fetchProductDossierData(asin, deps.sources, { budget });
+  let historyFailed = false;
   if (!data) return null;
   const input: DossierInput = { ...data, sample: deps.sample, notes: [...(data.notes ?? []), ...(deps.notes ?? [])] };
   let dossier = buildDossier(input, { id: deps.id, now: clock(), imageMatcher: deps.imageMatcher });
@@ -455,7 +457,10 @@ export async function getProductDossier(asin: string, deps: ProductDossierDeps):
       try {
         history = await deps.sources.history.history(asin, budget);
       } catch (e) {
+        // Momentum doesn't feed the verdict, so this Dossier is still sound with Momentum withheld;
+        // it just isn't cached, so the next request asks for the history again.
         notes.push(`Sales-rank history failed (${failure(e)}), so Momentum is withheld.`);
+        historyFailed = true;
       }
     }
     let adDuration: DossierInput["adDuration"] = null;
@@ -465,10 +470,12 @@ export async function getProductDossier(asin: string, deps: ProductDossierDeps):
     }
     dossier = buildDossier({ ...input, notes, history, adDuration }, { id: deps.id, now: clock(), imageMatcher: deps.imageMatcher });
   }
-  try {
-    await deps.cache.put(dossier, clock());
-  } catch (e) {
-    console.error("[dossier] couldn't cache", asin, e);
+  if (!historyFailed) {
+    try {
+      await deps.cache.put(dossier, clock());
+    } catch (e) {
+      console.error("[dossier] couldn't cache", asin, e);
+    }
   }
   return { dossier, cache: "miss" };
 }

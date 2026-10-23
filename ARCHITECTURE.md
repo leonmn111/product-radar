@@ -117,6 +117,14 @@ read), so a repeat request reuses its evidence instead of paying the providers a
 for a cached copy. It gets the buyer's own id, a note saying it came from the cache, and an
 `X-Dossier-Cache: hit` header. Sample (development) Dossiers are only ever served to sample mode.
 
+**A source that fails never becomes "no data".** If the retail or supplier source fails during a
+request (a refused or expired AliExpress token, a network error, a rate limit, or the query's budget
+running out), no Dossier is built: the paid routes answer `503 source_unavailable` with
+`Retry-After`, the x402 payment isn't settled and credits are refunded (`src/server/live/unavailable.ts`).
+Only a supplier search that succeeds and finds nothing counts as "no supplier" (an AVOID). The caller
+is told which provider failed; the full error goes to the server log. A failed Keepa lookup only
+withholds Momentum, which doesn't feed the verdict, and that copy isn't cached.
+
 ## Monetization
 
 - **x402 (USDC, native).** Today's implementation supports the `exact` scheme. The playbook adds:
@@ -156,7 +164,7 @@ for a cached copy. It gets the buyer's own id, a note saying it came from the ca
 
 | Product | Price |
 | --- | --- |
-| Search | $0.01 |
+| Search | $0.05 |
 | Standard (Dossier) | $2 |
 | On-Demand (fresh live data) | up to $4 (charged with `Upto`) |
 | Shortlist | $12 |
@@ -217,7 +225,7 @@ terms.
 | `src/engine/exports.ts` | `generateShopifyCSV()`: a Dossier with a shown margin as one draft Shopify listing; served at `/api/agent/v2/dossier/{asin}/export/csv` to its buyer |
 | `src/services/library.ts`, `/library`, `src/components/DossierLibrary.tsx` | The user's purchased Dossiers: owned = a kept (unrefunded) credit spend that references a delivered Dossier (`DossierRecord`, with summary columns for listing). Reopening at `/terminal?asin=…&id=…` is free, from that copy |
 | `src/components/CreditPacksModal.tsx` | The three credit packs, bought through Stripe Checkout; opened from the header's credit balance and from the terminal |
-| `src/app/` | Pages and API routes (`/search`, `/api/agent/v2/search` at $0.01, `/api/agent/v2/dossier/{asin}` at $2) |
+| `src/app/` | Pages and API routes (`/search`, `/api/agent/v2/search` at $0.05, `/api/agent/v2/dossier/{asin}` at $2; both set in `src/server/payments/x402/discovery.ts`) |
 
 ## Evidence, the product's core (CLAUDE.md Rule 3)
 

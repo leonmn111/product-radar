@@ -7,9 +7,8 @@ import { createRateLimiter } from "@/lib/rate-limit";
 import { getViewer } from "@/server/auth/entitlements";
 import { createDbCreditStore, InsufficientCreditsError } from "@/server/billing/credits";
 import { STANDARD_DOSSIER_CREDITS } from "@/server/billing/plans";
-import { BudgetExceededError } from "@/server/live/budget";
 import { liveSources } from "@/server/live/config";
-import { SourceError } from "@/server/sources/types";
+import { isSourceFailure, reportSourceFailure } from "@/server/live/unavailable";
 import { dbDossierCache } from "@/services/dossierCache";
 import { getProductDossier } from "@/services/dossierService";
 import { saveDossier } from "@/services/dossierStore";
@@ -78,7 +77,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await saveDossier(result.dossier);
     return json(result.dossier, 200, { "X-Dossier-Cache": result.cache, "X-Credits-Charged": String(cost), "X-Credits-Remaining": String(balance) });
   } catch (e) {
-    if (e instanceof SourceError || e instanceof BudgetExceededError) return await fail(502, { error: "source_unavailable", message: e.message });
+    if (isSourceFailure(e)) return await fail(503, { error: "source_unavailable", message: `${reportSourceFailure("dossier", e)} Try again in a few minutes.` });
     console.error("[dossier] credit request failed", asin, e);
     return await fail(500, { error: "internal_error", message: "The Dossier couldn't be built." });
   }

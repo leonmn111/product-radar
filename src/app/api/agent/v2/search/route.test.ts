@@ -6,7 +6,7 @@ import { NextRequest } from "next/server";
 import { privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RetailListing } from "@/server/live/types";
-import type { RetailSource, SupplierSource } from "@/server/sources/types";
+import { SourceError, type RetailSource, type SupplierSource } from "@/server/sources/types";
 
 vi.hoisted(() => {
   Object.assign(process.env, {
@@ -91,26 +91,26 @@ describe("GET /api/agent/v2/search", () => {
   });
 
   it("a search with under 0.5 confidence is paid for and returns a Dossier without its verdict or numbers", async () => {
-    // 1. No payment yet: 402 at $0.01 USDC, with the discovery headers.
+    // 1. No payment yet: 402 at $0.05 USDC, with the discovery headers.
     const unpaid = await call("?q=ceramic+coffee+mug");
     expect(unpaid.status).toBe(402);
-    expect(unpaid.headers.get(HEADER_PRICE)).toBe("0.01");
+    expect(unpaid.headers.get(HEADER_PRICE)).toBe("0.05");
     expect(unpaid.headers.get(HEADER_PAYMENT_ID)).toMatch(/^[0-9a-f]{64}$/);
     const required = decode(unpaid.headers.get(HEADER_REQUIRED));
-    expect(required.accepts[0]).toMatchObject({ scheme: "exact", network: "eip155:84532", amount: "10000" });
+    expect(required.accepts[0]).toMatchObject({ scheme: "exact", network: "eip155:84532", amount: "50000" });
     expect(retail.search).not.toHaveBeenCalled(); // nothing is fetched before payment
 
     // 2. Paid: 200, settled, with a Dossier whose gated parts are withheld.
     const res = await call("?q=ceramic+coffee+mug", { [HEADER_SIGNATURE]: await payFor(required) });
     expect(res.status).toBe(200);
-    expect(decode(res.headers.get(HEADER_RESPONSE))).toMatchObject({ success: true, amount: "10000" });
+    expect(decode(res.headers.get(HEADER_RESPONSE))).toMatchObject({ success: true, amount: "50000" });
     expect(db.agentPayment.create).toHaveBeenCalledTimes(1);
-    expect(res.headers.get(HEADER_PRICE)).toBe("0.01");
+    expect(res.headers.get(HEADER_PRICE)).toBe("0.05");
     const paymentId = res.headers.get(HEADER_PAYMENT_ID);
     expect(paymentId).toMatch(/^[0-9a-f]{64}$/);
     expect(paymentId).not.toBe(unpaid.headers.get(HEADER_PAYMENT_ID)); // a fresh identifier per request
     expect(JSON.parse(res.headers.get(HEADER_BAZAAR) ?? "[]")).toContainEqual(
-      expect.objectContaining({ method: "GET", path: "/api/agent/v2/search", priceUsdc: "0.01", scheme: "exact" }),
+      expect.objectContaining({ method: "GET", path: "/api/agent/v2/search", priceUsdc: "0.05", scheme: "exact" }),
     );
 
     const dossier = await res.json();
@@ -134,7 +134,7 @@ describe("GET /api/agent/v2/search", () => {
     for (const q of ["", "?q=x"]) {
       const res = await call(q);
       expect(res.status).toBe(400);
-      expect(res.headers.get(HEADER_PRICE)).toBe("0.01");
+      expect(res.headers.get(HEADER_PRICE)).toBe("0.05");
       expect(res.headers.get(HEADER_PAYMENT_ID)).toMatch(/^[0-9a-f]{64}$/);
     }
   });
@@ -144,7 +144,7 @@ describe("GET /api/agent/v2/search", () => {
     const res = await call("?q=ceramic+coffee+mug");
     expect(res.status).toBe(503);
     expect((await res.json()).missing).toHaveLength(1);
-    expect(res.headers.get(HEADER_PRICE)).toBe("0.01");
+    expect(res.headers.get(HEADER_PRICE)).toBe("0.05");
   });
 
   it("doesn't charge for a search with no listings", async () => {
@@ -154,5 +154,25 @@ describe("GET /api/agent/v2/search", () => {
     expect(res.status).toBe(404);
     expect(res.headers.get(HEADER_RESPONSE)).toBeNull(); // not settled
     expect(db.agentPayment.deleteMany).toHaveBeenCalled(); // the reserved nonce is released
+  });
+
+  it("aborts with 503 and doesn't charge when the supplier fails after payment, instead of an AVOID verdict", async () => {
+    const strong = [1, 2, 3, 4].map((n) => listing({ id: `B0TESTMUG${n}`, evidence: { ...listing().evidence, id: `rainforest:amazon.co.uk:B0TESTMUG${n}` } }));
+    for (const failure of ["The specified access token is invalid or expired", "network error", "App call limited"]) {
+      vi.mocked(retail.search).mockResolvedValueOnce(strong);
+      vi.mocked(supplier.search).mockRejectedValueOnce(new SourceError("aliexpress", failure));
+      vi.mocked(db.agentPayment.create).mockClear();
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      const required = decode((await call("?q=ceramic+coffee+mug")).headers.get(HEADER_REQUIRED));
+      const res = await call("?q=ceramic+coffee+mug", { [HEADER_SIGNATURE]: await payFor(required) });
+      const body = await res.json();
+      expect([res.status, body.error, res.headers.get("retry-after")]).toEqual([503, "source_unavailable", "120"]);
+      expect(body.message).toBe("A data source (aliexpress) didn't answer properly, so no Dossier was built. You were not charged; try again in a few minutes.");
+      expect(body).not.toHaveProperty("verdict");
+      expect(res.headers.get(HEADER_RESPONSE)).toBeNull(); // not settled
+      expect(db.agentPayment.create).not.toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "SETTLED" }) }));
+      expect(errors).toHaveBeenCalledWith("[v2/search] source failed:", `aliexpress: ${failure}`); // the owner sees the cause
+      errors.mockRestore();
+    }
   });
 });

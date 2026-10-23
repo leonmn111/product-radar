@@ -32,7 +32,7 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
   *Template scaffolded 2026-10-16.*
 - **Dossier assembly:** `src/services/dossierService.ts` turns Amazon UK listings and supplier offers
   into the 8-part Dossier: compliance first (an unsellable product gets no money maths), then
-  confidence and the two gates. `/api/agent/v2/search` now returns it at **$0.01** with the
+  confidence and the two gates. `/api/agent/v2/search` now returns it at **$0.05** (was $0.01 until 2026-10-23) with the
   `x402-price`, `x402-payment-identifier` and `x402-bazaar` headers. *Built 2026-10-16.*
 - **Standard Dossier, $2:** `/api/agent/v2/dossier/{asin}` builds the Dossier for one Amazon UK product
   from its product page (price, brand, seller, category), other listings of it and supplier matches,
@@ -66,8 +66,10 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
   `src/server/billing/plans.ts`). Sold in Stripe test mode until the owner switches it on;
   credits are a PostgreSQL ledger (`User.platformCredits` + `CreditLedgerEntry`, 2026-10-16), spent by
   `POST /api/dossier/{asin}` (4 credits, 1 on Pro).
-- **Prices:** Search $0.01 · Standard $2 · On-Demand up to $4 · Shortlist $12 · Pre-order $38.
-  `/api/agent/v2/search` moved from $0.50 to the $0.01 Search tier on 2026-10-16 (see Phase 0).
+- **Prices:** Search $0.05 · Standard $2 · On-Demand up to $4 · Shortlist $12 · Pre-order $38.
+  `/api/agent/v2/search` moved from $0.50 to the $0.01 Search tier on 2026-10-16 (see Phase 0), then to
+  $0.05 on 2026-10-23 so a search covers its provider calls. Both v2 prices are set in one place:
+  `src/server/payments/x402/discovery.ts`.
 - **Momentum, wired 2026-10-16:**
   - The Standard Dossier asks Keepa for 90 days of history only once the product is sellable and the
     evidence clears 0.7, so tokens aren't spent on Dossiers that would be withheld or avoided anyway.
@@ -123,7 +125,7 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
   - The credit is taken first and returned if the search fails or finds nothing.
   - It returns products (each its best listing, with its evidence) to open as Dossiers.
   - Only Rainforest is needed, so it works in production before AliExpress is connected.
-- **x402 Bazaar manifest, built 2026-10-16:** `GET /api/agent/v2/bazaar` lists the $0.01 search and the
+- **x402 Bazaar manifest, built 2026-10-16:** `GET /api/agent/v2/bazaar` lists the $0.05 search and the
   $2 Dossier, in the x402 discovery format, with live terms and an LLM-readable description of the 8
   parts. It passes the official `@x402/extensions` bazaar validator.
   *Started 2026-10-16:* `src/components/DossierTerminal.tsx`, the 8 panels in a dense, terminal-style
@@ -185,9 +187,10 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
 - **Rainforest trial:** 98 credits left (one spent on 2026-10-16 recording a product page for tests);
   continuing needs the Hobbyist plan (about $23/month). A $2 Dossier uses 2–4 credits (product page,
   a search, up to two synonym searches), about $0.09–$0.18 on Hobbyist.
-- **Search at $0.01 costs more than it earns:** each live search spends at least one Rainforest credit
-  (about $0.046 on Hobbyist), two when a synonym is searched, plus an AliExpress call. The $2 Dossier
-  endpoint now exists; decide whether the $0.01 search stays live or serves cached results only.
+- **Search margin is thin:** each live search spends at least one Rainforest credit (about $0.046 on
+  Hobbyist), two when a synonym is searched (about $0.092), plus a free AliExpress call. At $0.05
+  (since 2026-10-23) a one-credit search just covers its cost and a synonym search still loses about
+  $0.04; serving repeat searches from cache would widen it.
 - **Unconfirmed fee figures** (labelled as estimates in every margin until confirmed): the TikTok
   Shop UK £0.50 self-ship fee, and the EU €2 handling fee (proposed, not adopted). Confirm the
   TikTok fees in Seller Center; the EU fee when it's adopted.

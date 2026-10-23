@@ -15,11 +15,12 @@ Full documentation: https://theproductradar.io/docs#mcp
 
 | Tool | Cost | What it returns |
 | --- | --- | --- |
-| `search_products` | 0.01 USDC | Search Amazon UK in plain words ("ceramic coffee mug"): the 8-part Dossier for the product most listings agree on. Calls `GET /api/agent/v2/search` |
+| `search_products` | 0.05 USDC | Search Amazon UK in plain words ("ceramic coffee mug"): the 8-part Dossier for the product most listings agree on. Calls `GET /api/agent/v2/search` |
 | `get_product_dossier` | 2.00 USDC | The Standard 8-part Dossier for one Amazon UK product, by ASIN (`B0CH33F5P2`): its product page, other listings of it and supplier matches. Calls `GET /api/agent/v2/dossier/{asin}` |
 | `get_payment_status` | free | Wallet, caps, and the payments made this session |
 
-Nothing is charged when a search finds no listing or a data source fails. Scores, verdicts and margins
+Nothing is charged when a search finds no listing or a data source (Amazon UK or AliExpress) fails: the call
+answers with an error instead of a Dossier built on missing data. Scores, verdicts and margins
 are calculated estimates, not guarantees.
 
 ## Install
@@ -31,7 +32,7 @@ Claude Desktop (`claude_desktop_config.json`) or Cursor (`~/.cursor/mcp.json`):
   "mcpServers": {
     "productradar": {
       "command": "npx",
-      "args": ["-y", "https://theproductradar.io/mcp/productradar-mcp-0.2.0.tgz"],
+      "args": ["-y", "https://theproductradar.io/mcp/productradar-mcp-0.2.1.tgz"],
       "env": {
         "PRODUCTRADAR_WALLET_PRIVATE_KEY": "0x…",
         "PRODUCTRADAR_BUDGET_USDC": "5.00"
@@ -44,7 +45,7 @@ Claude Desktop (`claude_desktop_config.json`) or Cursor (`~/.cursor/mcp.json`):
 Claude Code:
 
 ```bash
-claude mcp add productradar --env PRODUCTRADAR_WALLET_PRIVATE_KEY=0x… -- npx -y https://theproductradar.io/mcp/productradar-mcp-0.2.0.tgz
+claude mcp add productradar --env PRODUCTRADAR_WALLET_PRIVATE_KEY=0x… -- npx -y https://theproductradar.io/mcp/productradar-mcp-0.2.1.tgz
 ```
 
 Needs Node.js 20 or newer.
@@ -54,7 +55,7 @@ Needs Node.js 20 or newer.
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `PRODUCTRADAR_WALLET_PRIVATE_KEY` | none | Wallet that pays (USDC on Base / Base Sepolia). Without it, paid tools explain how to add one. |
-| `PRODUCTRADAR_MAX_PRICE_USDC` | `2.00` | Never pay more than this for one call. Set `0.01` to allow searches only. |
+| `PRODUCTRADAR_MAX_PRICE_USDC` | `2.00` | Never pay more than this for one call. Set `0.05` to allow searches only. |
 | `PRODUCTRADAR_BUDGET_USDC` | `5.00` | Never spend more than this per server session (restart to reset). |
 | `PRODUCTRADAR_API_URL` | `https://theproductradar.io` | API to call. |
 

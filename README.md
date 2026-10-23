@@ -240,7 +240,7 @@ garbage headers are refused and that a failed request isn't charged.
 ### MCP server (`mcp/`)
 
 A stdio MCP server so Claude Desktop, Cursor, Claude Code and agent frameworks can use ProductRadar as
-native tools, on the v2 agent API since 0.2.0: `search_products` (`/api/agent/v2/search`, $0.01) and
+native tools, on the v2 agent API since 0.2.0: `search_products` (`/api/agent/v2/search`, $0.05) and
 `get_product_dossier` (`/api/agent/v2/dossier/{asin}`, $2.00), both paid and settled automatically with the
 official `@x402/fetch` client from the user's own wallet, and `get_payment_status` (free). Spending caps:
 `PRODUCTRADAR_MAX_PRICE_USDC` (default 2.00 per call) and `PRODUCTRADAR_BUDGET_USDC` (default 5.00 per session).
@@ -407,7 +407,7 @@ Validated at startup by `src/lib/env.ts` — the app refuses to start with a mis
 | `X402_NETWORK` | optional | `eip155:84532` Base Sepolia testnet (default) or `eip155:8453` Base mainnet |
 | `X402_FACILITATOR_URL` | optional | Default `https://x402.org/facilitator` (free) on testnet, Coinbase CDP on mainnet |
 | `X402_PAY_TO` | for agent API | Wallet address that receives agent payments |
-| `X402_PRICE_USDC` | optional | Price per agent request, default `0.01` |
+| `X402_PRICE_USDC` | optional | Price per request on the legacy v1 agent API (`/api/agent/v1`), default `0.01`. The v2 prices ($0.05 search, $2 Dossier) are set in `src/server/payments/x402/discovery.ts` |
 | `CDP_API_KEY_ID` | for mainnet | Coinbase Developer Platform secret API key ID (portal.cdp.coinbase.com) |
 | `CDP_API_KEY_SECRET` | for mainnet | That key's secret (Ed25519 base64, or EC PEM) |
 | `SERPAPI_API_KEY` | for `trends:enrich` | SerpApi key (serpapi.com, free plan 250 searches/month). Read by the script only, not the app. |

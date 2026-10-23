@@ -24,7 +24,7 @@ describe("GET /api/agent/v2/bazaar", () => {
     expect(res.headers.get("access-control-allow-origin")).toBe("*");
     expect(body).toMatchObject({ x402Version: 2, pagination: { limit: 2, offset: 0, total: 2 } });
     expect(body.items.map((i: { resource: string; accepts: { amount: string; scheme: string; network: string }[] }) => [i.resource, i.accepts[0].amount, i.accepts[0].scheme])).toEqual([
-      ["http://localhost:3457/api/agent/v2/search", "10000", "exact"], // $0.01
+      ["http://localhost:3457/api/agent/v2/search", "50000", "exact"], // $0.05
       ["http://localhost:3457/api/agent/v2/dossier/:asin", "2000000", "exact"], // $2.00
     ]);
     for (const item of body.items) {
