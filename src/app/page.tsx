@@ -192,7 +192,7 @@ const FAQ: { q: string; a: ReactNode }[] = [
   },
   {
     q: "What's a credit?",
-    a: "Credits pay for searches and Dossiers. A search costs 1 credit and a Standard Dossier 4, or 1 on Pro, and Pro includes 100 free searches a month. A search that finds nothing, or a Dossier that can't be built, costs nothing. Every Dossier you buy stays in your library, and reopening one is free.",
+    a: "Credits pay for searches and Dossiers. A new account's first Standard Dossier is free. After that, a search costs 1 credit and a Standard Dossier 4, or 1 on Pro, and Pro includes 100 free searches a month. A search that finds nothing, or a Dossier that can't be built, costs nothing. Every Dossier you buy stays in your library, and reopening one is free.",
   },
   {
     q: "Can I cancel?",

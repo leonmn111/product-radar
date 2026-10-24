@@ -68,6 +68,9 @@ const EnvSchema = z
     // Cached products don't count against the site-wide cap. 0 switches free checks off.
     FREE_VERDICTS_PER_DAY: count(20),
     FREE_VERDICTS_PER_VISITOR: count(1),
+    // A new account's free first Dossier (its WELCOME credits): at most this many accounts a UTC day get one,
+    // site-wide, so fake sign-ups can't run up provider costs. 0 switches the welcome off.
+    WELCOME_DOSSIERS_PER_DAY: count(50),
     // Keepa API key (keepa.com, a paid plan): Amazon UK price and sales-rank history for Momentum.
     // Without it, Momentum is withheld and says the history is missing.
     KEEPA_API_KEY: optional,

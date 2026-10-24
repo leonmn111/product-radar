@@ -8,12 +8,12 @@ import type { ReactNode } from "react";
 function Tile({ className = "", icon, title, body, children }: { className?: string; icon: string; title: string; body: string; children: ReactNode }) {
   return (
     <article
-      className={`group relative isolate flex flex-col overflow-hidden rounded-3xl border border-white/[0.07] bg-gradient-to-b from-surface-dark to-background-dark p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_20px_40px_-24px_rgba(0,0,0,0.7)] transition duration-300 ease-out hover:-translate-y-1 hover:border-accent-mint/30 hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_28px_60px_-28px_rgba(61,220,151,0.25)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:p-8 ${className}`}
+      className={`group relative isolate flex flex-col overflow-hidden rounded-3xl border border-white/[0.07] bg-gradient-to-b from-surface-dark to-background-dark p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_20px_40px_-24px_rgba(0,0,0,0.7)] transition duration-300 ease-out hover:-translate-y-1 hover:border-accent-mint/30 hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_28px_60px_-28px_rgba(0,191,165,0.25)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:p-8 ${className}`}
     >
       {/* The glow that rises on hover, and a mint hairline along the top edge. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(640px_circle_at_50%_-10%,rgba(61,220,151,0.12),transparent_60%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100 motion-reduce:transition-none"
+        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(640px_circle_at_50%_-10%,rgba(0,191,165,0.12),transparent_60%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100 motion-reduce:transition-none"
       />
       <div
         aria-hidden="true"

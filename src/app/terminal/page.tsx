@@ -6,6 +6,7 @@ import { DossierRunner } from "@/components/DossierRunner";
 import { db } from "@/lib/db";
 import { getViewer } from "@/server/auth/entitlements";
 import { createDbCreditStore } from "@/server/billing/credits";
+import { freeDossierLeft } from "@/server/billing/welcome";
 import { STANDARD_DOSSIER_CREDITS } from "@/server/billing/plans";
 import { creditPacksOnSale } from "@/server/billing/sales";
 import { liveSources } from "@/server/live/config";
@@ -39,6 +40,7 @@ async function Terminal({ searchParams }: { searchParams: SearchParams }) {
       example={live.ready && live.sample ? SAMPLE_ASIN : undefined}
       initialAsin={asin}
       reopened={reopened}
+      freeDossier={await freeDossierLeft(db, viewer.id, STANDARD_DOSSIER_CREDITS[viewer.tier])}
     />
   );
 }

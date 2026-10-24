@@ -9,6 +9,7 @@ import Credentials from "next-auth/providers/credentials";
 import Resend from "next-auth/providers/resend";
 import type { SubscriptionTier } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
+import { welcomeNewAccount } from "@/server/auth/welcome-account";
 import { env } from "@/lib/env";
 import {
   authenticate,
@@ -75,6 +76,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error(error) {
       if (error instanceof CredentialsSignin) return;
       console.error(error);
+    },
+  },
+  events: {
+    // The adapter just created an account (a first email-link sign-in): its free first Dossier.
+    async createUser({ user }) {
+      if (user.id) await welcomeNewAccount(user.id);
     },
   },
   callbacks: {

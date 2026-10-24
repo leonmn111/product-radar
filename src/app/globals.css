@@ -4,19 +4,20 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * ProductRadar design system: midnight-blue surfaces and a mint-green accent.
- * Each token is a Tailwind colour, so it works as a utility: bg-background-dark, bg-surface-dark,
- * text-accent-mint, ring-line-dark, bg-accent-mint/10, …
- * Contrast (WCAG AA): mint on midnight and midnight text on mint are about 10:1; slate-400 body
- * copy on midnight is about 7:1. Don't use slate-500 or darker for text on these surfaces.
+ * ProductRadar design system: the brand's exact colours. Midnight navy #0A0F1D (the page), dark navy #0F172A
+ * (surfaces and dark text), teal #00BFA5 (calls to action and highlights); the raised, border and hover
+ * shades are derived from them. Each token is a Tailwind colour, so it works as a utility: bg-background-dark,
+ * bg-surface-dark, text-accent-mint, ring-line-dark, bg-accent-mint/10, … ("mint" is the teal accent).
+ * Contrast (WCAG AA): teal on midnight about 8:1, midnight text on teal about 8:1, teal on dark navy about
+ * 7.6:1, slate-400 body copy on midnight about 7:1. Don't use slate-500 or darker for text on these surfaces.
  */
 @theme {
-  --color-background-dark: #0a1020; /* the page */
-  --color-surface-dark: #111a2e; /* cards and panels */
-  --color-surface-raised: #18233b; /* hover and raised panels */
-  --color-line-dark: #24314d; /* borders and dividers */
-  --color-accent-mint: #3ddc97; /* calls to action and highlights */
-  --color-accent-mint-strong: #6ee7b7; /* the accent on hover */
+  --color-background-dark: #0a0f1d; /* midnight navy: the page */
+  --color-surface-dark: #0f172a; /* dark navy: cards, panels and dark text */
+  --color-surface-raised: #172036; /* hover and raised panels */
+  --color-line-dark: #1e293b; /* borders and dividers */
+  --color-accent-mint: #00bfa5; /* teal: calls to action and highlights */
+  --color-accent-mint-strong: #1de9b6; /* the accent on hover */
 }
 
 @theme inline {

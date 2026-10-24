@@ -28,7 +28,7 @@ export function TiltTerminal({ children }: { children: ReactNode }) {
   const scale = useTransform(lift, [0, 1], [1, 1.025]);
   const glareX = useTransform(x, [0, 1], ["0%", "100%"]);
   const glareY = useTransform(y, [0, 1], ["0%", "100%"]);
-  const glare = useMotionTemplate`radial-gradient(520px circle at ${glareX} ${glareY}, rgba(61, 220, 151, 0.13), transparent 55%)`;
+  const glare = useMotionTemplate`radial-gradient(520px circle at ${glareX} ${glareY}, rgba(0, 191, 165, 0.13), transparent 55%)`;
   const halo = useTransform(lift, [0, 1], [0.35, 0.75]);
 
   const active = (e: PointerEvent) => e.pointerType === "mouse" && !reduceMotion;
@@ -54,7 +54,7 @@ export function TiltTerminal({ children }: { children: ReactNode }) {
         <m.div
           aria-hidden="true"
           style={{ opacity: halo }}
-          className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-[radial-gradient(closest-side,rgba(61,220,151,0.22),transparent)] blur-2xl"
+          className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-[radial-gradient(closest-side,rgba(0,191,165,0.22),transparent)] blur-2xl"
         />
         <m.div style={{ rotateX, rotateY, scale, transformStyle: "preserve-3d" }} className="relative will-change-transform">
           {children}

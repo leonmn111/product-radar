@@ -17,6 +17,7 @@ const LINK_ERRORS: Record<string, string> = {
   CredentialsSignin: "That email and password don't match. Check them, or use an email link instead.",
   InvalidEmail: "Please enter a valid email address.",
   RateLimited: "Too many sign-in emails requested. Please wait 15 minutes and try again.",
+  SignupLimited: "Too many accounts have been created from this connection today. Please sign in, or try again tomorrow.",
   Verification: "That sign-in link has expired or was already used. Request a new one below.",
   EmailSignin: "We couldn't send the sign-in email. Please try again in a moment.",
   // Auth.js reports any failure to send the email (e.g. the provider rejecting
@@ -45,7 +46,8 @@ async function SignInForm({ searchParams }: { searchParams: Promise<Record<strin
         {upgrading ? (registering ? "Create your account to start Pro" : "Sign in to upgrade to Pro") : "Welcome to ProductRadar"}
       </h1>
       <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-        Sign in or create a free account with a password, or get a one-time link by email.
+        Sign in or create a free account with a password, or get a one-time link by email. New accounts get their first full
+        Dossier free.
         {upgrading && " You'll go straight to secure checkout afterwards."}
       </p>
       <div className="mt-6">

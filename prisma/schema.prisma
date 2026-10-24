@@ -71,6 +71,7 @@ model User {
   sessions            Session[]
   passwordResetTokens PasswordResetToken[]
   creditEntries       CreditLedgerEntry[]
+  welcomeGrant        WelcomeGrant?
   bulkJobs            BulkJob[]
   searches            SearchUsage[]
 
@@ -86,6 +87,7 @@ enum CreditEntryKind {
   SPEND // credits spent on a Dossier
   REFUND // a spend given back because the request failed
   GRANT // a plan's monthly credits (Agency), on a paid subscription invoice
+  WELCOME // a new account's first Standard Dossier, free (once per account)
 }
 
 model CreditLedgerEntry {
@@ -338,13 +340,13 @@ enum AgentPaymentStatus {
 }
 
 model AgentPayment {
-  id          String             @id @default(uuid(7)) @db.Uuid
-  nonce       String             @unique // EIP-3009 authorization nonce — one use only (replay protection)
-  payer       String // 0x… wallet that signed
-  payTo       String
-  network     String // CAIP-2, e.g. "eip155:84532"
-  asset       String // token contract
-  amount      String // atomic units (USDC has 6 decimals)
+  id           String             @id @default(uuid(7)) @db.Uuid
+  nonce        String             @unique // EIP-3009 authorization nonce — one use only (replay protection)
+  payer        String // 0x… wallet that signed
+  payTo        String
+  network      String // CAIP-2, e.g. "eip155:84532"
+  asset        String // token contract
+  amount       String // atomic units (USDC has 6 decimals)
   resource     String // URL that was paid for
   resourcePath String? // its path, e.g. "/api/agent/v2/dossier/B0CH33F5P2": what Sign-In-With-X reopens for this payer
   reference    String? // what the payment bought, as the paid route named it (the Dossier id); opaque here
@@ -407,6 +409,22 @@ model DossierCache {
 // site-wide cap (FREE_VERDICTS_PER_DAY) that bounds what anonymous checks can spend. Cache hits aren't
 // counted, and nothing about the visitor is stored.
 model FreeVerdictDay {
+  day  DateTime @id @db.Date
+  used Int      @default(0)
+}
+
+// A new account's free first Dossier: one row per account ever (the primary key is the guarantee), written
+// in the same transaction as its WELCOME credits.
+model WelcomeGrant {
+  userId    String   @id @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credits   Int
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+}
+
+// Welcome grants per UTC day: the site-wide cap (WELCOME_DOSSIERS_PER_DAY) that bounds what fake sign-ups
+// could spend, whatever addresses they come from.
+model WelcomeGrantDay {
   day  DateTime @id @db.Date
   used Int      @default(0)
 }

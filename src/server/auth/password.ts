@@ -125,7 +125,9 @@ export const signInLimits = {
   perEmail: createRateLimiter({ windowMs: 15 * 60_000, max: 10 }),
   perClient: createRateLimiter({ windowMs: 15 * 60_000, max: 50 }),
 };
-export const registerLimits = { perClient: createRateLimiter({ windowMs: 60 * 60_000, max: 10 }) };
+// New accounts per client address (both ways one is made: a password, or an email link to an address
+// without an account): each starts with a free Dossier, so an address can't farm them. 3 a day.
+export const registerLimits = { perClient: createRateLimiter({ windowMs: 24 * 60 * 60_000, max: 3 }) };
 
 /** The client address from the proxy header, or null when the host doesn't send one. */
 export function clientAddress(headers: Headers) {

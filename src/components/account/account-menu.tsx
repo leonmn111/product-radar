@@ -3,6 +3,8 @@ import { signOut } from "@/auth";
 import { db } from "@/lib/db";
 import { getViewer } from "@/server/auth/entitlements";
 import { createDbCreditStore } from "@/server/billing/credits";
+import { STANDARD_DOSSIER_CREDITS } from "@/server/billing/plans";
+import { freeDossierLeft } from "@/server/billing/welcome";
 import { creditPacksOnSale } from "@/server/billing/sales";
 import { AccountDropdown } from "./account-dropdown";
 import { CreditBalance } from "./credit-balance";
@@ -39,10 +41,13 @@ export async function AccountMenu() {
   }
 
   const isPro = viewer.tier !== "FREE";
-  const balance = await createDbCreditStore(db).balance(viewer.id);
+  const [balance, freeDossier] = await Promise.all([
+    createDbCreditStore(db).balance(viewer.id),
+    freeDossierLeft(db, viewer.id, STANDARD_DOSSIER_CREDITS[viewer.tier]),
+  ]);
   return (
     <div className="flex items-center gap-2">
-      <CreditBalance balance={balance} onSale={creditPacksOnSale()} />
+      <CreditBalance balance={balance} onSale={creditPacksOnSale()} freeDossier={freeDossier} />
       {!isPro && (
         // The one action that earns: kept in plain sight for Free accounts, not tucked in the menu.
         <a

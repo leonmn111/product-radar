@@ -54,13 +54,13 @@ function Result({ result: r }: { result: FreeVerdict }) {
       )}
       <p className="mt-3 text-xs text-slate-400">
         Built from {r.evidenceCount} cited source{r.evidenceCount === 1 ? "" : "s"} and {r.supplierMatches} supplier match{r.supplierMatches === 1 ? "" : "es"}. The full Dossier shows the landed margin, every
-        cost line and the suppliers.
+        cost line and the suppliers, and your first one is free with a new account.
       </p>
       <Link
         href={r.fullDossier}
         className={`group mt-4 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-background-dark transition hover:bg-slate-200 active:scale-[0.98] motion-reduce:transition-none ${focusRing}`}
       >
-        Open the full Dossier: free account
+        Open the full Dossier free
         <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none">
           →
         </span>

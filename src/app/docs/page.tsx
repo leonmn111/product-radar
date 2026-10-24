@@ -179,7 +179,7 @@ export default function DocsPage() {
   return (
     <div className="flex-1 bg-background-dark text-slate-300 [color-scheme:dark]">
       {/* Keeps overscroll and the area below short pages dark too. */}
-      <style>{"body{background:#0a1020}"}</style>
+      <style>{"body{background:#0a0f1d}"}</style>
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded-md focus:bg-accent-mint focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-background-dark"

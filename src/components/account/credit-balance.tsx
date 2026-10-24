@@ -6,8 +6,8 @@ import { CreditPacksModal } from "@/components/CreditPacksModal";
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 
-/** The header's credit balance; it opens the credit packs. */
-export function CreditBalance({ balance, onSale }: { balance: number; onSale: boolean }) {
+/** The header's credit balance; it opens the credit packs. While the free first Dossier is unused, it says so. */
+export function CreditBalance({ balance, onSale, freeDossier = false }: { balance: number; onSale: boolean; freeDossier?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -25,6 +25,11 @@ export function CreditBalance({ balance, onSale }: { balance: number; onSale: bo
           <span className="max-sm:sr-only">credit{balance === 1 ? "" : "s"}</span>
           <span className="sr-only">: buy more</span>
         </span>
+        {freeDossier && (
+          <span className="ml-1 rounded-full bg-accent-mint/15 px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-accent-mint ring-1 ring-accent-mint/30 ring-inset max-sm:hidden">
+            1 free Dossier
+          </span>
+        )}
       </button>
       <CreditPacksModal open={open} onClose={() => setOpen(false)} onSale={onSale} balance={balance} />
     </>

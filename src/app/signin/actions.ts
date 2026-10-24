@@ -18,6 +18,7 @@ import {
   signInLimits,
 } from "@/server/auth/password";
 import { requestPasswordReset, resetLimits, resetPassword } from "@/server/auth/password-reset";
+import { welcomeNewAccount } from "@/server/auth/welcome-account";
 import { safeCallback } from "./callback-url";
 
 export type AuthFormState = {
@@ -60,9 +61,10 @@ export async function createAccount(_prev: AuthFormState, formData: FormData): P
   }
   const client = clientAddress(await headers());
   if (client && registerLimits.perClient.limited(client)) {
-    return { error: "Too many accounts created from this connection. Please try again in an hour." };
+    return { error: "Too many accounts have been created from this connection today. Please sign in, or try again tomorrow." };
   }
   const result = await registerUser(db, parsed.data);
+  if (result.ok) await welcomeNewAccount(result.userId); // the free first Dossier
   if (!result.ok) {
     return {
       fieldErrors: { email: "An account with this email already exists. Sign in instead, or use an email link." },
@@ -84,6 +86,9 @@ export async function sendLink(formData: FormData) {
   // every visitor would share one bucket and could lock each other out.
   const client = clientAddress(await headers());
   if ((client && linkPerClient.limited(client)) || linkPerEmail.limited(email)) redirect(back("RateLimited"));
+  // A link to an address without an account creates one when it's opened: a sign-up, limited like one.
+  const isNew = !(await db.user.findUnique({ where: { email }, select: { id: true } }));
+  if (isNew && client && registerLimits.perClient.limited(client)) redirect(back("SignupLimited"));
   // redirect:false returns the URL Auth.js would redirect to — an error page if sending failed.
   const next = await signIn("resend", { email, redirectTo: callbackUrl, redirect: false });
   const error = typeof next === "string" ? new URL(next, "http://x").searchParams.get("error") : null;

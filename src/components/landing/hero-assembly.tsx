@@ -49,7 +49,7 @@ export function HeroAssembly() {
         <div className="assemble flex items-center gap-3 rounded-xl bg-white/[0.03] p-3 ring-1 ring-white/[0.06]" style={step("assemble-rise", AT.product)}>
           <span aria-hidden="true" className="assemble flex size-12 shrink-0 items-center justify-center rounded-lg bg-slate-200" style={step("assemble-pop", AT.product + 50, 450)}>
             {/* A product photo stands here in a real Dossier. */}
-            <svg viewBox="0 0 24 24" fill="none" stroke="#0a1020" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-7">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0a0f1d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-7">
               <path d="M5 8h11v7a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8Z" />
               <path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16" />
               <path d="M8 3.5c0 1 1 1 1 2M11 3.5c0 1 1 1 1 2" />

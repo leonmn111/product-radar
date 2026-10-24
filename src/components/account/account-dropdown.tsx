@@ -31,7 +31,7 @@ export function AccountDropdown({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={toggle}
-        className={`flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-accent-mint to-emerald-500 text-sm font-semibold text-background-dark uppercase shadow-sm ring-2 ring-line-dark transition hover:scale-105 active:scale-95 motion-reduce:transition-none ${focusRing}`}
+        className={`flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-accent-mint to-accent-mint-strong text-sm font-semibold text-background-dark uppercase shadow-sm ring-2 ring-line-dark transition hover:scale-105 active:scale-95 motion-reduce:transition-none ${focusRing}`}
       >
         <span aria-hidden="true">{email.charAt(0)}</span>
         <span className="sr-only">Account menu for {email}</span>

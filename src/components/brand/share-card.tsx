@@ -16,16 +16,16 @@ const font = (file: string) => readFile(join(process.cwd(), "src/assets/fonts", 
 const [regular, bold] = await Promise.all([font("GeistMono-Regular.ttf"), font("GeistMono-Bold.ttf")]);
 
 const C = {
-  page: "#0a1020", // background-dark
-  window: "#111a2e", // surface-dark
-  line: "#24314d", // line-dark
-  dot: "#2c3a58",
+  page: "#0a0f1d", // background-dark
+  window: "#0f172a", // surface-dark
+  line: "#1e293b", // line-dark
+  dot: "#334155",
   text: "#ffffff",
   body: "#cbd5e1", // slate-300
   muted: "#94a3b8", // slate-400
-  accent: "#3ddc97", // accent-mint
-  brand: "#3ddc97", // the logo tile
-  onBrand: "#0a1020", // the radar mark on the mint tile
+  accent: "#00bfa5", // accent-mint
+  brand: "#00bfa5", // the logo tile
+  onBrand: "#0a0f1d", // the radar mark on the mint tile
 };
 
 const OUTPUT = [
@@ -44,7 +44,7 @@ export function shareCard() {
           display: "flex",
           padding: 56,
           backgroundColor: C.page,
-          backgroundImage: "radial-gradient(circle at 88% 0%, rgba(61,220,151,0.22), rgba(10,16,32,0) 58%)",
+          backgroundImage: "radial-gradient(circle at 88% 0%, rgba(0,191,165,0.22), rgba(10,15,29,0) 58%)",
           fontFamily: "Geist Mono",
           color: C.text,
         }}

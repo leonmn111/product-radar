@@ -159,10 +159,10 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
   read, and a postal address (plus the ICO registration number, if registered). Have both pages reviewed
   before submitting to Stripe or AliExpress.
 
-- **New accounts can't run a Dossier yet (found 2026-10-24).** A Standard Dossier costs credits (4, or 1 on
-  Pro), new accounts start with none, Pro's monthly allowance is searches rather than credits, and credit
-  packs aren't on sale (`CREDIT_PACKS_ON_SALE` off). So the landing page's free verdict leads to a sign-up
-  that can't open the full Dossier. Decide: switch packs on, give Pro monthly credits, or a free first Dossier.
+- **After the free first Dossier (2026-10-24), there's no way to buy more yet.** New accounts get 4 WELCOME
+  credits (one Free-tier Dossier; capped by `WELCOME_DOSSIERS_PER_DAY`), but Pro's monthly allowance is
+  searches rather than credits and credit packs aren't on sale (`CREDIT_PACKS_ON_SALE` off). Decide: switch
+  packs on, or give Pro monthly credits.
 
 - **Free verdicts (landing paste box, 2026-10-24):** `POST /api/free-verdict`, no account; verdict and
   confidence only. Capped by `FREE_VERDICTS_PER_DAY` (20) and `FREE_VERDICTS_PER_VISITOR` (1); each live

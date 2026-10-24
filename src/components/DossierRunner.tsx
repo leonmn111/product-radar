@@ -28,6 +28,7 @@ export function DossierRunner({
   example,
   initialAsin = "",
   reopened,
+  freeDossier = false,
 }: {
   balance: number;
   /** Credits a Standard Dossier costs this user (4, or 1 on Pro / Agency). */
@@ -41,6 +42,8 @@ export function DossierRunner({
   initialAsin?: string;
   /** A Dossier the user already owns, reopened from their library: shown at once, free. */
   reopened?: Dossier | null;
+  /** The account still has its free first Dossier (its welcome credits cover it). */
+  freeDossier?: boolean;
 }) {
   const router = useRouter();
   const inputId = useId();
@@ -104,11 +107,20 @@ export function DossierRunner({
           className={`inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent-mint px-5 text-sm font-semibold whitespace-nowrap text-background-dark shadow-sm hover:bg-accent-mint-strong disabled:cursor-not-allowed disabled:bg-accent-mint/50 ${focusRing}`}
         >
           {running && <span aria-hidden="true" className="size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />}
-          {running ? "Building Dossier…" : `Run Dossier · ${cost} credit${cost === 1 ? "" : "s"}`}
+          {running ? "Building Dossier…" : freeDossier ? "Run Dossier · free" : `Run Dossier · ${cost} credit${cost === 1 ? "" : "s"}`}
         </button>
       </form>
 
       <div aria-live="polite" className="text-sm">
+        {freeDossier && state.kind === "idle" && (
+          <p className="flex items-center gap-2 rounded-md border border-accent-mint/30 bg-accent-mint/10 px-3 py-2 text-slate-100">
+            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-accent-mint" />
+            <span>
+              <strong className="font-semibold text-white">1 free full Dossier remaining.</strong> Your first Standard Dossier is on us: every
+              part, every source, the Shopify export.
+            </span>
+          </p>
+        )}
         {unavailable && <p className="rounded-md bg-amber-50 px-3 py-2 text-amber-900 dark:bg-amber-400/10 dark:text-amber-200">{unavailable}</p>}
         {state.kind === "error" && (
           <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-red-800 dark:bg-red-400/10 dark:text-red-200">
