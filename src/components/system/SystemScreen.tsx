@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 const command = `inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2.5 font-mono text-xs font-semibold tracking-widest uppercase ${focusRing}`;
-export const primaryCommand = `${command} bg-accent-mint text-background-dark shadow-sm hover:bg-accent-mint-strong`;
+export const primaryCommand = `${command} bg-accent-mint text-on-accent shadow-sm hover:bg-accent-mint-strong`;
 export const secondaryCommand = `${command} text-slate-900 ring-1 ring-slate-300 ring-inset hover:bg-slate-100 dark:text-slate-100 dark:ring-white/15 dark:hover:bg-white/5`;
 
 /** A command button's label: a prompt mark, then plain words (so its name reads naturally). */

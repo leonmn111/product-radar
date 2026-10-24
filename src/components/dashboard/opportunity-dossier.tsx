@@ -21,8 +21,8 @@ export type DossierViewer = { signedIn: boolean; proTools: boolean };
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
-const card = "rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-line-dark dark:bg-surface-dark";
-const cardTitle = "text-sm font-semibold text-slate-950 dark:text-white";
+const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 dark:border-line-dark dark:bg-surface-dark";
+const cardTitle = "text-sm font-semibold text-slate-900 dark:text-white";
 
 export function OpportunityDossier({ product, viewer }: { product: ProductDto; viewer: DossierViewer }) {
   const [wholesale, setWholesale] = useState(startingWholesale(product.margin)?.toFixed(2) ?? "");
@@ -42,9 +42,9 @@ export function OpportunityDossier({ product, viewer }: { product: ProductDto; v
         />
         <SupplierAndExport product={product} viewer={viewer} costPerItem={parseMoney(wholesale)} />
       </div>
-      <details className="group rounded-xl border border-slate-200 bg-white shadow-sm dark:border-line-dark dark:bg-surface-dark">
+      <details className="group rounded-xl border border-gray-200 bg-white shadow-sm dark:border-line-dark dark:bg-surface-dark">
         <summary
-          className={`flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 hover:bg-slate-50 sm:px-5 dark:text-slate-100 dark:hover:bg-surface-raised/50 [&::-webkit-details-marker]:hidden ${focusRing}`}
+          className={`flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 hover:bg-gray-50 sm:px-5 dark:text-slate-100 dark:hover:bg-surface-raised/50 [&::-webkit-details-marker]:hidden ${focusRing}`}
         >
           <span>
             Score breakdown &amp; evidence{" "}
@@ -54,7 +54,7 @@ export function OpportunityDossier({ product, viewer }: { product: ProductDto; v
           </span>
           <Chevron className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" />
         </summary>
-        <div className="border-t border-slate-200 p-4 sm:p-5 dark:border-line-dark">
+        <div className="border-t border-gray-200 p-4 sm:p-5 dark:border-line-dark">
           <ProductDetail product={product} />
         </div>
       </details>
@@ -165,9 +165,9 @@ function ProfitCalculator({
       <h3 id={`profit-${product.id}`} className={cardTitle}>
         Profit calculator
       </h3>
-      <div className="mt-3 flex items-baseline justify-between gap-3 border-b border-slate-200 pb-3 dark:border-line-dark">
+      <div className="mt-3 flex items-baseline justify-between gap-3 border-b border-gray-200 pb-3 dark:border-line-dark">
         <span className="text-sm text-slate-600 dark:text-slate-400">Retail price at {offer.merchant}</span>
-        <span className="text-lg font-semibold tabular-nums text-slate-950 dark:text-white">
+        <span className="text-lg font-semibold tabular-nums text-slate-900 dark:text-white">
           {formatPrice(offer.price.amount, currency)}
         </span>
       </div>
@@ -200,9 +200,9 @@ function ProfitCalculator({
           </dd>
           <dd className="text-xs text-slate-600 dark:text-slate-400">per sale</dd>
         </div>
-        <div className="rounded-lg bg-slate-100 p-3 dark:bg-surface-raised/60">
+        <div className="rounded-lg bg-gray-100 p-3 dark:bg-surface-raised/60">
           <dt className="text-xs font-medium text-slate-700 dark:text-slate-300">Profit margin</dt>
-          <dd className="mt-1 text-2xl font-semibold tabular-nums text-slate-950 dark:text-white">
+          <dd className="mt-1 text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
             {result?.marginPct != null ? `${result.marginPct.toFixed(1)}%` : "—"}
           </dd>
           <dd className="text-xs text-slate-600 dark:text-slate-400">of retail price</dd>
@@ -240,7 +240,7 @@ function MoneyInput({
       </label>
       <div
         className={`mt-1 flex items-center rounded-md bg-white ring-1 ring-inset focus-within:ring-2 focus-within:ring-accent-mint dark:bg-background-dark ${
-          invalid ? "ring-rose-500" : "ring-slate-300 dark:ring-line-dark"
+          invalid ? "ring-rose-500" : "ring-gray-300 dark:ring-line-dark"
         }`}
       >
         <span aria-hidden="true" className="pl-3 text-sm text-slate-400 dark:text-slate-400">
@@ -256,7 +256,7 @@ function MoneyInput({
           onChange={(e) => onChange(e.target.value)}
           aria-invalid={invalid || undefined}
           aria-describedby={`${id}-hint`}
-          className="w-full min-w-0 border-0 bg-transparent py-2 pr-3 pl-1.5 text-base tabular-nums text-slate-950 placeholder:text-slate-400 focus:outline-none sm:text-sm dark:text-white"
+          className="w-full min-w-0 border-0 bg-transparent py-2 pr-3 pl-1.5 text-base tabular-nums text-slate-900 placeholder:text-slate-400 focus:outline-none sm:text-sm dark:text-white"
         />
       </div>
       <p id={`${id}-hint`} className={`mt-1 text-xs ${invalid ? "text-rose-700 dark:text-rose-300" : "text-slate-600 dark:text-slate-400"}`}>
@@ -299,7 +299,7 @@ function SupplierAndExport({
         </p>
         {viewer.proTools ? (
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <a href={urls.aliexpress} target="_blank" rel="noopener noreferrer" className={`${supplierBtn} bg-accent-mint text-background-dark hover:bg-accent-mint-strong`}>
+            <a href={urls.aliexpress} target="_blank" rel="noopener noreferrer" className={`${supplierBtn} bg-accent-mint text-on-accent hover:bg-accent-mint-strong`}>
               Find on AliExpress
               <ExternalIcon />
               <span className="sr-only">(opens in new tab)</span>
@@ -313,7 +313,7 @@ function SupplierAndExport({
         ) : null}
       </div>
 
-      <div className="border-t border-slate-200 pt-4 dark:border-line-dark">
+      <div className="border-t border-gray-200 pt-4 dark:border-line-dark">
         <h3 className={cardTitle}>Sell it on Shopify</h3>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
           A ready-to-import file with the title, description, photo, prices and your wholesale cost. It imports as a
@@ -341,7 +341,7 @@ function SupplierAndExport({
               href={csvHref}
               download
               onClick={() => setExported(true)}
-              className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-300 ring-inset hover:bg-slate-50 sm:w-auto dark:bg-surface-raised dark:text-white dark:ring-line-dark dark:hover:bg-slate-700 ${focusRing}`}
+              className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:w-auto dark:bg-surface-raised dark:text-white dark:ring-line-dark dark:hover:bg-slate-700 ${focusRing}`}
             >
               <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-4">
                 <path d="M10 3v10m0 0-4-4m4 4 4-4M3.5 15.5v1h13v-1" />
@@ -357,7 +357,7 @@ function SupplierAndExport({
 
       {!viewer.proTools && (
         <div className="rounded-lg bg-accent-mint/10 p-4 ring-1 ring-accent-mint/30 ring-inset">
-          <p className="flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-white">
+          <p className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
             <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-accent-mint">
               <path fillRule="evenodd" d="M10 2a4 4 0 0 0-4 4v2H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-1V6a4 4 0 0 0-4-4Zm2 6V6a2 2 0 1 0-4 0v2h4Z" clipRule="evenodd" />
             </svg>
@@ -368,7 +368,7 @@ function SupplierAndExport({
           </p>
           <a
             href="/upgrade"
-            className={`mt-3 inline-flex rounded-md bg-accent-mint px-4 py-2 text-sm font-semibold text-background-dark shadow-sm hover:bg-accent-mint-strong ${focusRing}`}
+            className={`mt-3 inline-flex rounded-md bg-accent-mint px-4 py-2 text-sm font-semibold text-on-accent shadow-sm hover:bg-accent-mint-strong ${focusRing}`}
           >
             {viewer.signedIn ? `Upgrade to Pro · ${planPriceLabel(PLANS.pro)}` : `Sign in & upgrade · ${planPriceLabel(PLANS.pro)}`}
           </a>

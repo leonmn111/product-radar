@@ -1,7 +1,19 @@
 @import "tailwindcss";
 
-/* The site is dark only: the root layout always puts `dark` on <html>, so every `dark:` style applies. */
-@custom-variant dark (&:where(.dark, .dark *));
+/*
+ * Two looks. The public site (landing, docs, sign-in, legal) is dark: the root layout puts `dark` on <html>.
+ * The signed-in app is light ("calm FinTech"): its pages wrap themselves in `.app-light`, where `dark:`
+ * styles stop applying. Inside the app, `.on-dark` (the midnight top bar) turns them back on, and a
+ * `.light-island` in that bar (the credit packs window it opens) goes back to the app's light look.
+ */
+@custom-variant dark {
+  &:where(.on-dark, .on-dark *):not(:where(.light-island, .light-island *)),
+  &:where(.dark, .dark *):not(:where(.app-light, .app-light *)) {
+    @slot;
+  }
+}
+/* The site footer, and everything in it, when it follows a signed-in app page (the page's next sibling in <body>). */
+@custom-variant after-app (&:where(.app-light ~ *, .app-light ~ * *));
 
 /*
  * ProductRadar design system: the brand's exact colours. Midnight navy #0A0F1D (the page), dark navy #0F172A
@@ -18,6 +30,9 @@
   --color-line-dark: #1e293b; /* borders and dividers */
   --color-accent-mint: #00bfa5; /* teal: calls to action and highlights */
   --color-accent-mint-strong: #1de9b6; /* the accent on hover */
+  --color-on-accent: #0a0f1d; /* text on a teal button */
+  /* Tailwind's slate-900 is an oklch colour that rounds to #0F172B; the brand's dark navy is exactly #0F172A. */
+  --color-slate-900: #0f172a;
 }
 
 @theme inline {
@@ -31,6 +46,40 @@
   --background: var(--color-background-dark);
   --foreground: #e2e8f0; /* slate-200 */
   color-scheme: dark;
+}
+
+/*
+ * The signed-in app, light: white surfaces and dark-navy text. White text and teal text on white both need a
+ * deeper teal to pass WCAG AA (the brand teal on white is 2.3:1), so inside the app the accent is #00796B
+ * (5.3:1 on white, white text on it 5.3:1) and #00695C on hover. The midnight top bar keeps the brand teal.
+ */
+.app-light {
+  --color-accent-mint: #00796b;
+  --color-accent-mint-strong: #00695c;
+  --color-on-accent: #ffffff;
+  color-scheme: light;
+  /* Every figure in the app (prices, margins, scores, counts) on tabular digits, so columns line up. */
+  font-variant-numeric: tabular-nums;
+}
+/* A light window opened from the app's dark top bar takes the app's light accent again. */
+.app-light .light-island {
+  --color-accent-mint: #00796b;
+  --color-accent-mint-strong: #00695c;
+  --color-on-accent: #ffffff;
+  color-scheme: light;
+}
+.on-dark {
+  --color-accent-mint: #00bfa5;
+  --color-accent-mint-strong: #1de9b6;
+  --color-on-accent: #0a0f1d;
+  color-scheme: dark;
+}
+:root:has(body > .app-light) {
+  color-scheme: light;
+}
+body:has(> .app-light) {
+  background: #f9fafb; /* gray-50 */
+  color: #0f172a;
 }
 
 body {

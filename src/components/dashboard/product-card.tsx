@@ -33,7 +33,7 @@ export function ProductImage({
   return (
     <div
       className={`relative aspect-square overflow-hidden ${
-        showImage ? "bg-slate-200" : "bg-gradient-to-br from-accent-mint/10 to-surface-dark"
+        showImage ? "bg-gray-50 dark:bg-slate-200" : "bg-gradient-to-br from-accent-mint/10 to-gray-100 dark:to-surface-dark"
       } ${className}`}
     >
       {showImage ? (
@@ -52,7 +52,7 @@ export function ProductImage({
         />
       ) : (
         <div aria-hidden="true" className="flex size-full flex-col items-center justify-center gap-3">
-          <span className="flex size-20 items-center justify-center rounded-2xl bg-surface-raised text-2xl font-semibold tracking-tight text-accent-mint shadow-sm ring-1 ring-line-dark">
+          <span className="flex size-20 items-center justify-center rounded-2xl bg-white text-2xl font-semibold tracking-tight text-accent-mint shadow-sm ring-1 ring-gray-200 dark:bg-surface-raised dark:ring-line-dark">
             {initials(label) || "?"}
           </span>
           <span className="flex items-center gap-1 text-xs font-medium text-slate-400 dark:text-slate-400">
@@ -75,7 +75,7 @@ function OverallScore({ score }: { score?: Score }) {
   return (
     <p className="flex items-baseline gap-1">
       <span className="sr-only">Overall score: </span>
-      <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-950 dark:text-white">
+      <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-900 dark:text-white">
         {score ? Math.round(score.value) : "—"}
       </span>
       <span className="text-xs text-slate-400 dark:text-slate-400">{score ? "/ 100" : "no score yet"}</span>
@@ -85,12 +85,12 @@ function OverallScore({ score }: { score?: Score }) {
 
 function ValueBadge({ score }: { score?: Score }) {
   const style = !score
-    ? "bg-slate-100 text-slate-600 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-400 dark:ring-slate-400/20"
+    ? "bg-gray-100 text-slate-600 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-400 dark:ring-slate-400/20"
     : score.value >= 65
       ? "bg-emerald-50 text-emerald-800 ring-emerald-600/20 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-400/20"
       : score.value < 40
         ? "bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-400/20"
-        : "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20";
+        : "bg-gray-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20";
   return (
     <span
       title="Value: quality against price, compared with the category"
@@ -167,16 +167,16 @@ export function ProductCard({
   const overall = getScore(p, "OVERALL");
   const frameClass =
     frame === "bento"
-      ? `h-full rounded-2xl duration-300 hover:shadow-black/40 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-accent-mint ${
-          highlighted ? "ring-2 ring-accent-mint" : "ring-1 ring-line-dark hover:ring-accent-mint/50"
+      ? `h-full rounded-2xl duration-300 hover:shadow-md dark:hover:shadow-black/40 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-accent-mint ${
+          highlighted ? "ring-2 ring-accent-mint" : "ring-1 ring-gray-200 hover:ring-gray-300 dark:ring-line-dark dark:hover:ring-accent-mint/50"
         }`
-      : `rounded-xl border duration-200 hover:shadow-black/40 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-accent-mint has-[a:focus-visible]:ring-offset-2 has-[a:focus-visible]:ring-offset-background-dark ${
-          highlighted ? "border-accent-mint ring-2 ring-accent-mint" : "border-line-dark hover:border-accent-mint/40"
+      : `rounded-xl border duration-200 hover:shadow-md dark:hover:shadow-black/40 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-accent-mint has-[a:focus-visible]:ring-offset-2 dark:has-[a:focus-visible]:ring-offset-background-dark ${
+          highlighted ? "border-accent-mint ring-2 ring-accent-mint" : "border-gray-200 hover:border-gray-300 dark:border-line-dark dark:hover:border-accent-mint/40"
         }`;
   return (
     <li
       data-product-id={p.id}
-      className={`group/card relative flex flex-col overflow-hidden shadow-sm transition ease-out hover:-translate-y-1 hover:shadow-xl active:translate-y-0 active:shadow-md active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 bg-surface-dark ${frameClass}`}
+      className={`group/card relative flex flex-col overflow-hidden shadow-sm transition ease-out hover:-translate-y-0.5 active:translate-y-0 active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 bg-white dark:bg-surface-dark ${frameClass}`}
     >
       <article className="flex flex-1 flex-col">
         <div className="relative">
@@ -196,7 +196,7 @@ export function ProductCard({
             {p.brand && (
               <p className="truncate text-xs font-semibold tracking-wide text-accent-mint uppercase">{p.brand}</p>
             )}
-            <h3 className="mt-0.5 line-clamp-2 font-semibold text-slate-950 dark:text-white" title={p.name}>
+            <h3 className="mt-0.5 line-clamp-2 font-semibold text-slate-900 dark:text-white" title={p.name}>
               <Link href={href} className="after:absolute after:inset-0 after:z-10 after:content-[''] focus:outline-none">
                 {p.name}
               </Link>
@@ -209,10 +209,10 @@ export function ProductCard({
             {overall && <ConfidenceBadge confidence={overall.confidence} />}
           </div>
 
-          <div className="mt-auto flex items-end justify-between gap-3 border-t border-line-dark pt-3">
+          <div className="mt-auto flex items-end justify-between gap-3 border-t border-gray-100 pt-3 dark:border-line-dark">
             {p.bestOffer ? (
               <div className="min-w-0">
-                <p className="text-lg font-semibold tabular-nums text-slate-950 dark:text-white">
+                <p className="text-lg font-semibold tabular-nums text-slate-900 dark:text-white">
                   {formatPrice(p.bestOffer.price.amount, p.bestOffer.price.currency)}
                 </p>
                 <p className="truncate text-xs text-slate-600 dark:text-slate-400">at {p.bestOffer.merchant}</p>
@@ -255,7 +255,7 @@ export function CardGridSkeleton() {
   return (
     <div aria-hidden="true" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }, (_, i) => (
-        <div key={i} className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200 dark:bg-surface-dark dark:ring-white/10">
+        <div key={i} className="overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200 dark:bg-surface-dark dark:ring-white/10">
           <div className="aspect-square animate-pulse bg-slate-200/70 dark:bg-white/5" />
           <div className="space-y-2 p-4">
             <div className="h-3 w-1/3 animate-pulse rounded bg-slate-200/70 dark:bg-surface-raised/70" />

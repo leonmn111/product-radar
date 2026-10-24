@@ -9,7 +9,7 @@ export const inputClass =
   "mt-1 w-full rounded-md border-0 bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-slate-300 ring-inset placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint aria-invalid:ring-red-600 dark:bg-background-dark dark:text-slate-100 dark:ring-line-dark dark:aria-invalid:ring-red-400";
 export const labelClass = "block text-sm font-medium text-slate-900 dark:text-slate-100";
 const primaryClass =
-  "inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent-mint px-4 py-2 text-sm font-semibold text-background-dark shadow-sm hover:bg-accent-mint-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint disabled:cursor-not-allowed disabled:opacity-70";
+  "inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent-mint px-4 py-2 text-sm font-semibold text-on-accent shadow-sm hover:bg-accent-mint-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint disabled:cursor-not-allowed disabled:opacity-70";
 const secondaryClass =
   "inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-slate-300 ring-inset hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint disabled:cursor-not-allowed disabled:opacity-70 dark:bg-surface-dark dark:text-slate-100 dark:ring-line-dark dark:hover:bg-surface-raised";
 

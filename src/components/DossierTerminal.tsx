@@ -34,24 +34,24 @@ const TONE: Record<Tone, string> = {
   ok: "text-emerald-700 ring-emerald-600/30 bg-emerald-50 dark:text-emerald-300 dark:ring-emerald-400/30 dark:bg-emerald-400/10",
   warn: "text-amber-800 ring-amber-600/30 bg-amber-50 dark:text-amber-300 dark:ring-amber-400/30 dark:bg-amber-400/10",
   bad: "text-red-700 ring-red-600/30 bg-red-50 dark:text-red-300 dark:ring-red-400/30 dark:bg-red-400/10",
-  off: "text-slate-700 ring-slate-400/40 bg-slate-100 dark:text-slate-300 dark:ring-slate-500/40 dark:bg-surface-raised",
+  off: "text-slate-700 ring-slate-400/40 bg-gray-100 dark:text-slate-300 dark:ring-slate-500/40 dark:bg-surface-raised",
 };
 
 function Tag({ tone, children }: { tone: Tone; children: ReactNode }) {
-  return <span className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider uppercase ring-1 ring-inset ${TONE[tone]}`}>{children}</span>;
+  return <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider uppercase ring-1 ring-inset ${TONE[tone]}`}>{children}</span>;
 }
 
 function Panel({ n, title, status, className = "", children }: { n: number; title: string; status: ReactNode; className?: string; children: ReactNode }) {
   const id = `dossier-part-${n}`;
   return (
-    <section aria-labelledby={id} className={`flex min-w-0 flex-col bg-white dark:bg-background-dark ${className}`}>
-      <header className="flex items-center justify-between gap-2 border-b border-slate-200 px-3 py-2 dark:border-line-dark">
+    <section aria-labelledby={id} className={`flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white shadow-sm dark:border-line-dark dark:bg-surface-dark ${className}`}>
+      <header className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 dark:border-line-dark">
         <h3 id={id} className="font-mono text-[11px] font-semibold tracking-widest text-slate-900 uppercase dark:text-slate-100">
           <span className="text-accent-mint">{String(n).padStart(2, "0")}</span> {title}
         </h3>
         {status}
       </header>
-      <div className="min-w-0 flex-1 p-3 text-[13px] leading-snug">{children}</div>
+      <div className="min-w-0 flex-1 p-4 text-[13px] leading-relaxed">{children}</div>
     </section>
   );
 }
@@ -153,7 +153,7 @@ const flagTag = (f: ComplianceFlag) =>
 
 function ResellabilityPanel({ flags }: { flags: ResellabilityFlags }) {
   return (
-    <dl className="divide-y divide-slate-100 dark:divide-line-dark">
+    <dl className="divide-y divide-gray-100 dark:divide-line-dark">
       {(Object.keys(FLAG_LABEL) as (keyof ResellabilityFlags)[]).map((k) => (
         <div key={k} className="py-1.5 first:pt-0 last:pb-0">
           <dt className="flex items-center justify-between gap-2 font-medium">
@@ -171,10 +171,10 @@ const BASIS: Record<LineBasis, string> = { sourced: "sourced", caller_supplied: 
 function MarginTable({ m }: { m: LandedMargin }) {
   const row = (label: ReactNode, value: ReactNode, strong = false) => (
     <tr className={strong ? "font-semibold" : ""}>
-      <th scope="row" className="py-0.5 pr-3 text-left font-normal">
+      <th scope="row" className="py-1.5 pr-3 text-left font-normal">
         {label}
       </th>
-      <td className={`py-0.5 text-right ${num}`}>{value}</td>
+      <td className={`py-1.5 text-right ${num}`}>{value}</td>
     </tr>
   );
   return (
@@ -184,14 +184,14 @@ function MarginTable({ m }: { m: LandedMargin }) {
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
-          <tbody>
+          <tbody className="divide-y divide-gray-100 dark:divide-line-dark">
             {row("Retail price", money(m.retailPrice), true)}
             {m.lines.map((l) => (
               <tr key={`${l.kind}-${l.label}`}>
-                <th scope="row" className="py-0.5 pr-3 text-left font-normal">
+                <th scope="row" className="py-1.5 pr-3 text-left font-normal">
                   {l.label} <span className={`ml-1 font-mono text-[10px] uppercase ${l.basis === "estimate" ? "text-amber-700 dark:text-amber-300" : muted}`}>{BASIS[l.basis]}</span>
                 </th>
-                <td className={`py-0.5 text-right ${num}`}>−{money(l.amount)}</td>
+                <td className={`py-1.5 text-right ${num}`}>−{money(l.amount)}</td>
               </tr>
             ))}
             {row("Landed cost per unit", money(m.landedCost))}
@@ -313,7 +313,7 @@ function SuppliersPanel({ matches }: { matches: Dossier["supplierMatches"] }) {
             <th scope="col" className="pb-1 pl-2 text-right font-medium">Match</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-line-dark">
+        <tbody className="divide-y divide-gray-100 dark:divide-line-dark">
           {matches.map((s) => (
             <tr key={s.listingUrl}>
               <td className="max-w-[16rem] py-1 pr-3">
@@ -338,7 +338,7 @@ function EvidencePanel({ evidence }: { evidence: Evidence[] }) {
   return (
     <div className="max-h-96 overflow-auto">
       <table className="w-full text-xs">
-        <thead className={`sticky top-0 bg-white font-mono text-[10px] tracking-wider uppercase dark:bg-background-dark ${muted}`}>
+        <thead className={`sticky top-0 bg-white font-mono text-[10px] tracking-wider uppercase dark:bg-surface-dark ${muted}`}>
           <tr>
             <th scope="col" className="pb-1 text-left font-medium">Claim</th>
             <th scope="col" className="pb-1 text-left font-medium">Source</th>
@@ -348,7 +348,7 @@ function EvidencePanel({ evidence }: { evidence: Evidence[] }) {
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-line-dark">
+        <tbody className="divide-y divide-gray-100 dark:divide-line-dark">
           {evidence.map((e) => (
             <tr key={e.id} className="align-top">
               <td className="min-w-[14rem] py-1 pr-3">
@@ -410,9 +410,9 @@ export function DossierTerminal({ dossier }: { dossier: Dossier }) {
   return (
     <article
       aria-label={`Dossier: ${d.product.title}`}
-      className={`${inter.className} overflow-hidden rounded-md bg-slate-200 text-slate-900 ring-1 ring-slate-300 dark:bg-surface-raised dark:text-slate-100 dark:ring-line-dark`}
+      className={`${inter.className} space-y-4 text-slate-900 dark:text-slate-100`}
     >
-      <header className="space-y-1 bg-slate-50 px-3 py-2.5 dark:bg-surface-dark">
+      <header className="space-y-1.5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-line-dark dark:bg-surface-dark">
         <div className="flex flex-wrap items-center gap-2">
           {d.sample && <Tag tone="warn">Sample data: not real</Tag>}
           <span className={`font-mono text-[11px] tracking-wider uppercase ${muted}`}>
@@ -434,7 +434,7 @@ export function DossierTerminal({ dossier }: { dossier: Dossier }) {
         )}
       </header>
 
-      <div className="grid grid-cols-1 gap-px border-t border-slate-300 md:grid-cols-2 xl:grid-cols-4 dark:border-line-dark">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Panel n={1} title="Verdict" status={gateTag(d.verdict)}>
           <VerdictPanel verdict={d.verdict} />
         </Panel>

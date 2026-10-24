@@ -148,7 +148,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
       {hasSample && (
         <p
           role="note"
-          className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white/60 px-3 py-1.5 text-xs text-slate-600 sm:inline-flex sm:items-center sm:rounded-full dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400"
+          className="flex items-start gap-2 rounded-xl border border-gray-200 bg-white/60 px-3 py-1.5 text-xs text-slate-600 sm:inline-flex sm:items-center sm:rounded-full dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400"
         >
           <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-px size-4 shrink-0 text-slate-400 sm:mt-0 dark:text-slate-400">
             <path
@@ -182,8 +182,8 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
                 onClick={() => setCategory(c)}
                 className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition motion-reduce:transition-none ${focusRing} ${
                   active
-                    ? "bg-accent-mint text-background-dark shadow-sm shadow-accent-mint/20"
-                    : "bg-white text-slate-600 ring-1 ring-slate-200 ring-inset hover:text-slate-950 hover:ring-slate-300 dark:bg-white/[0.03] dark:text-slate-400 dark:ring-white/10 dark:hover:text-white dark:hover:ring-white/20"
+                    ? "bg-accent-mint text-on-accent shadow-sm shadow-sm"
+                    : "bg-white text-slate-600 ring-1 ring-gray-200 ring-inset hover:text-slate-900 hover:ring-gray-300 dark:bg-white/[0.03] dark:text-slate-400 dark:ring-white/10 dark:hover:text-white dark:hover:ring-white/20"
                 }`}
               >
                 {c ? humanizeSlug(c) : "All categories"}
@@ -195,7 +195,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
           <div
             role="group"
             aria-label="Layout"
-            className="hidden rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200 ring-inset md:flex dark:bg-white/5 dark:ring-white/10"
+            className="hidden rounded-xl bg-gray-100 p-1 ring-1 ring-gray-200 ring-inset md:flex dark:bg-white/5 dark:ring-white/10"
           >
             {(["cards", "table"] as const).map((v) => (
               <button
@@ -203,7 +203,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
                 type="button"
                 aria-pressed={view === v}
                 onClick={() => setView(v)}
-                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm font-medium text-slate-400 transition hover:text-slate-900 aria-pressed:bg-white aria-pressed:text-slate-950 aria-pressed:shadow-sm motion-reduce:transition-none dark:text-slate-400 dark:hover:text-slate-100 dark:aria-pressed:bg-surface-raised dark:aria-pressed:text-white ${focusRing}`}
+                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm font-medium text-slate-400 transition hover:text-slate-900 aria-pressed:bg-white aria-pressed:text-slate-900 aria-pressed:shadow-sm motion-reduce:transition-none dark:text-slate-400 dark:hover:text-slate-100 dark:aria-pressed:bg-surface-raised dark:aria-pressed:text-white ${focusRing}`}
               >
                 <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-4">
                   {v === "cards" ? (
@@ -226,7 +226,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
               <select
                 value={sortKey}
                 onChange={(e) => setSortKey(e.target.value as SortKey)}
-                className={`h-9 appearance-none rounded-xl border-0 bg-white py-1.5 pr-9 pl-3 text-sm font-medium text-slate-900 ring-1 ring-slate-200 ring-inset hover:ring-slate-300 dark:bg-white/5 dark:text-slate-100 dark:ring-white/10 dark:hover:ring-white/20 ${focusRing}`}
+                className={`h-9 appearance-none rounded-xl border-0 bg-white py-1.5 pr-9 pl-3 text-sm font-medium text-slate-900 ring-1 ring-gray-200 ring-inset hover:ring-gray-300 dark:bg-white/5 dark:text-slate-100 dark:ring-white/10 dark:hover:ring-white/20 ${focusRing}`}
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.key} value={o.key}>
@@ -275,10 +275,10 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
       ) : loading ? (
         <CardGridSkeleton />
       ) : products.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center dark:border-white/15">
+        <div className="rounded-2xl border border-dashed border-gray-300 p-10 text-center dark:border-white/15">
           <p className="text-sm font-medium text-slate-900 dark:text-slate-100">No products yet.</p>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Run <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs dark:bg-surface-raised">npm run db:seed</code>{" "}
+            Run <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-xs dark:bg-surface-raised">npm run db:seed</code>{" "}
             to load sample data.
           </p>
         </div>
@@ -310,11 +310,11 @@ const HIGHLIGHT = "bg-accent-mint/10 ring-2 ring-accent-mint ring-inset";
 
 function ProductTable({ products, highlightId }: ListProps) {
   return (
-    <div className="hidden overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 md:block dark:bg-surface-dark dark:ring-white/10">
+    <div className="hidden overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 md:block dark:bg-surface-dark dark:ring-white/10">
       <div className="overflow-x-auto">
         <table className="min-w-full text-left">
           <caption className="sr-only">Products ranked with evidence-based scores</caption>
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs font-medium tracking-wide text-slate-600 uppercase dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
+          <thead className="border-b border-gray-200 bg-gray-50 text-xs font-medium tracking-wide text-slate-600 uppercase dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
             <tr>
               <th scope="col" className="w-10 py-3 pl-4">
                 #
@@ -338,12 +338,12 @@ function ProductTable({ products, highlightId }: ListProps) {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+          <tbody className="divide-y divide-gray-200 dark:divide-white/10">
             {products.map((p, i) => (
               <tr
                 key={p.id}
                 data-product-id={p.id}
-                className={`transition-colors duration-700 ${p.id === highlightId ? HIGHLIGHT : "hover:bg-slate-50 dark:hover:bg-white/[0.03]"}`}
+                className={`transition-colors duration-700 ${p.id === highlightId ? HIGHLIGHT : "hover:bg-gray-50 dark:hover:bg-white/[0.03]"}`}
               >
                 <td className="py-4 pl-4 align-top text-sm tabular-nums text-slate-400 dark:text-slate-400">{i + 1}</td>
                 <td className="px-3 py-4 align-top">
@@ -396,7 +396,7 @@ function ProductGrid({ products, highlightId, className = "" }: ListProps & { cl
 function ProductName({ product: p }: { product: ProductDto }) {
   return (
     <div className="min-w-0">
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-slate-950 dark:text-white">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-slate-900 dark:text-white">
         <Link
           href={dossierHref(p)}
           className={`rounded-sm hover:text-accent-mint hover:underline hover:underline-offset-2 ${focusRing}`}
@@ -404,7 +404,7 @@ function ProductName({ product: p }: { product: ProductDto }) {
           {p.name}
         </Link>
         {p.isSample ? (
-          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-slate-500/20 ring-inset dark:bg-white/10 dark:text-slate-300 dark:ring-white/15">
+          <span className="rounded-md bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-slate-500/20 ring-inset dark:bg-white/10 dark:text-slate-300 dark:ring-white/15">
             Sample
           </span>
         ) : (
@@ -428,7 +428,7 @@ function BestPrice({ product: p }: { product: ProductDto }) {
   if (!p.bestOffer) return <span className="text-sm text-slate-400 dark:text-slate-400">No current offer</span>;
   return (
     <div>
-      <p className="text-sm font-semibold tabular-nums text-slate-950 dark:text-white">
+      <p className="text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
         {formatPrice(p.bestOffer.price.amount, p.bestOffer.price.currency)}
       </p>
       <p className="text-xs text-slate-600 dark:text-slate-400">{p.bestOffer.merchant}</p>

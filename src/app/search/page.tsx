@@ -32,7 +32,7 @@ function readParams(params: Record<string, string | string[] | undefined>) {
 
 function SearchForm({ q, markets }: { q: string; markets: Market[] }) {
   return (
-    <form action="/search" method="get" className="flex flex-col gap-3 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200 sm:flex-row sm:items-center dark:bg-surface-dark dark:ring-white/10">
+    <form action="/search" method="get" className="flex flex-col gap-3 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-gray-200 sm:flex-row sm:items-center dark:bg-surface-dark dark:ring-white/10">
       <label htmlFor="live-q" className="sr-only">
         What to search for
       </label>
@@ -58,7 +58,7 @@ function SearchForm({ q, markets }: { q: string; markets: Market[] }) {
       </fieldset>
       <button
         type="submit"
-        className={`h-11 shrink-0 rounded-xl bg-accent-mint px-5 text-sm font-semibold text-background-dark shadow-sm shadow-accent-mint/20 transition hover:bg-accent-mint-strong active:scale-[0.98] motion-reduce:transition-none ${focusRing}`}
+        className={`h-11 shrink-0 rounded-xl bg-accent-mint px-5 text-sm font-semibold text-on-accent shadow-sm shadow-sm transition hover:bg-accent-mint-strong active:scale-[0.98] motion-reduce:transition-none ${focusRing}`}
       >
         Search live
       </button>
@@ -85,8 +85,8 @@ async function LiveSearch({ searchParams }: { searchParams: SearchParams }) {
 
   if (!canRun) {
     return (
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-surface-dark dark:ring-white/10">
-        <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Live search is coming</h2>
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-surface-dark dark:ring-white/10">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Live search is coming</h2>
         <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
           We&apos;re connecting live sources (Amazon US and UK, and AliExpress suppliers). Searches open here with credit packs; AI
           agents will be able to use the paid API at /api/agent/v2/search as soon as both sources are connected.
@@ -124,11 +124,11 @@ async function LiveSearch({ searchParams }: { searchParams: SearchParams }) {
 
 export default function SearchPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <div className="min-h-full bg-slate-50 dark:bg-background-dark">
+    <div className="app-light min-h-full bg-gray-50 text-slate-900">
       <AppHeader />
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-slate-50">Live search</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">Live search</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
             Amazon US and UK against AliExpress suppliers, searched live. Only results with at least 0.7 confidence on both sides
             are shown, and every number links to its source.

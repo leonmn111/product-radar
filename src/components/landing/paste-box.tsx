@@ -19,7 +19,7 @@ type State =
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 
 const PILL: Record<"LAUNCH" | "TEST" | "AVOID", { label: string; tone: string }> = {
-  LAUNCH: { label: "LAUNCH", tone: "bg-accent-mint text-background-dark" },
+  LAUNCH: { label: "LAUNCH", tone: "bg-accent-mint text-on-accent" },
   TEST: { label: "TEST · start small", tone: "bg-amber-400 text-background-dark" },
   AVOID: { label: "AVOID", tone: "bg-rose-400 text-background-dark" },
 };
@@ -126,7 +126,7 @@ export function PasteBox() {
           <button
             type="submit"
             disabled={checking}
-            className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-mint px-5 py-3 text-base font-semibold whitespace-nowrap text-background-dark shadow-lg shadow-accent-mint/20 transition duration-200 hover:bg-accent-mint-strong active:scale-[0.98] disabled:cursor-wait disabled:opacity-80 motion-reduce:transition-none ${focusRing}`}
+            className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-mint px-5 py-3 text-base font-semibold whitespace-nowrap text-on-accent shadow-lg shadow-accent-mint/20 transition duration-200 hover:bg-accent-mint-strong active:scale-[0.98] disabled:cursor-wait disabled:opacity-80 motion-reduce:transition-none ${focusRing}`}
           >
             {checking ? (
               <>

@@ -16,9 +16,9 @@ const DIM_ORDER: Dimension[] = ["OVERALL", "QUALITY", "VALUE", "DEMAND", "SENTIM
 const AVAILABILITY_STYLE: Record<string, string> = {
   IN_STOCK: "bg-emerald-50 text-emerald-800 ring-emerald-600/20 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-400/20",
   PREORDER: "bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-400/20",
-  OUT_OF_STOCK: "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20",
-  DISCONTINUED: "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20",
-  UNKNOWN: "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20",
+  OUT_OF_STOCK: "bg-gray-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20",
+  DISCONTINUED: "bg-gray-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20",
+  UNKNOWN: "bg-gray-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20",
 };
 
 const badge = "inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset";
@@ -45,7 +45,7 @@ export function ProductDetail({ product }: { product: ProductDto }) {
         )}
 
         <section aria-labelledby={`scores-${product.id}`}>
-          <h3 id={`scores-${product.id}`} className="text-sm font-semibold text-slate-950 dark:text-white">
+          <h3 id={`scores-${product.id}`} className="text-sm font-semibold text-slate-900 dark:text-white">
             Score breakdown
           </h3>
           <ul className="mt-3 space-y-3">
@@ -56,7 +56,7 @@ export function ProductDetail({ product }: { product: ProductDto }) {
                 <li key={d}>
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{DIMENSION_LABEL[d]}</span>
-                    <span className="text-sm font-semibold tabular-nums text-slate-950 dark:text-white">
+                    <span className="text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
                       {s.value.toFixed(1)}
                       <span className="font-normal text-slate-400 dark:text-slate-400"> / 100</span>
                     </span>
@@ -82,13 +82,13 @@ export function ProductDetail({ product }: { product: ProductDto }) {
         </section>
 
         <section aria-labelledby={`offers-${product.id}`}>
-          <h3 id={`offers-${product.id}`} className="text-sm font-semibold text-slate-950 dark:text-white">
+          <h3 id={`offers-${product.id}`} className="text-sm font-semibold text-slate-900 dark:text-white">
             Offers
           </h3>
           {product.offers.length === 0 ? (
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">No offers recorded.</p>
           ) : (
-            <ul className="mt-3 divide-y divide-slate-200 dark:divide-line-dark">
+            <ul className="mt-3 divide-y divide-gray-200 dark:divide-line-dark">
               {product.offers.map((o) => (
                 <li key={o.id} className="flex items-start justify-between gap-3 py-2">
                   <div className="min-w-0">
@@ -102,7 +102,7 @@ export function ProductDetail({ product }: { product: ProductDto }) {
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="text-sm font-semibold tabular-nums text-slate-950 dark:text-white">
+                    <span className="text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
                       {formatPrice(o.price.amount, o.price.currency)}
                     </span>
                     <span className={`${badge} ${AVAILABILITY_STYLE[o.availability]}`}>
@@ -117,7 +117,7 @@ export function ProductDetail({ product }: { product: ProductDto }) {
       </div>
 
       <section aria-labelledby={`evidence-${product.id}`} className="min-w-0">
-        <h3 id={`evidence-${product.id}`} className="text-sm font-semibold text-slate-950 dark:text-white">
+        <h3 id={`evidence-${product.id}`} className="text-sm font-semibold text-slate-900 dark:text-white">
           Evidence{" "}
           <span className="font-normal text-slate-400 dark:text-slate-400">
             ({product.evidenceCount > product.evidence.length
@@ -131,7 +131,7 @@ export function ProductDetail({ product }: { product: ProductDto }) {
             return (
               <li
                 key={e.id}
-                className="rounded-lg border border-slate-200 bg-white p-3 dark:border-line-dark dark:bg-surface-dark"
+                className="rounded-lg border border-gray-200 bg-white p-3 dark:border-line-dark dark:bg-surface-dark"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <p className="min-w-0 flex-1 text-sm text-slate-900 dark:text-slate-100">{e.claim}</p>

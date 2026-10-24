@@ -182,7 +182,7 @@ export default function DocsPage() {
       <style>{"body{background:#0a0f1d}"}</style>
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded-md focus:bg-accent-mint focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-background-dark"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded-md focus:bg-accent-mint focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-on-accent"
       >
         Skip to content
       </a>
@@ -310,7 +310,7 @@ async function DocsMain() {
         <div className="flex flex-wrap gap-3">
           <a
             href="#quickstart"
-            className={`rounded-lg bg-accent-mint px-4 py-2.5 text-sm font-semibold text-background-dark hover:bg-accent-mint-strong ${focusRing}`}
+            className={`rounded-lg bg-accent-mint px-4 py-2.5 text-sm font-semibold text-on-accent hover:bg-accent-mint-strong ${focusRing}`}
           >
             Make your first request
           </a>

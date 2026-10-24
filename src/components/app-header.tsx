@@ -6,10 +6,13 @@ import { Logo } from "@/components/brand/logo";
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 
-/** The signed-in app's top bar (catalog, dossiers, account): slim, sticky, the landing page's look. */
+/**
+ * The signed-in app's top bar (catalog, dossiers, account): slim, sticky, solid midnight navy. The one dark
+ * band in the light app (`on-dark`: dark styles and the bright brand teal inside it), grounding the brand.
+ */
 export function AppHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-white/10 dark:bg-background-dark/70">
+    <header className="on-dark sticky top-0 z-40 border-b border-white/10 bg-background-dark text-slate-100">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Link href="/" className={`flex items-center gap-2.5 rounded-md font-semibold tracking-tight text-slate-950 dark:text-slate-50 ${focusRing}`}>
           <Logo />

@@ -43,7 +43,7 @@ const PRO_PRICE = new Intl.NumberFormat("en-GB", {
 
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 // Midnight text on mint passes WCAG AA comfortably (about 10:1); it glows and grows on hover.
-const primaryButton = `inline-flex items-center justify-center gap-2 rounded-xl bg-accent-mint px-6 py-3.5 text-base font-semibold text-background-dark shadow-lg shadow-accent-mint/20 transition duration-200 ease-out hover:scale-[1.03] hover:bg-accent-mint-strong hover:shadow-xl hover:shadow-accent-mint/30 active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 ${focusRing}`;
+const primaryButton = `inline-flex items-center justify-center gap-2 rounded-xl bg-accent-mint px-6 py-3.5 text-base font-semibold text-on-accent shadow-lg shadow-accent-mint/20 transition duration-200 ease-out hover:scale-[1.03] hover:bg-accent-mint-strong hover:shadow-xl hover:shadow-accent-mint/30 active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 ${focusRing}`;
 const secondaryButton = `inline-flex items-center justify-center gap-2 rounded-xl bg-white/5 px-6 py-3.5 text-base font-semibold text-white ring-1 ring-white/15 transition ring-inset hover:bg-white/10 active:scale-[0.98] motion-reduce:transition-none ${focusRing}`;
 const sectionTitle = "text-3xl font-bold tracking-tight text-balance text-white sm:text-4xl";
 const eyebrow = "text-sm font-semibold text-accent-mint";
@@ -230,7 +230,7 @@ export default function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-accent-mint focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-background-dark"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-accent-mint focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-on-accent"
       >
         Skip to content
       </a>

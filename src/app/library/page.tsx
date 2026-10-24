@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const TIER_TONE = {
-  FREE: "text-slate-700 ring-slate-400/40 bg-slate-100 dark:text-slate-300 dark:ring-slate-500/40 dark:bg-surface-raised",
+  FREE: "text-slate-700 ring-slate-400/40 bg-gray-100 dark:text-slate-300 dark:ring-slate-500/40 dark:bg-surface-raised",
   PRO: "text-slate-100 ring-accent-mint/30 bg-accent-mint/10",
   AGENCY: "text-emerald-800 ring-emerald-600/30 bg-emerald-50 dark:text-emerald-200 dark:ring-emerald-400/30 dark:bg-emerald-500/15",
 } as const;
@@ -31,7 +31,7 @@ async function AccountStrip() {
   if (!user) redirect("/signin?callbackUrl=%2Flibrary");
   const free = await freeSearchesLeft(db, viewer.id);
   return (
-    <section aria-label="Your plan and credits" className="grid grid-cols-2 gap-px overflow-hidden rounded-md bg-slate-300 ring-1 ring-slate-300 sm:grid-cols-4 dark:bg-surface-raised dark:ring-line-dark">
+    <section aria-label="Your plan and credits" className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 shadow-sm sm:grid-cols-4 dark:border-line-dark dark:bg-surface-raised">
       <div className="bg-white p-3 dark:bg-background-dark">
         <p className={stat}>Plan</p>
         <p className="mt-1">
@@ -63,12 +63,12 @@ async function AccountStrip() {
 
 export default function LibraryPage() {
   return (
-    <div className="min-h-full bg-slate-50 dark:bg-background-dark">
+    <div className="app-light min-h-full bg-gray-50 text-slate-900">
       <AppHeader />
       <main className="mx-auto max-w-7xl space-y-5 px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-slate-50">Dossier library</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">Dossier library</h1>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Every Dossier you&apos;ve bought. Reopening one is free.</p>
           </div>
           <Link href="/terminal" className="font-mono text-xs font-semibold tracking-wider text-accent-mint uppercase hover:underline">

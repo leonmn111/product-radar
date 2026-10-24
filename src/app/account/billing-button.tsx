@@ -5,8 +5,8 @@ import { useEffect, useState, type FormEvent } from "react";
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 const STYLE = {
-  primary: `bg-accent-mint text-background-dark hover:bg-accent-mint-strong ${focusRing}`,
-  secondary: `bg-white text-slate-900 ring-1 ring-slate-300 ring-inset hover:bg-slate-50 dark:bg-surface-dark dark:text-slate-100 dark:ring-line-dark dark:hover:bg-surface-raised ${focusRing}`,
+  primary: `bg-accent-mint text-on-accent hover:bg-accent-mint-strong ${focusRing}`,
+  secondary: `bg-white text-slate-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 dark:bg-surface-dark dark:text-slate-100 dark:ring-line-dark dark:hover:bg-surface-raised ${focusRing}`,
 };
 
 /**

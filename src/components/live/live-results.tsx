@@ -13,7 +13,7 @@ const pct = (x: number) => `${Math.round(x * 100)}%`;
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 const link = `rounded-sm font-medium text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-accent-mint dark:text-slate-100 dark:decoration-slate-600 ${focusRing}`;
-const tile = "rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-surface-dark dark:ring-white/10";
+const tile = "rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-surface-dark dark:ring-white/10";
 
 function ConfidencePill({ c }: { c: LiveOpportunity["confidence"] }) {
   return (
@@ -38,7 +38,7 @@ function MarginBlock({ o }: { o: LiveOpportunity }) {
     ["Landed cost", money(m.landedCost, m.currency)],
   ];
   return (
-    <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-line-dark/5 ring-inset dark:bg-white/[0.03] dark:ring-white/10">
+    <div className="rounded-xl bg-gray-50 p-4 ring-1 ring-line-dark/5 ring-inset dark:bg-white/[0.03] dark:ring-white/10">
       <p className="text-xs font-medium text-slate-400 dark:text-slate-400">{m.label}</p>
       <p className="mt-1 flex flex-wrap items-baseline gap-x-2">
         <span className={`text-3xl font-bold tracking-tight whitespace-nowrap tabular-nums ${m.spread >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}`}>
@@ -51,14 +51,14 @@ function MarginBlock({ o }: { o: LiveOpportunity }) {
         {rows.map(([k, v]) => (
           <div key={k} className="flex justify-between gap-3">
             <dt className="text-slate-600 dark:text-slate-400">{k}</dt>
-            <dd className={`tabular-nums ${v === "not quoted" ? "text-slate-400 italic" : "font-medium text-slate-950 dark:text-slate-50"}`}>{v}</dd>
+            <dd className={`tabular-nums ${v === "not quoted" ? "text-slate-400 italic" : "font-medium text-slate-900 dark:text-slate-50"}`}>{v}</dd>
           </div>
         ))}
       </dl>
       <p className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
         Not included:
         {m.notIncluded.map((n) => (
-          <span key={n} className="rounded-full bg-white px-2 py-0.5 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
+          <span key={n} className="rounded-full bg-white px-2 py-0.5 ring-1 ring-gray-200 dark:bg-white/5 dark:ring-white/10">
             {n}
           </span>
         ))}
@@ -81,10 +81,10 @@ function Opportunity({ o }: { o: LiveOpportunity }) {
   return (
     <article className={`${tile} flex flex-col gap-4 p-5 sm:p-6`}>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-slate-300">{MARKETS[o.market].label}</span>
+        <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-slate-300">{MARKETS[o.market].label}</span>
         <ConfidencePill c={o.confidence} />
       </div>
-      <h3 className="text-lg font-semibold tracking-tight text-slate-950 dark:text-slate-50">{o.title}</h3>
+      <h3 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-50">{o.title}</h3>
       <MarginBlock o={o} />
       <div className="grid gap-4 md:grid-cols-2">
         <section aria-label="Amazon listings">
@@ -134,13 +134,13 @@ function WithheldList({ items }: { items: Withheld[] }) {
   if (!items.length) return null;
   return (
     <details className={`${tile} group p-5 sm:p-6`}>
-      <summary className={`flex cursor-pointer list-none items-center justify-between gap-3 rounded-md font-semibold text-slate-950 dark:text-slate-50 ${focusRing} [&::-webkit-details-marker]:hidden`}>
+      <summary className={`flex cursor-pointer list-none items-center justify-between gap-3 rounded-md font-semibold text-slate-900 dark:text-slate-50 ${focusRing} [&::-webkit-details-marker]:hidden`}>
         Withheld under the 0.7 confidence gate ({items.length})
         <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180 motion-reduce:transition-none">
           <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
         </svg>
       </summary>
-      <ul className="mt-4 divide-y divide-slate-200 dark:divide-white/10">
+      <ul className="mt-4 divide-y divide-gray-200 dark:divide-white/10">
         {items.map((w) => (
           <li key={`${w.market}:${w.title}`} className="py-3 text-sm">
             <p className="font-medium text-slate-900 dark:text-slate-100">

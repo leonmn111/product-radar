@@ -28,7 +28,7 @@ async function ResetContent({ searchParams }: { searchParams: Promise<Record<str
         </p>
         <Link
           href="/signin/forgot"
-          className="mt-6 inline-flex w-full items-center justify-center rounded-md bg-accent-mint px-4 py-2 text-sm font-semibold text-background-dark shadow-sm hover:bg-accent-mint-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint"
+          className="mt-6 inline-flex w-full items-center justify-center rounded-md bg-accent-mint px-4 py-2 text-sm font-semibold text-on-accent shadow-sm hover:bg-accent-mint-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint"
         >
           Send a new link
         </Link>

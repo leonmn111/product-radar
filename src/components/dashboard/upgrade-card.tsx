@@ -16,7 +16,7 @@ export function UpgradeCard({ signedIn, liveProducts }: { signedIn: boolean; liv
     >
       <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="max-w-2xl">
-          <h2 id="upgrade-title" className="text-lg font-semibold text-slate-950 dark:text-white">
+          <h2 id="upgrade-title" className="text-lg font-semibold text-slate-900 dark:text-white">
             Unlock the full catalog with Pro
           </h2>
           <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
@@ -40,13 +40,13 @@ export function UpgradeCard({ signedIn, liveProducts }: { signedIn: boolean; liv
           </ul>
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
-          <p className="text-slate-950 dark:text-white">
+          <p className="text-slate-900 dark:text-white">
             <span className="text-3xl font-semibold tracking-tight">£{PLANS.pro.pricePence / 100}</span>
             <span className="text-sm text-slate-600 dark:text-slate-400"> / month</span>
           </p>
           <a
             href="/upgrade"
-            className="rounded-md bg-accent-mint px-4 py-2 text-sm font-semibold text-background-dark shadow-sm transition hover:bg-accent-mint-strong active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint motion-reduce:transition-none"
+            className="rounded-md bg-accent-mint px-4 py-2 text-sm font-semibold text-on-accent shadow-sm transition hover:bg-accent-mint-strong active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint motion-reduce:transition-none"
           >
             {signedIn ? "Upgrade to Pro" : "Sign in & upgrade"}
           </a>

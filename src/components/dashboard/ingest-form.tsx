@@ -71,7 +71,7 @@ export function IngestForm({
       </h2>
       <form
         onSubmit={submit}
-        className="flex flex-col gap-2 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200 transition focus-within:ring-accent-mint/50 motion-reduce:transition-none sm:flex-row sm:items-center dark:bg-surface-dark dark:ring-white/10"
+        className="flex flex-col gap-2 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-gray-200 transition focus-within:ring-accent-mint/50 motion-reduce:transition-none sm:flex-row sm:items-center dark:bg-surface-dark dark:ring-white/10"
       >
         <div className="relative min-w-0 flex-1">
           <svg
@@ -108,7 +108,7 @@ export function IngestForm({
           />
           <kbd
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-400 ring-1 ring-slate-200 ring-inset sm:block dark:bg-white/5 dark:text-slate-400 dark:ring-white/10"
+            className="pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded-md bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-slate-400 ring-1 ring-gray-200 ring-inset sm:block dark:bg-white/5 dark:text-slate-400 dark:ring-white/10"
           >
             /
           </kbd>
@@ -128,7 +128,7 @@ export function IngestForm({
             value={category}
             onChange={(e) => setCategory(e.target.value.toLowerCase())}
             disabled={busy}
-            className={`${field} min-w-0 flex-1 bg-slate-50 px-3 ring-1 ring-slate-200 ring-inset sm:w-48 sm:flex-none dark:bg-white/5 dark:ring-white/10`}
+            className={`${field} min-w-0 flex-1 bg-gray-50 px-3 ring-1 ring-gray-200 ring-inset sm:w-48 sm:flex-none dark:bg-white/5 dark:ring-white/10`}
           />
           <datalist id={ids.list}>
             {categories.map((c) => (
@@ -140,7 +140,7 @@ export function IngestForm({
           <button
             type="submit"
             disabled={busy}
-            className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-mint px-5 text-sm font-semibold text-background-dark shadow-sm shadow-accent-mint/20 transition hover:bg-accent-mint-strong active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 motion-reduce:transition-none dark:hover:shadow-md hover:shadow-accent-mint/30 ${focusRing}`}
+            className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-mint px-5 text-sm font-semibold text-on-accent shadow-sm shadow-sm transition hover:bg-accent-mint-strong active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 motion-reduce:transition-none dark:hover:shadow-md ${focusRing}`}
           >
             {busy && (
               <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 animate-spin" fill="none">

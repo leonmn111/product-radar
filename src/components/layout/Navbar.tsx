@@ -9,7 +9,7 @@ export type NavLink = { href: string; label: string };
 
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 const navLink = `rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white ${focusRing}`;
-const cta = `inline-flex items-center rounded-lg bg-accent-mint px-3.5 py-2 text-sm font-semibold whitespace-nowrap text-background-dark shadow-md shadow-accent-mint/20 transition duration-200 hover:scale-[1.03] hover:bg-accent-mint-strong active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 ${focusRing}`;
+const cta = `inline-flex items-center rounded-lg bg-accent-mint px-3.5 py-2 text-sm font-semibold whitespace-nowrap text-on-accent shadow-md shadow-accent-mint/20 transition duration-200 hover:scale-[1.03] hover:bg-accent-mint-strong active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 ${focusRing}`;
 
 export function Navbar({ links = [], ctaHref = "/get-started" }: { links?: NavLink[]; ctaHref?: string }) {
   return (

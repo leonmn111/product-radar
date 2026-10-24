@@ -21,8 +21,8 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
-const card = "rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-line-dark dark:bg-surface-dark";
-const cardTitle = "text-base font-semibold text-slate-950 dark:text-white";
+const card = "rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6 dark:border-line-dark dark:bg-surface-dark";
+const cardTitle = "text-base font-semibold text-slate-900 dark:text-white";
 const muted = "text-sm text-slate-600 dark:text-slate-400";
 
 const TIER_LABEL: Record<SubscriptionTier, string> = { FREE: "Free", PRO: "Pro", AGENCY: "Agency" };
@@ -36,7 +36,7 @@ function TierBadge({ tier }: { tier: SubscriptionTier }) {
       className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${
         paid
           ? "bg-accent-mint/10 text-accent-mint ring-accent-mint/30"
-          : "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20"
+          : "bg-gray-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20"
       }`}
     >
       {TIER_LABEL[tier]}
@@ -48,7 +48,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid gap-1 py-3 sm:grid-cols-3 sm:gap-4">
       <dt className="text-sm font-medium text-slate-600 dark:text-slate-400">{label}</dt>
-      <dd className="text-sm text-slate-950 sm:col-span-2 dark:text-slate-100">{children}</dd>
+      <dd className="text-sm text-slate-900 sm:col-span-2 dark:text-slate-100">{children}</dd>
     </div>
   );
 }
@@ -59,7 +59,7 @@ function ProfileCard({ profile, tier }: { profile: AccountProfile; tier: Subscri
       <h2 id="profile-heading" className={cardTitle}>
         Profile
       </h2>
-      <dl className="mt-2 divide-y divide-slate-200 dark:divide-line-dark">
+      <dl className="mt-2 divide-y divide-gray-200 dark:divide-line-dark">
         <Row label="Email">
           <span className="break-all">{profile.email}</span>
           {profile.emailVerified && <span className="ml-2 text-xs text-emerald-700 dark:text-emerald-300">Verified</span>}
@@ -110,7 +110,7 @@ function PlanCard({ tier, billing }: { tier: SubscriptionTier; billing: BillingS
 
       {!paid && (
         <div className="mt-4 rounded-lg bg-accent-mint/10 p-4 ring-1 ring-accent-mint/30 ring-inset">
-          <p className="text-sm font-semibold text-slate-950 dark:text-white">Pro unlocks everything ProductRadar tracks</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">Pro unlocks everything ProductRadar tracks</p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700 dark:text-slate-300">
             <li>Every live product, not just the samples</li>
             <li>Analyze any product link yourself</li>
@@ -118,7 +118,7 @@ function PlanCard({ tier, billing }: { tier: SubscriptionTier; billing: BillingS
           </ul>
           <a
             href="/upgrade"
-            className={`mt-4 inline-flex w-full items-center justify-center rounded-md bg-accent-mint px-4 py-2.5 text-sm font-semibold text-background-dark shadow-sm hover:bg-accent-mint-strong sm:w-auto ${focusRing}`}
+            className={`mt-4 inline-flex w-full items-center justify-center rounded-md bg-accent-mint px-4 py-2.5 text-sm font-semibold text-on-accent shadow-sm hover:bg-accent-mint-strong sm:w-auto ${focusRing}`}
           >
             Upgrade to Pro · {proPrice}
           </a>
@@ -176,7 +176,7 @@ async function AccountContent({ searchParams }: { searchParams: SearchParams }) 
         </p>
       )}
       {params.checkout === "cancelled" && (
-        <p role="status" className="rounded-lg bg-slate-100 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-300 ring-inset dark:bg-white/5 dark:text-slate-300 dark:ring-white/10">
+        <p role="status" className="rounded-lg bg-gray-100 px-4 py-3 text-sm text-slate-700 ring-1 ring-gray-300 ring-inset dark:bg-white/5 dark:text-slate-300 dark:ring-white/10">
           Checkout cancelled. Nothing was charged.
         </p>
       )}
@@ -189,10 +189,10 @@ async function AccountContent({ searchParams }: { searchParams: SearchParams }) 
 
 export default function AccountPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <div className="min-h-full bg-slate-50 dark:bg-background-dark">
+    <div className="app-light min-h-full bg-gray-50 text-slate-900">
       <AppHeader />
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-        <h1 className="mb-6 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-slate-50">Account</h1>
+        <h1 className="mb-6 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">Account</h1>
         <Suspense
           fallback={
             <div aria-hidden="true" className="space-y-6">

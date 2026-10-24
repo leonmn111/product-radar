@@ -105,7 +105,7 @@ async function Previews() {
 export default function TerminalPreviewPage() {
   if (env.NODE_ENV === "production") notFound();
   return (
-    <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+    <main className="app-light mx-auto min-h-full w-full max-w-7xl space-y-6 bg-gray-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
       <h1 className="text-xl font-semibold">Dossier terminal preview</h1>
       <p className="text-sm text-slate-600 dark:text-slate-400">Development only: this page doesn&apos;t exist in production. No provider is called.</p>
       <Suspense fallback={<p className="text-sm">Building previews…</p>}>

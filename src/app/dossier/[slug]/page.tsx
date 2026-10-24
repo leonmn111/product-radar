@@ -33,7 +33,7 @@ function ProductSummary({ product: p }: { product: ProductDto }) {
   const overall = getScore(p, "OVERALL");
   return (
     <section aria-labelledby="product-name" className="flex flex-col gap-5 sm:flex-row sm:items-start">
-      <div className="w-full max-w-56 shrink-0 self-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:w-48 sm:self-start dark:border-line-dark">
+      <div className="w-full max-w-56 shrink-0 self-center overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm sm:w-48 sm:self-start dark:border-line-dark">
         <ProductImage src={p.imageUrl} alt={p.name} label={p.brand ?? p.name} />
       </div>
       <div className="min-w-0 flex-1">
@@ -49,7 +49,7 @@ function ProductSummary({ product: p }: { product: ProductDto }) {
             {p.isSample ? "Sample" : "Live"}
           </span>
         </p>
-        <h1 id="product-name" className="mt-1 text-2xl font-semibold tracking-tight text-balance text-slate-950 sm:text-3xl dark:text-white">
+        <h1 id="product-name" className="mt-1 text-2xl font-semibold tracking-tight text-balance text-slate-900 sm:text-3xl dark:text-white">
           {p.name}
         </h1>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{humanizeSlug(p.category)}</p>
@@ -58,7 +58,7 @@ function ProductSummary({ product: p }: { product: ProductDto }) {
           <div>
             <dt className="text-xs font-medium text-slate-600 dark:text-slate-400">Overall score</dt>
             <dd className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="text-2xl font-semibold tabular-nums text-slate-950 dark:text-white">
+              <span className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
                 {overall ? Math.round(overall.value) : "—"}
                 <span className="text-sm font-normal text-slate-400 dark:text-slate-400"> / 100</span>
               </span>
@@ -70,7 +70,7 @@ function ProductSummary({ product: p }: { product: ProductDto }) {
             <dd className="mt-1">
               {p.bestOffer ? (
                 <>
-                  <span className="text-2xl font-semibold tabular-nums text-slate-950 dark:text-white">
+                  <span className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
                     {formatPrice(p.bestOffer.price.amount, p.bestOffer.price.currency)}
                   </span>
                   <span className="block text-xs text-slate-600 dark:text-slate-400">
@@ -84,7 +84,7 @@ function ProductSummary({ product: p }: { product: ProductDto }) {
           </div>
           <div>
             <dt className="text-xs font-medium text-slate-600 dark:text-slate-400">Evidence</dt>
-            <dd className="mt-1 text-sm text-slate-950 dark:text-slate-100">
+            <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">
               <span className="text-2xl font-semibold tabular-nums">{p.sourceCount}</span> source{p.sourceCount === 1 ? "" : "s"}
               <span className="block text-xs text-slate-600 dark:text-slate-400">
                 {p.evidenceCount} evidence item{p.evidenceCount === 1 ? "" : "s"}
@@ -102,7 +102,7 @@ function LockedDossier({ name, liveProducts }: { name: string; liveProducts: num
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-balance text-slate-950 sm:text-3xl dark:text-white">{name}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-balance text-slate-900 sm:text-3xl dark:text-white">{name}</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
           This product&apos;s dossier is part of the Pro catalog.
         </p>
@@ -130,7 +130,7 @@ async function DossierContent({ params }: { params: Params }) {
     <div className="space-y-6">
       <Link
         href={pro ? "/dashboard" : "/"}
-        className={`inline-flex items-center gap-1 rounded-sm text-sm font-medium text-slate-600 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white ${focusRing}`}
+        className={`inline-flex items-center gap-1 rounded-sm text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white ${focusRing}`}
       >
         <span aria-hidden="true">←</span> {pro ? "Back to catalog" : "Back to ProductRadar"}
       </Link>
@@ -152,7 +152,7 @@ async function DossierContent({ params }: { params: Params }) {
 
 export default function DossierPage({ params }: { params: Params }) {
   return (
-    <div className="min-h-full bg-slate-50 dark:bg-background-dark">
+    <div className="app-light min-h-full bg-gray-50 text-slate-900">
       <AppHeader />
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <Suspense

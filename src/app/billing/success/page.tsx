@@ -28,7 +28,7 @@ async function Confirmation({ searchParams }: { searchParams: Promise<{ session_
 
   return result.ok && result.tier !== "FREE" ? (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">You&apos;re on {result.tier === "AGENCY" ? "Agency" : "Pro"} 🎉</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">You&apos;re on {result.tier === "AGENCY" ? "Agency" : "Pro"} 🎉</h1>
       <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
         Live product analysis is unlocked and you can now see all live products.
         {result.periodEnd &&
@@ -37,7 +37,7 @@ async function Confirmation({ searchParams }: { searchParams: Promise<{ session_
     </>
   ) : (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Almost there</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Almost there</h1>
       <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
         {result.ok ? "Your payment is still processing." : result.reason} You haven&apos;t been charged twice — refresh
         this page in a moment.
@@ -48,14 +48,14 @@ async function Confirmation({ searchParams }: { searchParams: Promise<{ session_
 
 export default function BillingSuccessPage(props: { searchParams: Promise<{ session_id?: string }> }) {
   return (
-    <main className="flex min-h-full flex-1 items-center justify-center bg-slate-50 px-4 py-12 dark:bg-background-dark">
-      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-line-dark dark:bg-surface-dark">
+    <main className="app-light flex min-h-full flex-1 items-center justify-center bg-gray-50 px-4 py-12 text-slate-900">
+      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-line-dark dark:bg-surface-dark">
         <Suspense fallback={<p className="text-sm text-slate-600 dark:text-slate-400">Confirming your subscription…</p>}>
           <Confirmation searchParams={props.searchParams} />
         </Suspense>
         <Link
           href="/dashboard"
-          className="mt-6 inline-flex rounded-md bg-accent-mint px-4 py-2 text-sm font-semibold text-background-dark hover:bg-accent-mint-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint "
+          className="mt-6 inline-flex rounded-md bg-accent-mint px-4 py-2 text-sm font-semibold text-on-accent hover:bg-accent-mint-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint "
         >
           Go to dashboard
         </Link>

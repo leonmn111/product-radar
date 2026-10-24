@@ -83,7 +83,7 @@ export function DossierRunner({
   const running = state.kind === "running";
   return (
     <div className="space-y-5">
-      <form onSubmit={run} className="flex flex-col gap-3 rounded-lg bg-white p-3 ring-1 ring-slate-300 sm:flex-row sm:items-end dark:bg-surface-dark dark:ring-line-dark">
+      <form onSubmit={run} className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:items-end dark:border-line-dark dark:bg-surface-dark">
         <div className="min-w-0 flex-1">
           <label htmlFor={inputId} className="font-mono text-[11px] font-semibold tracking-widest text-slate-600 uppercase dark:text-slate-400">
             Amazon UK ASIN
@@ -97,14 +97,14 @@ export function DossierRunner({
             spellCheck={false}
             maxLength={10}
             disabled={running || Boolean(unavailable)}
-            className={`mt-1 h-11 w-full rounded-md bg-slate-50 px-3 font-mono text-base tracking-wider text-slate-950 uppercase ring-1 ring-slate-300 placeholder:text-slate-400 placeholder:normal-case disabled:opacity-60 dark:bg-background-dark dark:text-white dark:ring-line-dark ${focusRing}`}
+            className={`mt-1 h-11 w-full rounded-md bg-gray-50 px-3 font-mono text-base tracking-wider text-slate-900 uppercase ring-1 ring-gray-300 placeholder:text-slate-400 placeholder:normal-case disabled:opacity-60 dark:bg-background-dark dark:text-white dark:ring-line-dark ${focusRing}`}
           />
         </div>
         <button
           type="submit"
           disabled={running || Boolean(unavailable)}
           aria-busy={running}
-          className={`inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent-mint px-5 text-sm font-semibold whitespace-nowrap text-background-dark shadow-sm hover:bg-accent-mint-strong disabled:cursor-not-allowed disabled:bg-accent-mint/50 ${focusRing}`}
+          className={`inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent-mint px-5 text-sm font-semibold whitespace-nowrap text-on-accent shadow-sm hover:bg-accent-mint-strong disabled:cursor-not-allowed disabled:bg-accent-mint/50 ${focusRing}`}
         >
           {running && <span aria-hidden="true" className="size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />}
           {running ? "Building Dossier…" : freeDossier ? "Run Dossier · free" : `Run Dossier · ${cost} credit${cost === 1 ? "" : "s"}`}

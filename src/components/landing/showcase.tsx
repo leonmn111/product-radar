@@ -81,7 +81,7 @@ function Spread({ trade: t }: { trade: Trade }) {
       </div>
       <div className="relative flex justify-center before:absolute before:inset-x-0 before:top-1/2 before:h-px before:bg-gradient-to-r before:from-white/10 before:via-accent-mint before:to-white/10">
         <dt className="sr-only">Spread</dt>
-        <dd className="relative rounded-full bg-accent-mint px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-background-dark tabular-nums shadow-md shadow-accent-mint/20 sm:px-3 sm:text-sm">
+        <dd className="relative rounded-full bg-accent-mint px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-on-accent tabular-nums shadow-md shadow-accent-mint/20 sm:px-3 sm:text-sm">
           {spread >= 0 ? "+" : "−"}
           {money(Math.abs(spread), t.currency)}
         </dd>

@@ -32,7 +32,7 @@ export async function AccountMenu() {
         </Link>
         <a
           href="/upgrade"
-          className={`rounded-lg bg-accent-mint px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-background-dark shadow-sm shadow-accent-mint/20 transition hover:bg-accent-mint-strong active:scale-[0.98] motion-reduce:transition-none hover:shadow-accent-mint/30 ${focusRing}`}
+          className={`rounded-lg bg-accent-mint px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-on-accent shadow-sm shadow-accent-mint/20 transition hover:bg-accent-mint-strong active:scale-[0.98] motion-reduce:transition-none hover:shadow-accent-mint/30 ${focusRing}`}
         >
           Get Pro
         </a>
@@ -52,7 +52,7 @@ export async function AccountMenu() {
         // The one action that earns: kept in plain sight for Free accounts, not tucked in the menu.
         <a
           href="/upgrade"
-          className={`rounded-lg bg-accent-mint px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-background-dark shadow-sm shadow-accent-mint/20 transition hover:bg-accent-mint-strong active:scale-[0.98] motion-reduce:transition-none hover:shadow-accent-mint/30 ${focusRing}`}
+          className={`rounded-lg bg-accent-mint px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-on-accent shadow-sm shadow-accent-mint/20 transition hover:bg-accent-mint-strong active:scale-[0.98] motion-reduce:transition-none hover:shadow-accent-mint/30 ${focusRing}`}
         >
           Upgrade<span className="hidden sm:inline"> to Pro</span>
         </a>

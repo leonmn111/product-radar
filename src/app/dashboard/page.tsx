@@ -31,7 +31,7 @@ async function ProGate() {
       <UpgradeCard signedIn liveProducts={stats.products} />
       {products.length > 0 && (
         <section aria-labelledby="preview-heading">
-          <h2 id="preview-heading" className="text-base font-semibold text-slate-950 dark:text-white">
+          <h2 id="preview-heading" className="text-base font-semibold text-slate-900 dark:text-white">
             Preview a real dossier
           </h2>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
@@ -63,7 +63,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
           className={`mb-4 rounded-lg px-4 py-3 text-sm ring-1 ring-inset ${
             notice.tone === "error"
               ? "bg-red-50 text-red-900 ring-red-600/20 dark:bg-red-950/30 dark:text-red-200 dark:ring-red-400/30"
-              : "bg-slate-100 text-slate-800 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-200 dark:ring-slate-400/20"
+              : "bg-gray-100 text-slate-800 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-200 dark:ring-slate-400/20"
           }`}
         >
           {notice.text}
@@ -80,11 +80,11 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
 
 export default function DashboardPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <div className="min-h-full bg-slate-50 dark:bg-background-dark">
+    <div className="app-light min-h-full bg-gray-50 text-slate-900">
       <AppHeader />
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-slate-50">Product intelligence</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">Product intelligence</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
             Every score is calculated from sourced, timestamped evidence. Open a product to see exactly which evidence
             each score is based on.

@@ -47,11 +47,11 @@ async function Terminal({ searchParams }: { searchParams: SearchParams }) {
 
 export default function TerminalPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <div className="min-h-full bg-slate-50 dark:bg-background-dark">
+    <div className="app-light min-h-full bg-gray-50 text-slate-900">
       <AppHeader />
       <main className="mx-auto max-w-7xl space-y-5 px-4 py-8 sm:px-6 lg:px-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-slate-50">Dossier terminal</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">Dossier terminal</h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             One product, eight parts, every number cited. Parts without enough evidence are withheld, never guessed.
           </p>

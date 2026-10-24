@@ -20,7 +20,7 @@ export function ScoreCell({ score, emphasis = false }: { score?: Score; emphasis
   return (
     <div className="flex min-w-[4.5rem] flex-col gap-1">
       <span
-        className={`tabular-nums ${emphasis ? "text-lg font-semibold text-slate-950 dark:text-white" : "text-sm font-medium text-slate-900 dark:text-slate-100"}`}
+        className={`tabular-nums ${emphasis ? "text-lg font-semibold text-slate-900 dark:text-white" : "text-sm font-medium text-slate-900 dark:text-slate-100"}`}
       >
         {score.value.toFixed(1)}
       </span>
@@ -44,7 +44,7 @@ export function ConfidenceBadge({ confidence }: { confidence: number }) {
   const level = confidenceLevel(confidence);
   const style = {
     low: "bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-400/20",
-    medium: "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20",
+    medium: "bg-gray-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20",
     high: "bg-emerald-50 text-emerald-800 ring-emerald-600/20 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-400/20",
   }[level];
   return (
