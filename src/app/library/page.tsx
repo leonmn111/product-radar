@@ -51,10 +51,11 @@ async function AccountStrip() {
       </div>
       <div className="flex flex-col items-start justify-center gap-2 bg-white p-3 dark:bg-background-dark">
         <TopUpButton balance={user.platformCredits} onSale={creditPacksOnSale()} />
+        {/* A plain link: /upgrade opens Stripe Checkout, so it must never be prefetched. */}
         {user.subscriptionTier === "FREE" && (
-          <Link href="/upgrade" className="text-xs font-medium text-accent-mint underline underline-offset-2">
+          <a href="/upgrade" className="text-xs font-medium text-accent-mint underline underline-offset-2">
             Or upgrade to Pro
-          </Link>
+          </a>
         )}
       </div>
     </section>

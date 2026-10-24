@@ -10,6 +10,11 @@ import { BillingNotConfiguredError } from "@/server/billing/stripe";
 //   signed in  → Stripe Checkout for Pro (£29/month, plans.ts), or the billing portal if already subscribed
 export async function GET(request: NextRequest) {
   await connection();
+  // A prefetch (a Next.js <Link> to this route, scrolled into view) must never open a Checkout Session or
+  // create a Stripe customer: only a real click does. Every upgrade button is a plain <a> for this reason.
+  if (request.headers.has("next-router-prefetch") || /prefetch/i.test(request.headers.get("sec-purpose") ?? request.headers.get("purpose") ?? "")) {
+    return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
+  }
   const base = appUrl(request.nextUrl.origin);
   const viewer = await getViewer();
   if (!viewer) return Response.redirect(`${base}/signin?callbackUrl=${encodeURIComponent("/upgrade")}`, 303);
