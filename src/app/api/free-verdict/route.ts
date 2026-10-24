@@ -75,7 +75,9 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    const result = await getProductDossier(link.asin, { sources: live.sources, cache: dbDossierCache, sample: false, id: randomBytes(32).toString("hex"), now: () => now });
+    // No fixed clock here: the Dossier is dated when it's built, after the providers answer. A clock frozen at
+    // the start of the request dates every piece of evidence in the future, and confidence ignores those.
+    const result = await getProductDossier(link.asin, { sources: live.sources, cache: dbDossierCache, sample: false, id: randomBytes(32).toString("hex") });
     if (!result) {
       await giveBack();
       return json({ error: "no_product", message: "Amazon UK has no priced product at that link. Check it opens a product page, then try again." }, 404);

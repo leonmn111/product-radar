@@ -71,6 +71,8 @@ describe("POST /api/free-verdict", () => {
     expect(JSON.stringify(body)).not.toMatch(/5\.63|reasons|net per unit/);
     expect(dbFreeVerdictQuota.reserve).toHaveBeenCalledWith(expect.any(Date), 2);
     expect(getProductDossier).toHaveBeenCalledWith("B0TESTMUG1", expect.objectContaining({ sample: false }));
+    // Built on the live clock: a clock frozen at the start of the request would date the evidence in the future.
+    expect(vi.mocked(getProductDossier).mock.calls[0][1]).not.toHaveProperty("now");
   });
 
   it("allows one free check per visitor a day", async () => {
