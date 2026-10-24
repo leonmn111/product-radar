@@ -1,14 +1,13 @@
 import { Footer } from "@/components/Footer";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Inter } from "next/font/google";
 import { Analytics } from "@/components/analytics";
-import { themeScript, type Theme } from "@/components/theme/theme";
-import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Inter for text (Tailwind's font-sans), Geist Mono for the terminal look (font-mono). See globals.css.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -35,26 +34,16 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
 };
 
-// New visitors see dark first; the theme toggle saves Light, Dark or System per browser.
-const DEFAULT_THEME: Theme = "dark";
-
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    // The inline script may change the `dark` class before React hydrates, hence suppressHydrationWarning.
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${DEFAULT_THEME === "dark" ? "dark " : ""}${geistSans.variable} ${geistMono.variable} h-full antialiased motion-safe:scroll-smooth`}
-    >
+    // Dark only: `dark` is always on, so every page renders its dark styles (globals.css).
+    <html lang="en" className={`dark ${inter.variable} ${geistMono.variable} h-full antialiased motion-safe:scroll-smooth`}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript(DEFAULT_THEME) }} />
         <Analytics />
       </head>
       <body className="min-h-full flex flex-col">
-        <ThemeProvider defaultTheme={DEFAULT_THEME}>
-          {children}
-          <Footer />
-        </ThemeProvider>
+        {children}
+        <Footer />
       </body>
     </html>
   );

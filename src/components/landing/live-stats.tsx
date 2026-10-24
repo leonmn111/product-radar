@@ -17,22 +17,22 @@ export function LiveStats({ stats }: { stats: CatalogStats }) {
     <div>
       {/* One bar: hairline dividers are the 1px gaps showing the bar's own background through. */}
       <dl
-        className={`grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 shadow-sm dark:border-white/10 dark:bg-white/10 dark:shadow-none ${cols}`}
+        className={`grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line-dark bg-line-dark ${cols}`}
       >
         {items.map((i) => (
           <div
             key={i.label}
-            className="flex flex-col-reverse gap-1 bg-white px-4 py-5 text-center last:odd:col-span-2 sm:px-6 sm:last:odd:col-span-1 dark:bg-zinc-950"
+            className="flex flex-col-reverse gap-1 bg-surface-dark px-4 py-5 text-center last:odd:col-span-2 sm:px-6 sm:last:odd:col-span-1"
           >
-            <dt className="text-xs text-zinc-600 sm:text-sm dark:text-zinc-400">{i.label}</dt>
-            <dd className="text-3xl font-bold tracking-tight tabular-nums text-zinc-950 sm:text-4xl dark:text-zinc-50">{count(i.value)}</dd>
+            <dt className="text-xs text-slate-400 sm:text-sm">{i.label}</dt>
+            <dd className="text-3xl font-bold tracking-tight tabular-nums text-white sm:text-4xl">{count(i.value)}</dd>
           </div>
         ))}
       </dl>
-      <p className="mt-3 flex items-center justify-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+      <p className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-400">
         <span aria-hidden="true" className="relative flex size-2">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:animate-none" />
-          <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent-mint opacity-75 motion-reduce:animate-none" />
+          <span className="relative inline-flex size-2 rounded-full bg-accent-mint" />
         </span>
         Live counts from our database{stats.lastObservedAt && <> · newest capture {longDate(stats.lastObservedAt)}</>}
       </p>
@@ -43,15 +43,15 @@ export function LiveStats({ stats }: { stats: CatalogStats }) {
 export function LiveStatsSkeleton() {
   return (
     <div aria-hidden="true">
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 sm:grid-cols-4 dark:border-white/10 dark:bg-white/10">
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line-dark bg-line-dark sm:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="flex flex-col items-center gap-2 bg-white px-4 py-5 dark:bg-zinc-950">
-            <div className="h-9 w-16 animate-pulse rounded bg-zinc-200/70 sm:h-10 dark:bg-white/10" />
-            <div className="h-3 w-24 animate-pulse rounded bg-zinc-200/70 dark:bg-white/10" />
+          <div key={i} className="flex flex-col items-center gap-2 bg-surface-dark px-4 py-5">
+            <div className="h-9 w-16 animate-pulse rounded bg-white/10 sm:h-10" />
+            <div className="h-3 w-24 animate-pulse rounded bg-white/10" />
           </div>
         ))}
       </div>
-      <div className="mx-auto mt-3 h-4 w-64 animate-pulse rounded bg-zinc-200/70 dark:bg-white/10" />
+      <div className="mx-auto mt-3 h-4 w-64 animate-pulse rounded bg-white/10" />
     </div>
   );
 }

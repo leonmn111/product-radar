@@ -19,7 +19,7 @@ export function platformStatus(c: { dossiersLive: boolean; keepaKey: boolean; ag
 }
 
 const STATUS_TONE: Record<Status, string> = {
-  LIVE: "text-emerald-300 ring-emerald-400/30 bg-emerald-400/10",
+  LIVE: "text-accent-mint ring-accent-mint/30 bg-accent-mint/10",
   "LAUNCHING SOON": "text-amber-300 ring-amber-400/30 bg-amber-400/10",
 };
 
@@ -36,36 +36,36 @@ const PARTS: [string, string][] = [
 
 function Panel({ n, title, status, children }: { n: string; title: string; status: Status; children: React.ReactNode }) {
   return (
-    <article className="flex flex-col bg-zinc-950 p-5 sm:p-6">
+    <article className="flex flex-col bg-surface-dark p-5 sm:p-6">
       <header className="flex items-center justify-between gap-3">
         <h3 className="font-mono text-xs font-semibold tracking-widest text-white uppercase">
-          <span className="text-purple-400">{n}</span> {title}
+          <span className="text-accent-mint">{n}</span> {title}
         </h3>
         <span className={`shrink-0 rounded-sm px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider ring-1 ring-inset ${STATUS_TONE[status]}`}>{status}</span>
       </header>
-      <div className="mt-4 flex-1 text-sm/6 text-zinc-300">{children}</div>
+      <div className="mt-4 flex-1 text-sm/6 text-slate-300">{children}</div>
     </article>
   );
 }
 
-const bullet = "flex gap-2 before:mt-[0.6rem] before:size-1 before:shrink-0 before:rounded-full before:bg-purple-400 before:content-['']";
+const bullet = "flex gap-2 before:mt-[0.6rem] before:size-1 before:shrink-0 before:rounded-full before:bg-accent-mint before:content-['']";
 
 export async function Platform() {
   await connection(); // the statuses follow the live configuration, not the build
   const { dossier, momentum, agency } = platformStatus({ dossiersLive: liveSources().ready, keepaKey: Boolean(env.KEEPA_API_KEY), agencyOnSale: agencyOnSale() });
 
   return (
-    <div className="grid gap-px overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/10 lg:grid-cols-3">
+    <div className="grid gap-px overflow-hidden rounded-lg bg-line-dark ring-1 ring-line-dark lg:grid-cols-3">
       <Panel n="01" title="The 8-part Dossier" status={dossier}>
         <p>One Amazon UK product, eight parts, every number cited. The true landed margin counts VAT, EU duty, platform fees and ad costs.</p>
-        <ol className="mt-4 space-y-1 font-mono text-xs text-zinc-400">
+        <ol className="mt-4 space-y-1 font-mono text-xs text-slate-400">
           {PARTS.map(([n, label]) => (
             <li key={n}>
-              <span className="text-zinc-500">{n}</span> {label}
+              <span className="text-slate-400/70">{n}</span> {label}
             </li>
           ))}
         </ol>
-        <p className="mt-4 text-xs text-zinc-400">Meta ad signals (how long a product&apos;s ads have run) are in development.</p>
+        <p className="mt-4 text-xs text-slate-400">Meta ad signals (how long a product&apos;s ads have run) are in development.</p>
       </Panel>
       <Panel n="02" title="Momentum engine" status={momentum}>
         <p>Twelve weeks of Amazon sales-rank history (Keepa), fitted by least-squares regression, so you see where demand is heading.</p>

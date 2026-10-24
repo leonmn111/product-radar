@@ -1,43 +1,48 @@
 @import "tailwindcss";
 
-/* Dark mode follows the `dark` class on <html> (set by the theme script), not the device. */
+/* The site is dark only: the root layout always puts `dark` on <html>, so every `dark:` style applies. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-  color-scheme: light;
+/*
+ * ProductRadar design system: midnight-blue surfaces and a mint-green accent.
+ * Each token is a Tailwind colour, so it works as a utility: bg-background-dark, bg-surface-dark,
+ * text-accent-mint, ring-line-dark, bg-accent-mint/10, …
+ * Contrast (WCAG AA): mint on midnight and midnight text on mint are about 10:1; slate-400 body
+ * copy on midnight is about 7:1. Don't use slate-500 or darker for text on these surfaces.
+ */
+@theme {
+  --color-background-dark: #0a1020; /* the page */
+  --color-surface-dark: #111a2e; /* cards and panels */
+  --color-surface-raised: #18233b; /* hover and raised panels */
+  --color-line-dark: #24314d; /* borders and dividers */
+  --color-accent-mint: #3ddc97; /* calls to action and highlights */
+  --color-accent-mint-strong: #6ee7b7; /* the accent on hover */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
 
-:root.dark {
-  --background: #09090b;
-  --foreground: #ededed;
+:root {
+  --background: var(--color-background-dark);
+  --foreground: #e2e8f0; /* slate-200 */
   color-scheme: dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Landing hero: a faint grid that fades out from the top centre. */
 .hero-grid {
   background-image:
-    linear-gradient(to right, rgb(24 24 27 / 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(24 24 27 / 0.06) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 100%);
-}
-.dark .hero-grid {
-  background-image:
     linear-gradient(to right, rgb(255 255 255 / 0.05) 1px, transparent 1px),
     linear-gradient(to bottom, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 100%);
 }

@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
-import { Logo } from "@/components/brand/logo";
+import { Navbar, type NavLink } from "@/components/layout/Navbar";
 import { LiveStats, LiveStatsSkeleton } from "@/components/landing/live-stats";
 import { Platform, PlatformSkeleton } from "@/components/landing/platform";
 import { Showcase } from "@/components/landing/showcase";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SITE_URL } from "@/lib/site";
 import { PLANS } from "@/server/billing/plans";
 import { getShowcase } from "@/server/products/showcase-cache";
@@ -14,6 +13,7 @@ import { getShowcase } from "@/server/products/showcase-cache";
 // The public landing page. Signed-in visitors never see it: src/proxy.ts sends them
 // to /dashboard. Everything here is static except the live counts and the showcase,
 // which stream in from the database (cached for about an hour).
+// Design: the midnight-blue and mint-green tokens in globals.css (the site is dark only).
 
 const TITLE = "ProductRadar — Institutional-grade product research for Amazon & AliExpress";
 const DESCRIPTION =
@@ -37,14 +37,12 @@ const PRO_PRICE = new Intl.NumberFormat("en-GB", {
   minimumFractionDigits: 0,
 }).format(PLANS.pro.pricePence / 100);
 
-const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
-// Rich purple with white text passes WCAG AA in both themes; it glows and grows on hover.
-const primaryButton = `inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-6 py-3.5 text-base font-semibold text-white shadow-lg ring-1 shadow-purple-600/30 ring-white/15 transition duration-200 ease-out ring-inset hover:scale-[1.03] hover:bg-purple-700 hover:shadow-xl hover:shadow-purple-600/40 active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 dark:shadow-purple-500/20 dark:hover:bg-purple-600 dark:hover:shadow-purple-500/40 ${focusRing}`;
-const secondaryButton = `inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-base font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 transition ring-inset hover:bg-zinc-50 active:scale-[0.98] motion-reduce:transition-none dark:bg-white/5 dark:text-zinc-50 dark:ring-white/15 dark:hover:bg-white/10 ${focusRing}`;
-const sectionTitle = "text-3xl font-bold tracking-tight text-balance text-zinc-950 sm:text-4xl dark:text-zinc-50";
-const eyebrow = "text-sm font-semibold text-purple-700 dark:text-purple-300";
-const navLink = `rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white ${focusRing}`;
+const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
+// Midnight text on mint passes WCAG AA comfortably (about 10:1); it glows and grows on hover.
+const primaryButton = `inline-flex items-center justify-center gap-2 rounded-xl bg-accent-mint px-6 py-3.5 text-base font-semibold text-background-dark shadow-lg shadow-accent-mint/20 transition duration-200 ease-out hover:scale-[1.03] hover:bg-accent-mint-strong hover:shadow-xl hover:shadow-accent-mint/30 active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 ${focusRing}`;
+const secondaryButton = `inline-flex items-center justify-center gap-2 rounded-xl bg-white/5 px-6 py-3.5 text-base font-semibold text-white ring-1 ring-white/15 transition ring-inset hover:bg-white/10 active:scale-[0.98] motion-reduce:transition-none ${focusRing}`;
+const sectionTitle = "text-3xl font-bold tracking-tight text-balance text-white sm:text-4xl";
+const eyebrow = "text-sm font-semibold text-accent-mint";
 
 // ── Small pieces ─────────────────────────────────────────────────────────────
 
@@ -62,7 +60,7 @@ function Arrow() {
 
 function Check() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 size-5 shrink-0 text-purple-600 dark:text-purple-400">
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 size-5 shrink-0 text-accent-mint">
       <path
         fillRule="evenodd"
         d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z"
@@ -86,49 +84,64 @@ function CallToAction({ className = "" }: { className?: string }) {
   );
 }
 
-// ── Header ───────────────────────────────────────────────────────────────────
+// ── Navigation ───────────────────────────────────────────────────────────────
 
-const NAV = [
-  ["#platform", "Platform"],
-  ["#showcase", "Showcase"],
-  ["#how-it-works", "How it works"],
-  ["#agents", "For agents"],
-  ["#pricing", "Pricing"],
-] as const;
+const SECTIONS: NavLink[] = [
+  { href: "#platform", label: "Platform" },
+  { href: "#showcase", label: "Showcase" },
+  { href: "#how-it-works", label: "How it works" },
+  { href: "#agents", label: "For agents" },
+  { href: "#pricing", label: "Pricing" },
+];
 
-function SiteHeader() {
+// ── Hero illustration ────────────────────────────────────────────────────────
+
+// What the Live Dossier Terminal does for one search, step by step. An illustration of the process,
+// with no figures in it: real numbers only ever come from a real Dossier (CLAUDE.md Rule 3).
+const PIPELINE: [string, string][] = [
+  ["Amazon UK", "listings that agree on one product"],
+  ["AliExpress", "supplier matches, priced in GBP"],
+  ["Margin", "supplier · shipping · duty · VAT · fees · ads"],
+  ["Gates", "verdict from 0.5 · every number from 0.7"],
+];
+
+function TerminalPreview() {
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/80 backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/70">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className={`flex items-center gap-2.5 rounded-md font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 ${focusRing}`}>
-          <Logo />
-          ProductRadar
-        </Link>
-        <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
-          {NAV.map(([href, label]) => (
-            <a key={href} href={href} className={navLink}>
-              {label}
-            </a>
+    <figure className="min-w-0 overflow-hidden rounded-2xl bg-surface-dark shadow-2xl ring-1 shadow-black/40 ring-line-dark">
+      <figcaption className="flex items-center justify-between gap-3 border-b border-line-dark px-4 py-3 font-mono text-xs text-slate-400">
+        <span className="flex items-center gap-3">
+          <span aria-hidden="true" className="flex gap-1.5">
+            <span className="size-2.5 rounded-full bg-white/15" />
+            <span className="size-2.5 rounded-full bg-white/15" />
+            <span className="size-2.5 rounded-full bg-white/15" />
+          </span>
+          Live Dossier Terminal
+        </span>
+        <span className="hidden sm:inline">how one Dossier is built</span>
+      </figcaption>
+      <div className="space-y-3 p-4 font-mono text-[0.8rem]/6 sm:p-5">
+        <p className="break-words text-slate-200">
+          <span aria-hidden="true" className="text-accent-mint">$ </span>
+          dossier &quot;ceramic coffee mug&quot; --market UK
+        </p>
+        <dl className="space-y-1.5">
+          {PIPELINE.map(([source, what]) => (
+            <div key={source} className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
+              <dt className="text-slate-400">
+                <span aria-hidden="true" className="text-accent-mint">› </span>
+                {source}
+              </dt>
+              <dd className="text-slate-300">{what}</dd>
+            </div>
           ))}
-          <Link href="/docs" className={navLink}>
-            API docs
-          </Link>
-        </nav>
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <ThemeToggle />
-          {/* On narrow phones the hero's full-width Sign in button sits right below. */}
-          <Link href="/signin" className={`max-[420px]:hidden ${navLink}`}>
-            Sign in
-          </Link>
-          <Link
-            href={GET_STARTED}
-            className={`rounded-lg bg-purple-600 px-3.5 py-2 text-sm font-semibold whitespace-nowrap text-white shadow-md shadow-purple-600/25 transition duration-200 hover:scale-[1.03] hover:bg-purple-700 active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 dark:hover:bg-purple-600 dark:hover:shadow-purple-500/40 ${focusRing}`}
-          >
-            Get started
-          </Link>
-        </div>
+        </dl>
+        <p className="flex items-center gap-2 border-t border-line-dark pt-3 text-white">
+          <span aria-hidden="true" className="text-accent-mint">✓</span>
+          Dossier: 8 parts, every source attached
+          <span aria-hidden="true" className="inline-block h-4 w-2 animate-pulse bg-accent-mint motion-reduce:animate-none" />
+        </p>
       </div>
-    </header>
+    </figure>
   );
 }
 
@@ -145,7 +158,7 @@ async function ShowcaseContent() {
   const { products } = await getShowcase();
   if (products.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+      <p className="rounded-xl border border-dashed border-line-dark p-8 text-center text-sm text-slate-400">
         No two stores are selling the same product at different prices right now, so there&apos;s no live price gap to
         show. Pro members see the full catalog either way.
       </p>
@@ -155,7 +168,7 @@ async function ShowcaseContent() {
 }
 
 function ShowcaseSkeleton() {
-  const block = "animate-pulse rounded-2xl bg-zinc-200/70 dark:bg-white/5";
+  const block = "animate-pulse rounded-2xl bg-white/5";
   return (
     <div aria-hidden="true" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <div className={`h-[30rem] sm:row-span-3 lg:row-span-2 ${block}`} />
@@ -257,47 +270,59 @@ export default function Home() {
   };
 
   return (
-    <div className="flex-1 bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+    <div className="flex-1 bg-background-dark text-slate-100">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-purple-600 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-accent-mint focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-background-dark"
       >
         Skip to content
       </a>
-      <SiteHeader />
+      <Navbar links={SECTIONS} ctaHref={GET_STARTED} />
 
       <main id="main">
         {/* Hero */}
-        <section className="relative isolate overflow-hidden">
+        <section aria-labelledby="hero-title" className="relative isolate overflow-hidden">
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
             <div className="hero-grid absolute inset-0" />
-            <div className="absolute top-[-16rem] left-1/2 h-[34rem] w-[60rem] max-w-[200vw] -translate-x-1/2 rounded-full bg-purple-400/25 blur-3xl dark:bg-purple-600/20" />
+            <div className="absolute top-[-18rem] left-1/2 h-[36rem] w-[64rem] max-w-[200vw] -translate-x-1/2 rounded-full bg-accent-mint/10 blur-3xl" />
           </div>
-          <div className="mx-auto max-w-7xl px-4 pt-16 pb-16 sm:px-6 sm:pt-24 sm:pb-20 lg:px-8 lg:pt-32">
-            <div className="mx-auto max-w-4xl text-center">
-              <p className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-zinc-700 ring-1 ring-zinc-200 backdrop-blur ring-inset sm:text-sm dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10">
-                <span aria-hidden="true" className="size-1.5 rounded-full bg-purple-600 dark:bg-purple-400" />
-                Product research for UK resellers and buyer agents
-              </p>
-              {/* Each phrase wraps as a unit; the smallest phones get a touch less than text-5xl so it fits. */}
-              <h1 className="mt-8 text-[2.6rem] leading-[1.05] font-extrabold tracking-tighter text-balance text-zinc-950 max-[400px]:text-[2.2rem] sm:text-5xl md:text-6xl dark:text-zinc-50">
-                <span className="inline-block">Institutional-grade</span> <span className="inline-block">product research</span>{" "}
-                <span className="inline-block text-purple-700 dark:text-purple-400">for Amazon &amp; AliExpress.</span>
-              </h1>
-              <p className="mx-auto mt-6 max-w-2xl text-lg/8 text-balance text-zinc-600 sm:text-xl/8 dark:text-zinc-400">
-                One Dossier per product: the true landed margin after VAT, duty and fees, whether you can legally resell it, the
-                best supplier matches, and every number cited. Thin evidence is withheld, never guessed.
-              </p>
-              <CallToAction className="mt-10" />
-              <p className="mt-5 text-sm text-zinc-600 dark:text-zinc-400">
-                Free to create · Pro is {PRO_PRICE}/month · cancel any time · secure checkout by Stripe
-              </p>
-              <p className="mt-6 font-mono text-[11px] tracking-widest text-zinc-500 uppercase dark:text-zinc-400">
-                UK + EU margins · 8 parts · every number cited · confidence-gated
-              </p>
+          <div className="mx-auto max-w-7xl px-4 pt-14 pb-16 sm:px-6 sm:pt-20 sm:pb-20 lg:px-8 lg:pt-28">
+            <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14">
+              <div>
+                <p className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-slate-300 ring-1 ring-white/10 ring-inset sm:text-sm">
+                  <span aria-hidden="true" className="size-1.5 rounded-full bg-accent-mint" />
+                  Live Dossier Terminal · Amazon UK and AliExpress
+                </p>
+                {/* Each phrase wraps as a unit; the smallest phones get a touch less than text-5xl so it fits. */}
+                <h1 id="hero-title" className="mt-7 text-[2.6rem] leading-[1.05] font-extrabold tracking-tighter text-balance text-white max-[400px]:text-[2.15rem] sm:text-5xl lg:text-6xl">
+                  <span className="inline-block">Institutional-Grade</span>{" "}
+                  <span className="inline-block text-accent-mint">E-Commerce Intelligence</span>
+                </h1>
+                <p className="mt-6 max-w-2xl text-lg/8 text-slate-300 sm:text-xl/8">
+                  The Live Dossier Terminal turns an Amazon UK product into an 8-part Dossier, built on demand from live data:
+                  the true landed margin after VAT, duty, fees and ads, whether you can legally resell it, the best AliExpress
+                  supplier matches, and every number cited. Thin evidence is withheld, never guessed.
+                </p>
+                <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+                  <Link href={GET_STARTED} className={`group ${primaryButton}`}>
+                    Run your first Dossier
+                    <Arrow />
+                  </Link>
+                  <Link href="/signin" className={secondaryButton}>
+                    Sign in
+                  </Link>
+                </div>
+                <p className="mt-5 text-sm text-slate-400">
+                  Free to create · Pro is {PRO_PRICE}/month · cancel any time · secure checkout by Stripe
+                </p>
+                <p className="mt-5 font-mono text-[11px] tracking-widest text-slate-400 uppercase">
+                  UK + EU margins · 8 parts · every number cited · confidence-gated
+                </p>
+              </div>
+              <TerminalPreview />
             </div>
-            <div className="mx-auto mt-14 max-w-5xl">
+            <div className="mx-auto mt-16 max-w-5xl">
               <Suspense fallback={<LiveStatsSkeleton />}>
                 <HeroStats />
               </Suspense>
@@ -306,14 +331,14 @@ export default function Home() {
         </section>
 
         {/* Platform (the v2 engine) */}
-        <section id="platform" aria-labelledby="platform-title" className="scroll-mt-16 bg-zinc-950 py-16 text-zinc-300 sm:py-20 [color-scheme:dark] dark:border-y dark:border-white/10 dark:bg-black">
+        <section id="platform" aria-labelledby="platform-title" className="scroll-mt-16 border-y border-line-dark bg-surface-dark/40 py-16 text-slate-300 sm:py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl">
-              <p className="font-mono text-xs font-semibold tracking-widest text-purple-300 uppercase">The platform</p>
+              <p className="font-mono text-xs font-semibold tracking-widest text-accent-mint uppercase">The platform</p>
               <h2 id="platform-title" className="mt-2 text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">
                 A research terminal for every product you&apos;re thinking of stocking
               </h2>
-              <p className="mt-4 text-lg/8 text-zinc-400">
+              <p className="mt-4 text-lg/8 text-slate-400">
                 Search Amazon UK, open a Dossier, and export the winners straight to Shopify. Each part shows only once the
                 evidence is strong enough: a verdict from 0.5 confidence, every number from 0.7.
               </p>
@@ -328,20 +353,20 @@ export default function Home() {
                 Create a free account
                 <Arrow />
               </Link>
-              <p className="text-sm text-zinc-400">Searches cost 1 credit (Pro: 100 free a month). A Dossier is 4 credits, or 1 on Pro.</p>
+              <p className="text-sm text-slate-400">Searches cost 1 credit (Pro: 100 free a month). A Dossier is 4 credits, or 1 on Pro.</p>
             </div>
           </div>
         </section>
 
         {/* Showcase */}
-        <section id="showcase" aria-labelledby="showcase-title" className="scroll-mt-16 border-t border-zinc-200 bg-zinc-50 py-16 sm:py-24 dark:border-white/10 dark:bg-zinc-950">
+        <section id="showcase" aria-labelledby="showcase-title" className="scroll-mt-16 py-16 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
               <p className={eyebrow}>Live showcase</p>
               <h2 id="showcase-title" className={`mt-2 ${sectionTitle}`}>
                 The margin engine, on real products
               </h2>
-              <p className="mt-4 text-lg/8 text-zinc-600 dark:text-zinc-400">
+              <p className="mt-4 text-lg/8 text-slate-400">
                 Real prices captured from real stores. See what the same price gap is worth on eBay and in your own
                 shop, after each route&apos;s fees. Click the card for the full dossier.
               </p>
@@ -355,7 +380,7 @@ export default function Home() {
         </section>
 
         {/* How it works */}
-        <section id="how-it-works" aria-labelledby="how-title" className="scroll-mt-16 border-t border-zinc-200 bg-white py-16 sm:py-20 dark:border-white/10 dark:bg-zinc-900/40">
+        <section id="how-it-works" aria-labelledby="how-title" className="scroll-mt-16 border-y border-line-dark bg-surface-dark/40 py-16 sm:py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center">
               <p className={eyebrow}>How it works</p>
@@ -365,27 +390,27 @@ export default function Home() {
             </div>
             <ol className="mt-12 grid gap-6 md:grid-cols-3">
               {STEPS.map((s, i) => (
-                <li key={s.title} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900">
+                <li key={s.title} className="rounded-2xl bg-surface-dark p-6 ring-1 ring-line-dark">
                   <div className="flex items-center gap-3">
-                    <span className="flex size-10 items-center justify-center rounded-lg bg-purple-50 text-purple-700 ring-1 ring-purple-600/10 ring-inset dark:bg-purple-950/60 dark:text-purple-300 dark:ring-purple-400/20">
+                    <span className="flex size-10 items-center justify-center rounded-lg bg-accent-mint/10 text-accent-mint ring-1 ring-accent-mint/20 ring-inset">
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-5">
                         <path d={s.icon} />
                       </svg>
                     </span>
-                    <span className="text-sm font-semibold text-zinc-500 tabular-nums dark:text-zinc-400">Step {i + 1}</span>
+                    <span className="text-sm font-semibold text-slate-400 tabular-nums">Step {i + 1}</span>
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold text-zinc-950 dark:text-white">{s.title}</h3>
-                  <p className="mt-2 text-sm/6 text-zinc-600 dark:text-zinc-400">{s.body}</p>
+                  <h3 className="mt-4 text-lg font-semibold text-white">{s.title}</h3>
+                  <p className="mt-2 text-sm/6 text-slate-400">{s.body}</p>
                 </li>
               ))}
             </ol>
-            <dl className="mt-12 grid gap-x-8 gap-y-6 border-t border-zinc-200 pt-10 md:grid-cols-3 dark:border-white/10">
+            <dl className="mt-12 grid gap-x-8 gap-y-6 border-t border-line-dark pt-10 md:grid-cols-3">
               {TRUST.map(([title, body]) => (
                 <div key={title} className="flex gap-3">
                   <Check />
                   <div>
-                    <dt className="font-semibold text-zinc-950 dark:text-white">{title}</dt>
-                    <dd className="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400">{body}</dd>
+                    <dt className="font-semibold text-white">{title}</dt>
+                    <dd className="mt-1 text-sm/6 text-slate-400">{body}</dd>
                   </div>
                 </div>
               ))}
@@ -394,21 +419,21 @@ export default function Home() {
         </section>
 
         {/* For agents */}
-        <section id="agents" aria-labelledby="agents-title" className="scroll-mt-16 bg-zinc-950 py-16 text-zinc-300 sm:py-20 [color-scheme:dark] dark:border-y dark:border-white/10 dark:bg-black">
+        <section id="agents" aria-labelledby="agents-title" className="scroll-mt-16 py-16 text-slate-300 sm:py-20">
           <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
             <div>
-              <p className="text-sm font-semibold text-purple-300">For buyer agents</p>
+              <p className="text-sm font-semibold text-accent-mint">For buyer agents</p>
               <h2 id="agents-title" className="mt-2 text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">
                 Your agents can buy the same intelligence, one request at a time.
               </h2>
-              <p className="mt-4 text-lg/8 text-zinc-400">
+              <p className="mt-4 text-lg/8 text-slate-400">
                 Agents call the ProductRadar API and pay a small fee in USDC per request, using the open x402 payment
                 standard. Every answer carries the same scores, margins and cited evidence as the dashboard.
               </p>
               <ul className="mt-6 space-y-2">
                 {AGENT_FEATURES.map((f) => (
-                  <li key={f} className="flex gap-3 text-zinc-300">
-                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 size-5 shrink-0 text-purple-400">
+                  <li key={f} className="flex gap-3 text-slate-300">
+                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 size-5 shrink-0 text-accent-mint">
                       <path fillRule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.6l7.3-7.3a1 1 0 0 1 1.4 0Z" clipRule="evenodd" />
                     </svg>
                     {f}
@@ -417,36 +442,36 @@ export default function Home() {
               </ul>
               <Link
                 href="/docs"
-                className="group mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 text-base font-semibold text-zinc-950 shadow-sm transition hover:bg-zinc-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400 motion-reduce:transition-none"
+                className={`group mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 text-base font-semibold text-background-dark shadow-sm transition hover:bg-slate-200 active:scale-[0.98] motion-reduce:transition-none ${focusRing}`}
               >
                 Read the API docs
                 <Arrow />
               </Link>
             </div>
-            <figure className="min-w-0 overflow-hidden rounded-2xl bg-zinc-900 ring-1 ring-white/10">
-              <figcaption className="flex items-center gap-2 border-b border-white/10 px-4 py-3 text-xs text-zinc-400">
+            <figure className="min-w-0 overflow-hidden rounded-2xl bg-surface-dark ring-1 ring-line-dark">
+              <figcaption className="flex items-center gap-2 border-b border-line-dark px-4 py-3 text-xs text-slate-400">
                 <span aria-hidden="true" className="flex gap-1.5">
-                  <span className="size-2.5 rounded-full bg-zinc-700" />
-                  <span className="size-2.5 rounded-full bg-zinc-700" />
-                  <span className="size-2.5 rounded-full bg-zinc-700" />
+                  <span className="size-2.5 rounded-full bg-white/15" />
+                  <span className="size-2.5 rounded-full bg-white/15" />
+                  <span className="size-2.5 rounded-full bg-white/15" />
                 </span>
                 How an agent pays for one answer
               </figcaption>
-              <pre className="overflow-x-auto p-4 font-mono text-[0.8rem]/6 text-zinc-300 sm:p-5">
+              <pre className="overflow-x-auto p-4 font-mono text-[0.8rem]/6 text-slate-300 sm:p-5">
                 <code>
-                  <span className="text-zinc-500"># 1. Ask, without paying</span>
+                  <span className="text-slate-400"># 1. Ask, without paying</span>
                   {"\n"}
                   <span className="text-sky-300">GET</span> /api/agent/v1/opportunity?q=pizza+oven
                   {"\n"}
-                  <span className="text-amber-300">← 402 Payment Required</span> <span className="text-zinc-500">(the price, in USDC)</span>
+                  <span className="text-amber-300">← 402 Payment Required</span> <span className="text-slate-400">(the price, in USDC)</span>
                   {"\n\n"}
-                  <span className="text-zinc-500"># 2. Sign a USDC payment and ask again</span>
+                  <span className="text-slate-400"># 2. Sign a USDC payment and ask again</span>
                   {"\n"}
                   <span className="text-sky-300">GET</span> /api/agent/v1/opportunity?q=pizza+oven
                   {"\n"}
-                  <span className="text-zinc-400">PAYMENT-SIGNATURE:</span> eyJ4NDAyVmVyc2lvbiI6Mi…
+                  <span className="text-slate-400">PAYMENT-SIGNATURE:</span> eyJ4NDAyVmVyc2lvbiI6Mi…
                   {"\n"}
-                  <span className="text-emerald-300">← 200 OK</span> <span className="text-zinc-500">{"{ verdict, margin, evidence… }"}</span>
+                  <span className="text-emerald-300">← 200 OK</span> <span className="text-slate-400">{"{ verdict, margin, evidence… }"}</span>
                 </code>
               </pre>
             </figure>
@@ -454,7 +479,7 @@ export default function Home() {
         </section>
 
         {/* Pricing */}
-        <section id="pricing" aria-labelledby="pricing-title" className="scroll-mt-16 py-16 sm:py-20">
+        <section id="pricing" aria-labelledby="pricing-title" className="scroll-mt-16 border-y border-line-dark bg-surface-dark/40 py-16 sm:py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center">
               <p className={eyebrow}>Pricing</p>
@@ -463,18 +488,18 @@ export default function Home() {
               </h2>
             </div>
             <div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-5">
-              <div className="flex flex-col rounded-2xl bg-white p-6 shadow-xl ring-2 shadow-purple-900/10 ring-purple-600 sm:p-8 lg:col-span-3 dark:bg-zinc-900 dark:shadow-black/30 dark:ring-purple-400">
+              <div className="flex flex-col rounded-2xl bg-surface-dark p-6 shadow-xl ring-2 shadow-black/30 ring-accent-mint sm:p-8 lg:col-span-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-lg font-semibold text-zinc-950 dark:text-white">Pro</h3>
-                  <span className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-semibold text-purple-700 ring-1 ring-purple-600/20 ring-inset dark:bg-purple-950/60 dark:text-purple-300 dark:ring-purple-400/30">
+                  <h3 className="text-lg font-semibold text-white">Pro</h3>
+                  <span className="rounded-full bg-accent-mint/10 px-2.5 py-1 text-xs font-semibold text-accent-mint ring-1 ring-accent-mint/30 ring-inset">
                     For operators
                   </span>
                 </div>
                 <p className="mt-4 flex items-baseline gap-1">
-                  <span className="text-5xl font-semibold tracking-tight text-zinc-950 dark:text-white">{PRO_PRICE}</span>
-                  <span className="text-sm text-zinc-600 dark:text-zinc-400">/ month</span>
+                  <span className="text-5xl font-semibold tracking-tight text-white">{PRO_PRICE}</span>
+                  <span className="text-sm text-slate-400">/ month</span>
                 </p>
-                <ul className="mt-6 space-y-3 text-sm text-zinc-700 dark:text-zinc-300">
+                <ul className="mt-6 space-y-3 text-sm text-slate-300">
                   {PRO_FEATURES.map((f) => (
                     <li key={f} className="flex gap-3">
                       <Check />
@@ -486,13 +511,13 @@ export default function Home() {
                   Create a free account
                   <Arrow />
                 </Link>
-                <p className="mt-3 text-center text-xs text-zinc-600 dark:text-zinc-400">Free to create · upgrade any time</p>
+                <p className="mt-3 text-center text-xs text-slate-400">Free to create · upgrade any time</p>
               </div>
-              <div className="flex flex-col rounded-2xl bg-zinc-50 p-6 ring-1 ring-zinc-200 sm:p-8 lg:col-span-2 dark:bg-white/[0.03] dark:ring-white/10">
-                <h3 className="text-lg font-semibold text-zinc-950 dark:text-white">Agent API</h3>
-                <p className="mt-4 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Pay per request</p>
-                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">in USDC, with no subscription</p>
-                <ul className="mt-6 space-y-3 text-sm text-zinc-700 dark:text-zinc-300">
+              <div className="flex flex-col rounded-2xl bg-white/[0.03] p-6 ring-1 ring-line-dark sm:p-8 lg:col-span-2">
+                <h3 className="text-lg font-semibold text-white">Agent API</h3>
+                <p className="mt-4 text-2xl font-semibold tracking-tight text-white">Pay per request</p>
+                <p className="mt-1 text-sm text-slate-400">in USDC, with no subscription</p>
+                <ul className="mt-6 space-y-3 text-sm text-slate-300">
                   {AGENT_FEATURES.map((f) => (
                     <li key={f} className="flex gap-3">
                       <Check />
@@ -511,23 +536,23 @@ export default function Home() {
         </section>
 
         {/* FAQ */}
-        <section id="faq" aria-labelledby="faq-title" className="scroll-mt-16 border-t border-zinc-200 bg-zinc-50 py-16 sm:py-20 dark:border-white/10 dark:bg-zinc-900/40">
+        <section id="faq" aria-labelledby="faq-title" className="scroll-mt-16 py-16 sm:py-20">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <h2 id="faq-title" className={`text-center ${sectionTitle}`}>
               Questions
             </h2>
-            <div className="mt-10 divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:divide-white/10 dark:border-white/10 dark:bg-zinc-900">
+            <div className="mt-10 divide-y divide-line-dark overflow-hidden rounded-2xl border border-line-dark bg-surface-dark">
               {FAQ.map(({ q, a }) => (
                 <details key={q} className="group">
                   <summary
-                    className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-medium text-zinc-950 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-purple-600 sm:px-6 dark:text-white dark:hover:bg-zinc-800/50 dark:focus-visible:outline-purple-400 [&::-webkit-details-marker]:hidden"
+                    className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-medium text-white hover:bg-surface-raised focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-mint sm:px-6 [&::-webkit-details-marker]:hidden"
                   >
                     {q}
-                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-5 shrink-0 text-zinc-500 transition-transform group-open:rotate-180 motion-reduce:transition-none">
+                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180 motion-reduce:transition-none">
                       <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
                     </svg>
                   </summary>
-                  <p className="px-5 pb-5 text-sm/6 text-zinc-600 sm:px-6 dark:text-zinc-400">{a}</p>
+                  <p className="px-5 pb-5 text-sm/6 text-slate-400 sm:px-6">{a}</p>
                 </details>
               ))}
             </div>
@@ -535,12 +560,12 @@ export default function Home() {
         </section>
 
         {/* Closing call to action */}
-        <section aria-labelledby="cta-title" className="py-16 sm:py-24">
+        <section aria-labelledby="cta-title" className="border-t border-line-dark bg-surface-dark/40 py-16 sm:py-24">
           <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
             <h2 id="cta-title" className={sectionTitle}>
               Check your next product before you stock it.
             </h2>
-            <p className="mt-4 text-lg/8 text-zinc-600 dark:text-zinc-300">
+            <p className="mt-4 text-lg/8 text-slate-300">
               Real prices, real fees and every source linked. Free to create; Pro is {PRO_PRICE} a month.
             </p>
             <CallToAction className="mt-8" />

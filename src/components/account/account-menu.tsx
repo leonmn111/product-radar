@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { signOut } from "@/auth";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { db } from "@/lib/db";
 import { getViewer } from "@/server/auth/entitlements";
 import { createDbCreditStore } from "@/server/billing/credits";
@@ -22,7 +21,6 @@ export async function AccountMenu() {
   if (!viewer) {
     return (
       <div className="flex items-center gap-2">
-        <ThemeToggle />
         <Link
           href="/signin"
           // On the narrowest phones "Get Pro" signs you in on the way, so this one can go.
@@ -44,7 +42,6 @@ export async function AccountMenu() {
   const balance = await createDbCreditStore(db).balance(viewer.id);
   return (
     <div className="flex items-center gap-2">
-      <ThemeToggle />
       <CreditBalance balance={balance} onSale={creditPacksOnSale()} />
       {!isPro && (
         // The one action that earns: kept in plain sight for Free accounts, not tucked in the menu.

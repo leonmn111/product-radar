@@ -16,14 +16,50 @@ const initials = (s: string) =>
     .map((w) => w[0].toUpperCase())
     .join("");
 
+/**
+ * The card's accent: purple in the app, mint (the new design system, globals.css) on the landing page.
+ * The app moves to mint in a later rollout, and then this goes.
+ */
+export type CardTone = "purple" | "mint";
+const TONE: Record<CardTone, { accent: string; accentHover: string; surface: string; divider: string; placeholder: string; monogram: string }> = {
+  purple: {
+    accent: "text-purple-700 dark:text-purple-300",
+    accentHover: "group-hover/card:text-purple-900 dark:group-hover/card:text-purple-200",
+    surface: "bg-white dark:bg-zinc-900",
+    divider: "border-zinc-200 dark:border-zinc-800",
+    placeholder: "bg-gradient-to-br from-purple-50 to-zinc-100 dark:from-purple-950/60 dark:to-zinc-900",
+    monogram: "bg-white/80 text-purple-700 ring-purple-900/5 dark:bg-zinc-800/80 dark:text-purple-300 dark:ring-white/10",
+  },
+  mint: {
+    accent: "text-accent-mint",
+    accentHover: "group-hover/card:text-accent-mint-strong",
+    surface: "bg-surface-dark",
+    divider: "border-line-dark",
+    placeholder: "bg-gradient-to-br from-accent-mint/10 to-surface-dark",
+    monogram: "bg-surface-raised text-accent-mint ring-line-dark",
+  },
+};
+
 /** Square product photo on a soft tile; a monogram placeholder when there's no image or it fails to load. */
-export function ProductImage({ src, alt, label, className = "" }: { src: string | null; alt: string; label: string; className?: string }) {
+export function ProductImage({
+  src,
+  alt,
+  label,
+  className = "",
+  tone = "purple",
+}: {
+  src: string | null;
+  alt: string;
+  label: string;
+  className?: string;
+  tone?: CardTone;
+}) {
   const [failed, setFailed] = useState(false);
   const showImage = src && !failed;
   return (
     <div
       className={`relative aspect-square overflow-hidden ${
-        showImage ? "bg-zinc-50 dark:bg-zinc-200" : "bg-gradient-to-br from-purple-50 to-zinc-100 dark:from-purple-950/60 dark:to-zinc-900"
+        showImage ? "bg-zinc-50 dark:bg-zinc-200" : TONE[tone].placeholder
       } ${className}`}
     >
       {showImage ? (
@@ -42,7 +78,7 @@ export function ProductImage({ src, alt, label, className = "" }: { src: string 
         />
       ) : (
         <div aria-hidden="true" className="flex size-full flex-col items-center justify-center gap-3">
-          <span className="flex size-20 items-center justify-center rounded-2xl bg-white/80 text-2xl font-semibold tracking-tight text-purple-700 shadow-sm ring-1 ring-purple-900/5 dark:bg-zinc-800/80 dark:text-purple-300 dark:ring-white/10">
+          <span className={`flex size-20 items-center justify-center rounded-2xl text-2xl font-semibold tracking-tight shadow-sm ring-1 ${TONE[tone].monogram}`}>
             {initials(label) || "?"}
           </span>
           <span className="flex items-center gap-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">
@@ -92,7 +128,7 @@ function ValueBadge({ score }: { score?: Score }) {
   );
 }
 
-function SourcesBadge({ product: p }: { product: ProductDto }) {
+function SourcesBadge({ product: p, tone }: { product: ProductDto; tone: CardTone }) {
   return (
     <p className="flex items-center gap-1.5 text-xs font-medium whitespace-nowrap text-zinc-600 dark:text-zinc-400">
       <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-zinc-400 dark:text-zinc-500">
@@ -102,7 +138,7 @@ function SourcesBadge({ product: p }: { product: ProductDto }) {
       {p.hasSearchTrend && (
         <>
           <span aria-hidden="true">·</span>
-          <span className="inline-flex items-center gap-1 text-purple-700 dark:text-purple-300">
+          <span className={`inline-flex items-center gap-1 ${TONE[tone].accent}`}>
             <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
               <path
                 fillRule="evenodd"
@@ -134,7 +170,8 @@ function StatusChip({ sample }: { sample: boolean }) {
  * One product in a card grid. The whole card is one link to the product's dossier:
  * the title's link stretches over the card, so screen readers hear a single link
  * named after the product. Hovering lifts the card; pressing settles it back down.
- * The "bento" frame is the landing page's: a hairline ring that lights up purple on hover.
+ * The "bento" frame is a hairline ring that lights up in the accent on hover (the landing page and the
+ * dashboard's catalog); `tone` picks the accent.
  */
 export function ProductCard({
   product: p,
@@ -142,16 +179,23 @@ export function ProductCard({
   rank,
   highlighted = false,
   frame = "default",
+  tone = "purple",
 }: {
   product: ProductDto;
   href: string;
   rank?: number;
   highlighted?: boolean;
   frame?: "default" | "bento";
+  tone?: CardTone;
 }) {
   const overall = getScore(p, "OVERALL");
+  const t = TONE[tone];
   const frameClass =
-    frame === "bento"
+    frame === "bento" && tone === "mint"
+      ? `h-full rounded-2xl duration-300 hover:shadow-black/40 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-accent-mint ${
+          highlighted ? "ring-2 ring-accent-mint" : "ring-1 ring-line-dark hover:ring-accent-mint/50"
+        }`
+      : frame === "bento"
       ? `h-full rounded-2xl bg-white duration-300 hover:shadow-purple-900/10 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-purple-600 dark:hover:shadow-purple-950/50 dark:has-[a:focus-visible]:ring-purple-400 ${
           highlighted
             ? "ring-2 ring-purple-500 dark:ring-purple-400"
@@ -165,11 +209,11 @@ export function ProductCard({
   return (
     <li
       data-product-id={p.id}
-      className={`group/card relative flex flex-col overflow-hidden bg-white shadow-sm transition ease-out hover:-translate-y-1 hover:shadow-xl active:translate-y-0 active:shadow-md active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:bg-zinc-900 ${frameClass}`}
+      className={`group/card relative flex flex-col overflow-hidden shadow-sm transition ease-out hover:-translate-y-1 hover:shadow-xl active:translate-y-0 active:shadow-md active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${t.surface} ${frameClass}`}
     >
       <article className="flex flex-1 flex-col">
         <div className="relative">
-          <ProductImage src={p.imageUrl} alt={p.name} label={p.brand ?? p.name} key={p.imageUrl ?? "none"} />
+          <ProductImage src={p.imageUrl} alt={p.name} label={p.brand ?? p.name} tone={tone} key={p.imageUrl ?? "none"} />
           {rank !== undefined && (
             <span className="absolute top-2 left-2 rounded-md bg-white/95 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-zinc-700 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900/90 dark:text-zinc-200">
               <span className="sr-only">Rank </span>#{rank}
@@ -183,7 +227,7 @@ export function ProductCard({
         <div className="flex flex-1 flex-col gap-3 p-4">
           <div className="min-w-0">
             {p.brand && (
-              <p className="truncate text-xs font-semibold tracking-wide text-purple-700 uppercase dark:text-purple-300">{p.brand}</p>
+              <p className={`truncate text-xs font-semibold tracking-wide uppercase ${t.accent}`}>{p.brand}</p>
             )}
             <h3 className="mt-0.5 line-clamp-2 font-semibold text-zinc-950 dark:text-white" title={p.name}>
               <Link href={href} className="after:absolute after:inset-0 after:z-10 after:content-[''] focus:outline-none">
@@ -198,7 +242,7 @@ export function ProductCard({
             {overall && <ConfidenceBadge confidence={overall.confidence} />}
           </div>
 
-          <div className="mt-auto flex items-end justify-between gap-3 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+          <div className={`mt-auto flex items-end justify-between gap-3 border-t pt-3 ${t.divider}`}>
             {p.bestOffer ? (
               <div className="min-w-0">
                 <p className="text-lg font-semibold tabular-nums text-zinc-950 dark:text-white">
@@ -215,10 +259,10 @@ export function ProductCard({
           {p.margin && <MarginSummary margin={p.margin} />}
 
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-            <SourcesBadge product={p} />
+            <SourcesBadge product={p} tone={tone} />
             <span
               aria-hidden="true"
-              className="inline-flex items-center gap-1 text-sm font-medium text-purple-700 transition-colors group-hover/card:text-purple-900 dark:text-purple-300 dark:group-hover/card:text-purple-200"
+              className={`inline-flex items-center gap-1 text-sm font-medium transition-colors ${t.accent} ${t.accentHover}`}
             >
               View dossier
               <svg
