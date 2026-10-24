@@ -11,6 +11,12 @@ const optional = z
   .optional()
   .transform((v) => (v ? v : undefined));
 
+/** A whole number of 0 or more, with a default when unset. */
+const count = (fallback: number) =>
+  optional
+    .transform((v) => (v === undefined ? fallback : Number(v)))
+    .refine((n) => Number.isInteger(n) && n >= 0, { message: "must be a whole number, 0 or more" });
+
 const EnvSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -57,6 +63,11 @@ const EnvSchema = z
     ALIEXPRESS_REFRESH_TOKEN: optional,
     ALIEXPRESS_TOKEN_EXPIRES_AT: optional.refine((v) => !v || !Number.isNaN(Date.parse(v)), { message: "must be an ISO date-time" }),
     ALIEXPRESS_REFRESH_EXPIRES_AT: optional.refine((v) => !v || !Number.isNaN(Date.parse(v)), { message: "must be an ISO date-time" }),
+    // Free verdicts from the landing page's paste box (no account): each live check spends provider credits,
+    // so they're capped site-wide per UTC day and per visitor (IP, per server process) per 24 hours.
+    // Cached products don't count against the site-wide cap. 0 switches free checks off.
+    FREE_VERDICTS_PER_DAY: count(20),
+    FREE_VERDICTS_PER_VISITOR: count(1),
     // Keepa API key (keepa.com, a paid plan): Amazon UK price and sales-rank history for Momentum.
     // Without it, Momentum is withheld and says the history is missing.
     KEEPA_API_KEY: optional,

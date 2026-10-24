@@ -3,7 +3,9 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 import { Navbar, type NavLink } from "@/components/layout/Navbar";
+import { HeroAssembly } from "@/components/landing/hero-assembly";
 import { LiveStats, LiveStatsSkeleton } from "@/components/landing/live-stats";
+import { PasteBox } from "@/components/landing/paste-box";
 import { Platform, PlatformSkeleton } from "@/components/landing/platform";
 import { Showcase, type ShowcaseProduct } from "@/components/landing/showcase";
 import { TiltTerminal } from "@/components/landing/tilt-terminal";
@@ -95,57 +97,6 @@ const SECTIONS: NavLink[] = [
   { href: "#agents", label: "For agents" },
   { href: "#pricing", label: "Pricing" },
 ];
-
-// ── Hero illustration ────────────────────────────────────────────────────────
-
-// What the Live Dossier Terminal does for one search, step by step. An illustration of the process,
-// with no figures in it: real numbers only ever come from a real Dossier (CLAUDE.md Rule 3).
-const PIPELINE: [string, string][] = [
-  ["Amazon UK", "listings that agree on one product"],
-  ["AliExpress", "supplier matches, priced in GBP"],
-  ["Margin", "supplier · shipping · duty · VAT · fees · ads"],
-  ["Gates", "verdict from 0.5 · every number from 0.7"],
-];
-
-function TerminalPreview() {
-  return (
-    <figure className="min-w-0 overflow-hidden rounded-2xl bg-surface-dark shadow-2xl ring-1 shadow-black/40 ring-line-dark">
-      <figcaption className="flex items-center justify-between gap-3 border-b border-line-dark px-4 py-3 font-mono text-xs text-slate-400">
-        <span className="flex items-center gap-3">
-          <span aria-hidden="true" className="flex gap-1.5">
-            <span className="size-2.5 rounded-full bg-white/15" />
-            <span className="size-2.5 rounded-full bg-white/15" />
-            <span className="size-2.5 rounded-full bg-white/15" />
-          </span>
-          Live Dossier Terminal
-        </span>
-        <span className="hidden sm:inline">how one Dossier is built</span>
-      </figcaption>
-      <div className="space-y-3 p-4 font-mono text-[0.8rem]/6 sm:p-5">
-        <p className="break-words text-slate-200">
-          <span aria-hidden="true" className="text-accent-mint">$ </span>
-          dossier &quot;ceramic coffee mug&quot; --market UK
-        </p>
-        <dl className="space-y-1.5">
-          {PIPELINE.map(([source, what]) => (
-            <div key={source} className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
-              <dt className="text-slate-400">
-                <span aria-hidden="true" className="text-accent-mint">› </span>
-                {source}
-              </dt>
-              <dd className="text-slate-300">{what}</dd>
-            </div>
-          ))}
-        </dl>
-        <p className="flex items-center gap-2 border-t border-line-dark pt-3 text-white">
-          <span aria-hidden="true" className="text-accent-mint">✓</span>
-          Dossier: 8 parts, every source attached
-          <span aria-hidden="true" className="inline-block h-4 w-2 animate-pulse bg-accent-mint motion-reduce:animate-none" />
-        </p>
-      </div>
-    </figure>
-  );
-}
 
 // ── Streamed sections ────────────────────────────────────────────────────────
 
@@ -309,24 +260,14 @@ export default function Home() {
                   the true landed margin after VAT, duty, fees and ads, whether you can legally resell it, the best AliExpress
                   supplier matches, and every number cited. Thin evidence is withheld, never guessed.
                 </p>
-                <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                  <Link href={GET_STARTED} className={`group ${primaryButton}`}>
-                    Run your first Dossier
-                    <Arrow />
-                  </Link>
-                  <Link href="/signin" className={secondaryButton}>
-                    Sign in
-                  </Link>
-                </div>
-                <p className="mt-5 text-sm text-slate-400">
-                  Free to create · Pro is {PRO_PRICE}/month · cancel any time · secure checkout by Stripe
-                </p>
-                <p className="mt-5 font-mono text-[11px] tracking-widest text-slate-400 uppercase">
+                {/* The one action: paste a product, get its verdict free. */}
+                <PasteBox />
+                <p className="mt-6 font-mono text-[11px] tracking-widest text-slate-400 uppercase">
                   UK + EU margins · 8 parts · every number cited · confidence-gated
                 </p>
               </div>
               <TiltTerminal>
-                <TerminalPreview />
+                <HeroAssembly />
               </TiltTerminal>
             </div>
             <div className="mx-auto mt-16 max-w-5xl">

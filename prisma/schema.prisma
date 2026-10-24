@@ -403,6 +403,14 @@ model DossierCache {
   @@index([expiresAt])
 }
 
+// Free verdicts (the landing page's paste box, no account) that made live provider calls, per UTC day: the
+// site-wide cap (FREE_VERDICTS_PER_DAY) that bounds what anonymous checks can spend. Cache hits aren't
+// counted, and nothing about the visitor is stored.
+model FreeVerdictDay {
+  day  DateTime @id @db.Date
+  used Int      @default(0)
+}
+
 // OAuth tokens a data provider issued for the owner's own account (today: AliExpress Drop Shipping).
 // The app renews them before they expire and keeps the newest pair here, so a restart or deploy doesn't
 // fall back to the older pair in the environment. The tokens themselves are encrypted (AES-256-GCM, key
