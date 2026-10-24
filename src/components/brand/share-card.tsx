@@ -2,7 +2,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-// The social card for shared links: a terminal window in the site's dark mono + purple look.
+// The social card for shared links: a terminal window in the site's midnight-blue and mint-green look
+// (the design tokens in src/app/globals.css).
 // Rendered by app/opengraph-image.tsx and app/twitter-image.tsx (and the /docs copies), at build time.
 // The font is Geist Mono, the site's own mono face (SIL Open Font License, src/assets/fonts/OFL.txt).
 export const SHARE_CARD_SIZE = { width: 1200, height: 630 };
@@ -15,15 +16,16 @@ const font = (file: string) => readFile(join(process.cwd(), "src/assets/fonts", 
 const [regular, bold] = await Promise.all([font("GeistMono-Regular.ttf"), font("GeistMono-Bold.ttf")]);
 
 const C = {
-  page: "#09090b", // zinc-950
-  window: "#111113",
-  line: "rgba(255,255,255,0.12)",
-  dot: "#3f3f46", // zinc-700
-  text: "#fafafa",
-  body: "#d4d4d8", // zinc-300
-  muted: "#a1a1aa", // zinc-400
-  accent: "#c084fc", // purple-400
-  brand: "#9333ea", // purple-600
+  page: "#0a1020", // background-dark
+  window: "#111a2e", // surface-dark
+  line: "#24314d", // line-dark
+  dot: "#2c3a58",
+  text: "#ffffff",
+  body: "#cbd5e1", // slate-300
+  muted: "#94a3b8", // slate-400
+  accent: "#3ddc97", // accent-mint
+  brand: "#3ddc97", // the logo tile
+  onBrand: "#0a1020", // the radar mark on the mint tile
 };
 
 const OUTPUT = [
@@ -42,7 +44,7 @@ export function shareCard() {
           display: "flex",
           padding: 56,
           backgroundColor: C.page,
-          backgroundImage: "radial-gradient(circle at 88% 0%, rgba(147,51,234,0.38), rgba(9,9,11,0) 58%)",
+          backgroundImage: "radial-gradient(circle at 88% 0%, rgba(61,220,151,0.22), rgba(10,16,32,0) 58%)",
           fontFamily: "Geist Mono",
           color: C.text,
         }}
@@ -71,7 +73,7 @@ export function shareCard() {
 
             <div style={{ display: "flex", alignItems: "center", gap: 26, marginTop: 30 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 84, height: 84, borderRadius: 18, backgroundColor: C.brand }}>
-                <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round">
+                <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke={C.onBrand} strokeWidth="2" strokeLinecap="round">
                   <circle cx="12" cy="12" r="8.5" />
                   <circle cx="12" cy="12" r="4.5" />
                   <path d="M12 12 18 6" />

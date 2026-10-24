@@ -171,7 +171,9 @@ function StatusChip({ sample }: { sample: boolean }) {
  * the title's link stretches over the card, so screen readers hear a single link
  * named after the product. Hovering lifts the card; pressing settles it back down.
  * The "bento" frame is a hairline ring that lights up in the accent on hover (the landing page and the
- * dashboard's catalog); `tone` picks the accent.
+ * dashboard's catalog); `tone` picks the accent. `marginSummary={false}` leaves out the catalog's
+ * estimated gross margin, which rests on v1's benchmark wholesale range (the public landing page
+ * shows only figures from real captured prices).
  */
 export function ProductCard({
   product: p,
@@ -180,6 +182,7 @@ export function ProductCard({
   highlighted = false,
   frame = "default",
   tone = "purple",
+  marginSummary = true,
 }: {
   product: ProductDto;
   href: string;
@@ -187,6 +190,7 @@ export function ProductCard({
   highlighted?: boolean;
   frame?: "default" | "bento";
   tone?: CardTone;
+  marginSummary?: boolean;
 }) {
   const overall = getScore(p, "OVERALL");
   const t = TONE[tone];
@@ -256,7 +260,7 @@ export function ProductCard({
             <ValueBadge score={getScore(p, "VALUE")} />
           </div>
 
-          {p.margin && <MarginSummary margin={p.margin} />}
+          {marginSummary && p.margin && <MarginSummary margin={p.margin} />}
 
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
             <SourcesBadge product={p} tone={tone} />

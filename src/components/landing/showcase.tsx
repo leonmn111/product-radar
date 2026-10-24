@@ -6,7 +6,7 @@
 // and every price links to the store page it was read from.
 
 import Link from "next/link";
-import type { ArbitrageScenario, OfferRef } from "@/server/margins/engine";
+import type { ArbitrageScenario, MarginInsight, OfferRef } from "@/server/margins/engine";
 import type { ProductDto } from "@/server/products/service";
 import { dossierHref, formatDateTime, formatPrice } from "../dashboard/format";
 import { ArbitrageBadge } from "../dashboard/margin";
@@ -19,6 +19,13 @@ const tile =
   "rounded-2xl bg-surface-dark ring-1 ring-line-dark transition duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40 hover:ring-accent-mint/50 motion-reduce:transition-none motion-reduce:hover:translate-y-0";
 
 const money = (amount: number, currency: string) => formatPrice(String(amount), currency);
+
+/**
+ * A showcase product: only the two resale routes, priced from real captured store prices. v1's benchmark
+ * wholesale estimate (and its caveats) is left out, so it never reaches the public page, not even in
+ * the data sent to the browser.
+ */
+export type ShowcaseProduct = Omit<ProductDto, "margin"> & { margin: Pick<MarginInsight, "arbitrage" | "arbitrageOwnStore"> | null };
 
 const ROUTE_NAME: Record<ArbitrageScenario["channel"], string> = { MARKETPLACE: "eBay", OWN_STORE: "Your own shop" };
 const ROUTE_FEES: Record<ArbitrageScenario["channel"], string> = { MARKETPLACE: "eBay fees", OWN_STORE: "Card fees" };
@@ -197,20 +204,20 @@ function Difference({ ebay, own }: { ebay: ArbitrageScenario; own: ArbitrageScen
   );
 }
 
-const shortName = (p: ProductDto) => p.name.replace(/\s*\(.*?\)\s*/g, " ").trim();
+const shortName = (p: ShowcaseProduct) => p.name.replace(/\s*\(.*?\)\s*/g, " ").trim();
 
 /**
  * One product's tiles: the product card (tall), the price gap with the headline result,
  * and one tile per resale route. Every other product mirrors, card on the right, so
  * two products read as one bento grid rather than two identical rows.
  */
-function ProductBento({ product: p, flip }: { product: ProductDto; flip: boolean }) {
+function ProductBento({ product: p, flip }: { product: ShowcaseProduct; flip: boolean }) {
   const m = p.margin;
   const shared = m !== null && sameTrade(m.arbitrage, m.arbitrageOwnStore);
   return (
     <article aria-label={shortName(p)} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <ul className={`sm:row-span-3 lg:row-span-2 ${flip ? "sm:col-start-2 sm:row-start-1 lg:col-start-3" : ""}`}>
-        <ProductCard product={p} href={dossierHref(p)} frame="bento" tone="mint" />
+        <ProductCard product={{ ...p, margin: null }} href={dossierHref(p)} frame="bento" tone="mint" marginSummary={false} />
       </ul>
       <div className={`${tile} flex flex-col gap-4 p-5 sm:p-6 lg:col-span-2 ${flip ? "sm:col-start-1 sm:row-start-1" : ""}`}>
         <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-accent-mint uppercase">
@@ -255,7 +262,7 @@ function ProductBento({ product: p, flip }: { product: ProductDto; flip: boolean
   );
 }
 
-export function Showcase({ products }: { products: ProductDto[] }) {
+export function Showcase({ products }: { products: ShowcaseProduct[] }) {
   return (
     <div className="space-y-4">
       {products.map((p, i) => (

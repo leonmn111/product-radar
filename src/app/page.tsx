@@ -5,7 +5,7 @@ import { Suspense, type ReactNode } from "react";
 import { Navbar, type NavLink } from "@/components/layout/Navbar";
 import { LiveStats, LiveStatsSkeleton } from "@/components/landing/live-stats";
 import { Platform, PlatformSkeleton } from "@/components/landing/platform";
-import { Showcase } from "@/components/landing/showcase";
+import { Showcase, type ShowcaseProduct } from "@/components/landing/showcase";
 import { SITE_URL } from "@/lib/site";
 import { PLANS } from "@/server/billing/plans";
 import { getShowcase } from "@/server/products/showcase-cache";
@@ -155,7 +155,12 @@ async function HeroStats() {
 
 async function ShowcaseContent() {
   await connection();
-  const { products } = await getShowcase();
+  const { products: all } = await getShowcase();
+  // Only the real-price resale routes go to the browser; v1's benchmark wholesale estimate stays out.
+  const products: ShowcaseProduct[] = all.map(({ margin, ...p }) => ({
+    ...p,
+    margin: margin && { arbitrage: margin.arbitrage, arbitrageOwnStore: margin.arbitrageOwnStore },
+  }));
   if (products.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-line-dark p-8 text-center text-sm text-slate-400">
@@ -199,10 +204,20 @@ const STEPS = [
   },
 ];
 
+// What the v2 engine guarantees (ARCHITECTURE.md); every claim here is something the code does.
 const TRUST = [
-  ["Rule-based, not a black box", "Scores come from fixed formulas over captured evidence. The same evidence always gives the same score."],
-  ["Public benchmarks you can check", "Wholesale ranges come from US Census retail margins, and every fee rule links to its published source."],
-  ["Estimates, clearly labelled", "Every score shows how confident it is. Nothing is padded to look certain, and nothing is a guarantee."],
+  [
+    "True landed margin, every line sourced",
+    "Live Amazon UK prices and listings, cross-referenced with live AliExpress supplier costs, then VAT, import duty, platform fees and the most each sale can spend on ads. A cost that can't be sourced is named, never guessed.",
+  ],
+  [
+    "UK and EU compliance, checked first",
+    "Before any money maths, each product is checked for resale risk: a brand selling direct, trademarks, UKCA/CE marking, cosmetics and battery rules. A product you can't resell gets no margin.",
+  ],
+  [
+    "Gated by confidence, never padded",
+    "A verdict needs 0.5 confidence and every number 0.7. Below that, the Dossier says what evidence is missing instead of estimating, and nothing is a guarantee.",
+  ],
 ] as const;
 
 const PRO_FEATURES = [
@@ -224,15 +239,19 @@ const AGENT_FEATURES = [
 const FAQ: { q: string; a: ReactNode }[] = [
   {
     q: "Is this AI?",
-    a: "No. Scores are rule-based estimates: fixed formulas applied to evidence captured from real pages. The same evidence always gives the same result, and every dossier lists the evidence behind it.",
+    a: "No. Verdicts and margins are rule-based: fixed formulas applied to cited evidence. The same evidence always gives the same result, and every Dossier lists the evidence behind it.",
   },
   {
     q: "Where do the numbers come from?",
-    a: "Prices, ratings and review counts come from store and review pages, each saved with its link, the time it was read and a quality rating. Search interest comes from Google Trends. The wholesale range comes from US Census retail gross margins for the kind of shop that sells the product.",
+    a: "Amazon UK listings and prices come live from Rainforest API, and supplier prices live from AliExpress's official Drop Shipping API. VAT and duty follow GOV.UK and EU customs rules, and platform fees their published fee schedules, each one linked. Every number keeps its source link, the time it was read and a quality rating. Sales-rank history for Momentum is added once our Keepa connection is live.",
   },
   {
-    q: "What are the two fee routes?",
-    a: "When two stores sell the same product at different prices, ProductRadar works out what you'd keep reselling it on eBay, and what you'd keep in your own Shopify shop after card fees. Each fee rule links to its source. Shipping, VAT and advertising aren't included.",
+    q: "What does the landed margin include?",
+    a: "The Amazon UK selling price, the AliExpress unit cost, import duty and VAT for the UK or an EU market, the selling platform's fees, and the break-even ad cost per sale. Shipping is counted when the supplier quotes it. Anything that can't be sourced is listed as left out, never guessed.",
+  },
+  {
+    q: "What are the two fee routes in the showcase?",
+    a: "When two stores sell the same product at different prices, the showcase works out what you'd keep reselling it on eBay, and what you'd keep in your own Shopify shop after card fees. Its prices are captured from the store pages, and each fee rule links to its source. Shipping, VAT and advertising aren't included there.",
   },
   {
     q: "What's a credit?",
@@ -428,7 +447,7 @@ export default function Home() {
               </h2>
               <p className="mt-4 text-lg/8 text-slate-400">
                 Agents call the ProductRadar API and pay a small fee in USDC per request, using the open x402 payment
-                standard. Every answer carries the same scores, margins and cited evidence as the dashboard.
+                standard. Every answer is the same 8-part Dossier, with the same cited evidence, as the Dossier terminal.
               </p>
               <ul className="mt-6 space-y-2">
                 {AGENT_FEATURES.map((f) => (
@@ -461,17 +480,17 @@ export default function Home() {
                 <code>
                   <span className="text-slate-400"># 1. Ask, without paying</span>
                   {"\n"}
-                  <span className="text-sky-300">GET</span> /api/agent/v1/opportunity?q=pizza+oven
+                  <span className="text-sky-300">GET</span> /api/agent/v2/search?q=pizza+oven
                   {"\n"}
                   <span className="text-amber-300">← 402 Payment Required</span> <span className="text-slate-400">(the price, in USDC)</span>
                   {"\n\n"}
                   <span className="text-slate-400"># 2. Sign a USDC payment and ask again</span>
                   {"\n"}
-                  <span className="text-sky-300">GET</span> /api/agent/v1/opportunity?q=pizza+oven
+                  <span className="text-sky-300">GET</span> /api/agent/v2/search?q=pizza+oven
                   {"\n"}
                   <span className="text-slate-400">PAYMENT-SIGNATURE:</span> eyJ4NDAyVmVyc2lvbiI6Mi…
                   {"\n"}
-                  <span className="text-emerald-300">← 200 OK</span> <span className="text-slate-400">{"{ verdict, margin, evidence… }"}</span>
+                  <span className="text-emerald-300">← 200 OK</span> <span className="text-slate-400">{"{ verdict, landedMargin, evidence… }"}</span>
                 </code>
               </pre>
             </figure>
