@@ -88,9 +88,7 @@ function ProductSummary({ product: p }: { product: ProductDto }) {
             <dt className="text-xs font-medium text-slate-600 dark:text-slate-400">Evidence</dt>
             <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">
               <span className="text-2xl font-semibold tabular-nums">{p.sourceCount}</span> source{p.sourceCount === 1 ? "" : "s"}
-              <span className="block text-xs text-slate-600 dark:text-slate-400">
-                {p.evidenceCount} evidence item{p.evidenceCount === 1 ? "" : "s"}
-              </span>
+              <span className="block text-xs text-slate-600 dark:text-slate-400">unique pages, each counted once</span>
             </dd>
           </div>
         </dl>

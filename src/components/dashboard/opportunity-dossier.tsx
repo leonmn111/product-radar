@@ -1,12 +1,12 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState } from "react";
 import type { ProductDto } from "@/server/products/service";
+import { FINANCIAL_THRESHOLD } from "@/engine/confidence";
+import { money2, ukSellingCosts } from "@/engine/sellingCosts";
 import type { CatalogMargin } from "@/services/catalogMargin";
-import type { LandedMargin } from "@/types/financials";
 import {
   opportunityVerdict,
-  ownNumbersProfit,
   parseMoney,
   shopifyPrices,
   sourcingKeywords,
@@ -18,7 +18,17 @@ import { formatPrice } from "./format";
 import { LandedMarginCard } from "./landed-margin";
 import { MarginCard } from "./margin";
 import { ProductDetail } from "./product-detail";
-import { complianceNote, IP_RISK_NOTE, LOCKED_NOTE, RESELLABILITY_ORDER, resaleRisk, RISK_BADGE } from "./resellability";
+import {
+  CALCULATOR_WARNING,
+  complianceNote,
+  EXPORT_CONFIRM,
+  IP_RISK_NOTE,
+  RESELLABILITY_ORDER,
+  resaleRisk,
+  RISK_BADGE,
+  SUPPLIER_WARNING,
+  type ResaleRisk,
+} from "./resellability";
 
 export type DossierViewer = { signedIn: boolean; proTools: boolean };
 
@@ -28,19 +38,30 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 da
 const cardTitle = "text-sm font-semibold text-slate-900 dark:text-white";
 
 /**
- * The v1 dossier. A product that fails a resale check (product.resellable) gets no money figures at
- * all: no landed margin or price gaps, and the calculator, supplier search and Shopify export stay on
- * the page locked and greyed out, so the seller sees what a low-risk product unlocks. The calculator and
- * the Shopify export also need the landed margin to clear its gate, and start from its sourced supplier cost.
+ * The v1 dossier. A product that fails a resale check (product.resellable) gets no sourced landed margin
+ * and no price gaps, but its calculator, supplier search and Shopify export stay open, each under a
+ * clear warning of the risk (High IP Risk or Compliance Gated), and the export asks for confirmation.
+ * The calculator starts from the sourced waterfall when it's shown; otherwise from the UK store price
+ * when that clears the 0.7 gate, and the seller adds their own cost.
  */
 export function OpportunityDossier({ product, landed, viewer }: { product: ProductDto; landed: CatalogMargin; viewer: DossierViewer }) {
   const shown = landed.margin.status === "shown" ? landed.margin.value : null;
   const sourcedCost = shown?.lines.find((l) => l.kind === "supplier")?.amount.amount;
   const [supplierCost, setSupplierCost] = useState(sourcedCost?.toFixed(2) ?? "");
-  const [adShipping, setAdShipping] = useState("");
-  // Why a premium section is locked, or null when it's open.
-  const lockedNote = product.resellable ? null : LOCKED_NOTE;
-  const marginNote = shown ? null : (lockedNote ?? "Unlocks once the landed margin has enough evidence to show.");
+  const risk = product.resellable ? null : (resaleRisk(landed.resellability) ?? "ip");
+  const { price, confidence, stores } = landed.retail;
+  const storesWord = `${stores} current UK store price${stores === 1 ? "" : "s"}`;
+  const calculator = shown
+    ? { initialPrice: shown.retailPrice.amount, priceHint: `The waterfall's price: median of ${storesWord}` }
+    : price !== null && confidence >= FINANCIAL_THRESHOLD
+      ? { initialPrice: price, priceHint: `Median of ${storesWord}` }
+      : {
+          initialPrice: null,
+          priceHint:
+            price === null
+              ? "No current UK store price found: enter yours"
+              : `UK prices too thin to fill in (confidence ${confidence.toFixed(2)}, needs ${FINANCIAL_THRESHOLD.toFixed(2)}): enter yours`,
+        };
 
   return (
     <div className="space-y-4">
@@ -48,19 +69,24 @@ export function OpportunityDossier({ product, landed, viewer }: { product: Produ
       <LandedMarginCard productId={product.id} landed={landed} />
       {product.resellable && <MarginCard productId={product.id} margin={product.margin} />}
       <div className="grid gap-4 lg:grid-cols-2">
-        {shown ? (
-          <ProfitCalculator
-            productId={product.id}
-            m={shown}
-            supplierCost={supplierCost}
-            adShipping={adShipping}
-            onSupplierCost={setSupplierCost}
-            onAdShipping={setAdShipping}
-          />
-        ) : (
-          <LockedCalculator productId={product.id} note={marginNote!} />
-        )}
-        <SupplierAndExport product={product} viewer={viewer} lockedNote={lockedNote} exportNote={marginNote} costPerItem={parseMoney(supplierCost)} />
+        <ProfitCalculator
+          productId={product.id}
+          {...calculator}
+          cost={supplierCost}
+          onCost={setSupplierCost}
+          costLabel={risk === "ip" ? "Authorised wholesale cost" : "Supplier cost per unit"}
+          costHint={
+            shown
+              ? "Starts at the sourced AliExpress price"
+              : risk === "ip"
+                ? "From the brand's invoice or an authorised distributor"
+                : risk === "compliance"
+                  ? "From a supplier with the right UK safety paperwork"
+                  : "Enter a supplier's quote"
+          }
+          warning={risk ? CALCULATOR_WARNING[risk] : null}
+        />
+        <SupplierAndExport product={product} viewer={viewer} risk={risk} costPerItem={parseMoney(supplierCost)} />
       </div>
       <details className="group rounded-xl border border-gray-200 bg-white shadow-sm dark:border-line-dark dark:bg-surface-dark">
         <summary
@@ -69,7 +95,7 @@ export function OpportunityDossier({ product, landed, viewer }: { product: Produ
           <span>
             Score breakdown &amp; evidence{" "}
             <span className="font-normal text-slate-400 dark:text-slate-400">
-              ({product.evidenceCount} evidence item{product.evidenceCount === 1 ? "" : "s"} from {product.sourceCount} source{product.sourceCount === 1 ? "" : "s"})
+              ({product.sourceCount} source{product.sourceCount === 1 ? "" : "s"})
             </span>
           </span>
           <Chevron className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" />
@@ -132,7 +158,7 @@ function VerdictCard({ product, landed }: { product: ProductDto; landed: Catalog
         {verdict.sentences[0]} {verdict.sentences[1]}
       </p>
       <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
-        Rule-based estimate from {verdict.evidenceCount} evidence item{verdict.evidenceCount === 1 ? "" : "s"} ·{" "}
+        Rule-based estimate from {verdict.sourceCount} source{verdict.sourceCount === 1 ? "" : "s"} ·{" "}
         {Math.round(verdict.confidence * 100)}% confidence · not a guarantee. See the evidence below.
       </p>
     </section>
@@ -164,94 +190,19 @@ function RiskVerdictCard({ product, landed }: { product: ProductDto; landed: Cat
       <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{risk === "ip" ? IP_RISK_NOTE : complianceNote(flags)}</p>
       <p className="mt-3 max-w-3xl text-base/7 text-slate-800 dark:text-slate-200">
         {facts ? `${facts} ` : ""}
-        Flagged because {reasons.length === 1 ? reasons[0] : `${reasons.slice(0, -1).join(", ")} and ${reasons.at(-1)}`}, so ProductRadar shows no
-        margin for it.
+        Flagged because {reasons.length === 1 ? reasons[0] : `${reasons.slice(0, -1).join(", ")} and ${reasons.at(-1)}`}, so ProductRadar
+        sources no supplier price for it. The calculator below works from your own {risk === "ip" ? "authorised wholesale" : "supplier"} cost.
       </p>
       <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">Rule-based, from the product&apos;s own listing text. See the resale checks below.</p>
     </section>
   );
 }
 
-// ── Locked premium sections ──────────────────────────────────────────────────
+// ── Warnings ─────────────────────────────────────────────────────────────────
 
-function LockIcon({ className }: { className: string }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className={className}>
-      <path fillRule="evenodd" d="M10 2a4 4 0 0 0-4 4v2H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-1V6a4 4 0 0 0-4-4Zm2 6V6a2 2 0 1 0-4 0v2h4Z" clipRule="evenodd" />
-    </svg>
-  );
-}
-
-/** A locked section's title, its lock, and why it's locked (in full contrast: only the preview is greyed). */
-function LockedHeader({ id, title, note }: { id: string; title: string; note: string }) {
-  return (
-    <>
-      <div className="flex items-center justify-between gap-2">
-        <h3 id={id} className={cardTitle}>
-          {title}
-        </h3>
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-slate-700 ring-1 ring-gray-300 ring-inset dark:bg-surface-raised dark:text-slate-300 dark:ring-line-dark">
-          <LockIcon className="size-3.5" />
-          Locked
-        </span>
-      </div>
-      <p className="mt-2 flex items-start gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-slate-900 ring-1 ring-gray-200 ring-inset dark:bg-surface-raised/50 dark:text-white dark:ring-line-dark">
-        <LockIcon className="mt-0.5 size-4 shrink-0 text-slate-600 dark:text-slate-400" />
-        {note}
-      </p>
-    </>
-  );
-}
-
-/** What a locked feature looks like, greyed out and out of reach: not clickable, focusable or read out. */
-function Greyed({ children }: { children: ReactNode }) {
-  return (
-    <div aria-hidden="true" inert className="pointer-events-none mt-3 opacity-50 grayscale select-none">
-      {children}
-    </div>
-  );
-}
-
-const previewInput = (label: string, hint: string) => (
-  <div className="min-w-0">
-    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{label}</p>
-    <div className="mt-1 rounded-md bg-gray-50 px-3 py-2 text-sm text-slate-400 tabular-nums ring-1 ring-gray-300 ring-inset dark:bg-background-dark dark:ring-line-dark">£ 0.00</div>
-    <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{hint}</p>
-  </div>
-);
-
-/** The calculator, locked: its layout with no figures in it. */
-function LockedCalculator({ productId, note }: { productId: string; note: string }) {
-  const row = "flex items-baseline justify-between gap-3 py-2";
-  return (
-    <section aria-labelledby={`profit-${productId}`} className={card}>
-      <LockedHeader id={`profit-${productId}`} title="Try your own numbers" note={note} />
-      <Greyed>
-        <dl className="divide-y divide-gray-200 border-b border-gray-200 text-sm dark:divide-line-dark dark:border-line-dark">
-          <div className={row}>
-            <dt className="text-slate-600 dark:text-slate-400">Retail price, from the waterfall</dt>
-            <dd className="font-semibold text-slate-900 dark:text-white">—</dd>
-          </div>
-          <div className={row}>
-            <dt className="text-slate-600 dark:text-slate-400">VAT and platform fees</dt>
-            <dd className="font-semibold text-slate-900 dark:text-white">—</dd>
-          </div>
-        </dl>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {previewInput("Supplier cost per unit", "Starts at the sourced AliExpress price")}
-          {previewInput("Ad & shipping per sale", "Your ad spend + delivery per order")}
-        </div>
-        <dl className="mt-4 grid grid-cols-2 gap-3">
-          {["Net profit", "Net margin"].map((label) => (
-            <div key={label} className="rounded-lg bg-gray-100 p-3 dark:bg-surface-raised/60">
-              <dt className="text-xs font-medium text-slate-700 dark:text-slate-300">{label}</dt>
-              <dd className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">—</dd>
-            </div>
-          ))}
-        </dl>
-      </Greyed>
-    </section>
-  );
+/** A risk warning at the top of a premium section: impossible to miss, and read out first. */
+function RiskWarning({ text }: { text: string }) {
+  return <p className="rounded-lg bg-rose-50 px-3 py-2.5 text-sm font-semibold text-rose-900 ring-1 ring-rose-300 ring-inset dark:bg-rose-950/40 dark:text-rose-100 dark:ring-rose-400/40">{text}</p>;
 }
 
 // ── Profit calculator ────────────────────────────────────────────────────────
@@ -266,82 +217,85 @@ function currencySymbol(currency: string) {
 
 function ProfitCalculator({
   productId,
-  m,
-  supplierCost,
-  adShipping,
-  onSupplierCost,
-  onAdShipping,
+  initialPrice,
+  priceHint,
+  cost,
+  onCost,
+  costLabel,
+  costHint,
+  warning,
 }: {
   productId: string;
-  m: LandedMargin;
-  supplierCost: string;
-  adShipping: string;
-  onSupplierCost: (v: string) => void;
-  onAdShipping: (v: string) => void;
+  /** The selling price to start from (VAT included), or null when there's no sourced one to show. */
+  initialPrice: number | null;
+  priceHint: string;
+  cost: string;
+  onCost: (v: string) => void;
+  costLabel: string;
+  costHint: string;
+  warning: string | null;
 }) {
-  const currency = m.currency;
-  const s = parseMoney(supplierCost);
+  const [price, setPrice] = useState(initialPrice?.toFixed(2) ?? "");
+  const [adShipping, setAdShipping] = useState("");
+  const currency = "GBP";
+  const p = parseMoney(price);
+  const c = parseMoney(cost);
   const a = parseMoney(adShipping);
-  const valid = s !== null && (adShipping.trim() === "" || a !== null);
-  const result = valid ? ownNumbersProfit(m, s, a ?? 0) : null;
-  const { taxAndFees } = ownNumbersProfit(m, 0, 0);
-  const loss = result !== null && result.net < 0;
+  // VAT and fees from the price alone: the same arithmetic as the landed margin (engine/sellingCosts.ts).
+  const costs = p !== null && p > 0 ? ukSellingCosts(p) : null;
+  const net = costs && c !== null && (adShipping.trim() === "" || a !== null) ? money2(p! - costs.total - c - (a ?? 0)) : null;
+  const marginPct = net !== null ? Math.round((net / p!) * 1000) / 10 : null;
+  const loss = net !== null && net < 0;
   const money = (x: number) => formatPrice(String(x), currency);
+  const bad = (raw: string, parsed: number | null) => raw.trim() !== "" && parsed === null;
 
   return (
-    <section aria-labelledby={`profit-${productId}`} className={card}>
+    <section aria-labelledby={`profit-${productId}`} className={`${card} flex flex-col gap-3`}>
       <h3 id={`profit-${productId}`} className={cardTitle}>
-        Try your own numbers
+        Profit calculator
       </h3>
-      <dl className="mt-3 divide-y divide-gray-200 border-b border-gray-200 text-sm dark:divide-line-dark dark:border-line-dark">
-        <div className="flex items-baseline justify-between gap-3 pb-2">
-          <dt className="text-slate-600 dark:text-slate-400">Retail price, from the waterfall</dt>
-          <dd className="font-semibold tabular-nums text-slate-900 dark:text-white">{money(m.retailPrice.amount)}</dd>
+      {warning && <RiskWarning text={warning} />}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <MoneyInput label="Selling price (VAT included)" hint={priceHint} currency={currency} value={price} onChange={setPrice} placeholder="0.00" invalid={bad(price, p)} />
         </div>
-        <div className="flex items-baseline justify-between gap-3 py-2">
-          <dt className="text-slate-600 dark:text-slate-400">VAT and platform fees</dt>
-          <dd className="font-semibold tabular-nums text-slate-900 dark:text-white">−{money(taxAndFees)}</dd>
-        </div>
-      </dl>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <MoneyInput
-          label="Supplier cost per unit"
-          hint="Starts at the sourced AliExpress price"
-          currency={currency}
-          value={supplierCost}
-          onChange={onSupplierCost}
-          invalid={s === null}
-        />
+        <MoneyInput label={costLabel} hint={costHint} currency={currency} value={cost} onChange={onCost} placeholder="0.00" invalid={bad(cost, c)} />
         <MoneyInput
           label="Ad & shipping per sale"
           hint="Your ad spend + delivery per order"
           currency={currency}
           value={adShipping}
-          onChange={onAdShipping}
+          onChange={setAdShipping}
           placeholder="0.00"
-          invalid={adShipping.trim() !== "" && a === null}
+          invalid={bad(adShipping, a)}
         />
       </div>
-      <dl className="mt-4 grid grid-cols-2 gap-3" aria-live="polite">
-        <div className={`rounded-lg p-3 ${loss ? "bg-rose-50 dark:bg-rose-950/30" : "bg-emerald-50 dark:bg-emerald-950/30"}`}>
+      <dl className="divide-y divide-gray-200 border-y border-gray-200 text-sm dark:divide-line-dark dark:border-line-dark">
+        <div className="flex items-baseline justify-between gap-3 py-2">
+          <dt className="text-slate-600 dark:text-slate-400">VAT (20%) and TikTok Shop UK fees</dt>
+          <dd className="font-semibold tabular-nums text-slate-900 dark:text-white">{costs ? `−${money(costs.total)}` : "—"}</dd>
+        </div>
+      </dl>
+      <dl className="grid grid-cols-2 gap-3" aria-live="polite">
+        <div className={`rounded-lg p-3 ${net === null ? "bg-gray-100 dark:bg-surface-raised/60" : loss ? "bg-rose-50 dark:bg-rose-950/30" : "bg-emerald-50 dark:bg-emerald-950/30"}`}>
           <dt className="text-xs font-medium text-slate-700 dark:text-slate-300">Net profit</dt>
           <dd
-            className={`mt-1 text-2xl font-semibold tabular-nums ${loss ? "text-rose-700 dark:text-rose-300" : "text-emerald-700 dark:text-emerald-300"}`}
+            className={`mt-1 text-2xl font-semibold tabular-nums ${net === null ? "text-slate-900 dark:text-white" : loss ? "text-rose-700 dark:text-rose-300" : "text-emerald-700 dark:text-emerald-300"}`}
           >
-            {result ? money(result.net) : "—"}
+            {net !== null ? money(net) : "—"}
           </dd>
           <dd className="text-xs text-slate-600 dark:text-slate-400">per sale</dd>
         </div>
         <div className="rounded-lg bg-gray-100 p-3 dark:bg-surface-raised/60">
           <dt className="text-xs font-medium text-slate-700 dark:text-slate-300">Net margin</dt>
-          <dd className="mt-1 text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
-            {result ? `${result.marginPct.toFixed(1)}%` : "—"}
-          </dd>
-          <dd className="text-xs text-slate-600 dark:text-slate-400">of retail price</dd>
+          <dd className="mt-1 text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">{marginPct !== null ? `${marginPct.toFixed(1)}%` : "—"}</dd>
+          <dd className="text-xs text-slate-600 dark:text-slate-400">of the selling price</dd>
         </div>
       </dl>
-      <p className="mt-3 text-xs text-slate-600 dark:text-slate-400">
-        Same VAT and fee rules as the waterfall; only your two figures change. Returns aren&apos;t included.
+      <p className="text-xs text-slate-600 dark:text-slate-400">
+        Same VAT and fee rules as the landed margin: 9% referral, £0.50 per order and a 15% creator commission (an
+        estimate). Returns aren&apos;t included
+        {costs?.collectedAt === "import" ? ", and over £135 before VAT customs duty is due at import and isn't counted" : ""}.
       </p>
     </section>
   );
@@ -403,16 +357,13 @@ function MoneyInput({
 function SupplierAndExport({
   product,
   viewer,
-  lockedNote,
-  exportNote,
+  risk,
   costPerItem,
 }: {
   product: ProductDto;
   viewer: DossierViewer;
-  /** Why supplier search is locked (the product fails a resale check), or null when it's open. */
-  lockedNote: string | null;
-  /** Why the Shopify file is locked, or null: it's built from shown parts only, so the landed margin must clear its gate. */
-  exportNote: string | null;
+  /** A failed resale check: both sections stay open under its warning, and the export asks first. */
+  risk: ResaleRisk;
   costPerItem: number | null;
 }) {
   const merchant = product.bestOffer?.merchant ?? null;
@@ -421,119 +372,101 @@ function SupplierAndExport({
   const [exported, setExported] = useState(false);
   const prices = shopifyPrices(product);
   const money = (x: number) => formatPrice(String(x), prices.currency ?? "GBP");
-  // Built on the server, which checks for Pro; the cost is whatever the calculator holds.
-  const csvHref = `/api/products/${encodeURIComponent(product.id)}/shopify-csv${costPerItem !== null && costPerItem > 0 ? `?cost=${costPerItem}` : ""}`;
+  // Built on the server, which checks for Pro and, for a risky product, that the warning was confirmed.
+  // The cost is whatever the calculator holds.
+  const query = new URLSearchParams({
+    ...(costPerItem !== null && costPerItem > 0 ? { cost: String(costPerItem) } : {}),
+    ...(risk ? { acknowledgeRisk: risk } : {}),
+  }).toString();
+  const csvHref = `/api/products/${encodeURIComponent(product.id)}/shopify-csv${query ? `?${query}` : ""}`;
 
   const supplierBtn = `inline-flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold shadow-sm ${focusRing}`;
-  const aliexpressBtn = `${supplierBtn} bg-accent-mint text-on-accent hover:bg-accent-mint-strong`;
-  const alibabaBtn = `${supplierBtn} bg-surface-dark text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200`;
-  const csvBtn = `mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:w-auto dark:bg-surface-raised dark:text-white dark:ring-line-dark dark:hover:bg-slate-700 ${focusRing}`;
-  const downloadIcon = (
-    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-4">
-      <path d="M10 3v10m0 0-4-4m4 4 4-4M3.5 15.5v1h13v-1" />
-    </svg>
-  );
-  const searchText = (
-    <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-      Searches for <q className="font-medium text-slate-900 dark:text-slate-100">{keywords}</q> without brand names.
-    </p>
-  );
-  const shopifyText = (
-    <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-      A ready-to-import file with the title, description, photo, prices and your supplier cost. It imports as a draft,
-      so nothing goes live until you publish it.
-    </p>
-  );
 
   return (
     <section aria-labelledby={`source-${product.id}`} className={`${card} flex flex-col gap-5`}>
       <div>
-        {lockedNote ? (
-          <>
-            <LockedHeader id={`source-${product.id}`} title="Find suppliers" note={lockedNote} />
-            <Greyed>
-              {searchText}
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                <span className={aliexpressBtn}>Find on AliExpress</span>
-                <span className={alibabaBtn}>Find on Alibaba</span>
-              </div>
-            </Greyed>
-          </>
-        ) : (
-          <>
-            <h3 id={`source-${product.id}`} className={cardTitle}>
-              Find suppliers
-            </h3>
-            {searchText}
-            {viewer.proTools ? (
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                <a href={urls.aliexpress} target="_blank" rel="noopener noreferrer" className={aliexpressBtn}>
-                  Find on AliExpress
-                  <ExternalIcon />
-                  <span className="sr-only">(opens in new tab)</span>
-                </a>
-                <a href={urls.alibaba} target="_blank" rel="noopener noreferrer" className={alibabaBtn}>
-                  Find on Alibaba
-                  <ExternalIcon />
-                  <span className="sr-only">(opens in new tab)</span>
-                </a>
-              </div>
-            ) : null}
-          </>
+        <h3 id={`source-${product.id}`} className={cardTitle}>
+          Find suppliers
+        </h3>
+        {risk && (
+          <div className="mt-2">
+            <RiskWarning text={SUPPLIER_WARNING[risk]} />
+          </div>
         )}
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          Searches for <q className="font-medium text-slate-900 dark:text-slate-100">{keywords}</q> without brand names.
+        </p>
+        {viewer.proTools ? (
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <a href={urls.aliexpress} target="_blank" rel="noopener noreferrer" className={`${supplierBtn} bg-accent-mint text-on-accent hover:bg-accent-mint-strong`}>
+              Find on AliExpress
+              <ExternalIcon />
+              <span className="sr-only">(opens in new tab)</span>
+            </a>
+            <a href={urls.alibaba} target="_blank" rel="noopener noreferrer" className={`${supplierBtn} bg-surface-dark text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200`}>
+              Find on Alibaba
+              <ExternalIcon />
+              <span className="sr-only">(opens in new tab)</span>
+            </a>
+          </div>
+        ) : null}
       </div>
 
       <div className="border-t border-gray-200 pt-4 dark:border-line-dark">
-        {exportNote ? (
-          <>
-            <LockedHeader id={`shopify-${product.id}`} title="Sell it on Shopify" note={exportNote} />
-            <Greyed>
-              {shopifyText}
-              <span className={csvBtn}>
-                {downloadIcon}
-                Download Shopify CSV
-              </span>
-            </Greyed>
-          </>
-        ) : (
-          <>
-            <h3 className={cardTitle}>Sell it on Shopify</h3>
-            {shopifyText}
-            {prices.price !== null && (
-              <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
-                <dt className="font-medium text-slate-900 dark:text-slate-100">Price {money(prices.price)}</dt>
-                <dd>{prices.priceIsGoingRate ? "the going price at other stores" : "the best price found"}</dd>
-                <dt className="font-medium text-slate-900 dark:text-slate-100">
-                  Compare-at{prices.compareAtPrice !== null && ` ${money(prices.compareAtPrice)}`}
-                </dt>
-                <dd>
-                  {prices.compareAtPrice !== null && prices.rrp
-                    ? `the RRP on ${prices.rrp.merchant}`
-                    : prices.rrp
-                      ? `left blank: the RRP (${money(Number(prices.rrp.amount))} on ${prices.rrp.merchant}) isn't above the price`
-                      : "left blank: no RRP found"}
-                </dd>
-              </dl>
-            )}
-            {viewer.proTools ? (
-              <>
-                <a href={csvHref} download onClick={() => setExported(true)} className={csvBtn}>
-                  {downloadIcon}
-                  Download Shopify CSV
-                </a>
-                <p role="status" className="mt-2 text-xs text-slate-600 dark:text-slate-400">
-                  {exported ? "Downloaded. In Shopify go to Products › Import and choose this file." : ""}
-                </p>
-              </>
-            ) : null}
-          </>
+        <h3 className={cardTitle}>Sell it on Shopify</h3>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          A ready-to-import draft with the title, prices and your cost. The description is a placeholder for you to write
+          and the photo is left blank, so nothing copies the brand&apos;s text or images. Nothing goes live until you publish it.
+        </p>
+        {prices.price !== null && (
+          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
+            <dt className="font-medium text-slate-900 dark:text-slate-100">Price {money(prices.price)}</dt>
+            <dd>{prices.priceIsGoingRate ? "the going price at other stores" : "the best price found"}</dd>
+            <dt className="font-medium text-slate-900 dark:text-slate-100">
+              Compare-at{prices.compareAtPrice !== null && ` ${money(prices.compareAtPrice)}`}
+            </dt>
+            <dd>
+              {prices.compareAtPrice !== null && prices.rrp
+                ? `the RRP on ${prices.rrp.merchant}`
+                : prices.rrp
+                  ? `left blank: the RRP (${money(Number(prices.rrp.amount))} on ${prices.rrp.merchant}) isn't above the price`
+                  : "left blank: no RRP found"}
+            </dd>
+          </dl>
         )}
+        {viewer.proTools ? (
+          <>
+            <a
+              href={csvHref}
+              download
+              onClick={(e) => {
+                // A risky product's file downloads only once the seller confirms the warning.
+                if (risk && !window.confirm(EXPORT_CONFIRM[risk])) {
+                  e.preventDefault();
+                  return;
+                }
+                setExported(true);
+              }}
+              className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:w-auto dark:bg-surface-raised dark:text-white dark:ring-line-dark dark:hover:bg-slate-700 ${focusRing}`}
+            >
+              <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-4">
+                <path d="M10 3v10m0 0-4-4m4 4 4-4M3.5 15.5v1h13v-1" />
+              </svg>
+              Download Shopify CSV
+            </a>
+            <p role="status" className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+              {exported ? "Downloaded. In Shopify go to Products › Import and choose this file." : ""}
+            </p>
+          </>
+        ) : null}
       </div>
 
       {!viewer.proTools && (
         <div className="rounded-lg bg-accent-mint/10 p-4 ring-1 ring-accent-mint/30 ring-inset">
           <p className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
-            <LockIcon className="size-4 text-accent-mint" />
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-accent-mint">
+              <path fillRule="evenodd" d="M10 2a4 4 0 0 0-4 4v2H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-1V6a4 4 0 0 0-4-4Zm2 6V6a2 2 0 1 0-4 0v2h4Z" clipRule="evenodd" />
+            </svg>
             Supplier search and Shopify export are Pro features
           </p>
           <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">

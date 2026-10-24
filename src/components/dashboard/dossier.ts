@@ -3,8 +3,8 @@
 // every sentence in the verdict is built from the product's own scores and
 // evidence (CLAUDE.md Rule 3), and everything is presented as an estimate (Rule 4).
 
+import { SHOPIFY_PLACEHOLDER_BODY } from "@/engine/exports";
 import type { ProductDto } from "@/server/products/service";
-import type { LandedMargin } from "@/types/financials";
 import { humanizeSlug, type Evidence } from "./format";
 
 // ── Verdict ──────────────────────────────────────────────────────────────────
@@ -33,7 +33,7 @@ export type Verdict = {
   label: string;
   sentences: [string, string];
   confidence: number;
-  evidenceCount: number; // evidence items behind the OVERALL score (not distinct pages)
+  sourceCount: number; // distinct pages behind the OVERALL score: one page read four times counts once
 };
 
 type Facts = { rating?: { value: number; sources: number }; reviews?: number; searchInterest?: number };
@@ -137,27 +137,11 @@ export function opportunityVerdict(p: ProductDto): Verdict | null {
     label: VERDICT_LABEL[kind],
     sentences: [factsSentence(evidenceFacts(p.evidence), trend), why],
     confidence: overall.confidence,
-    evidenceCount: overall.evidenceIds.length,
+    sourceCount: overall.sourceCount,
   };
 }
 
-// ── Profit ───────────────────────────────────────────────────────────────────
-
-const cents = (x: number) => Math.round(x * 100) / 100;
-
-// Lines of the landed margin that the seller's own figures replace; every other line (VAT, duty,
-// handling, platform fees, returns) depends only on the retail price, so it carries over unchanged.
-const SELLER_LINES = new Set(["supplier", "shipping", "ad_cost"]);
-
-/**
- * The dossier's calculator: the sourced landed margin (src/engine/margin.ts) with the seller's own
- * supplier cost and ad & shipping per sale in place of the waterfall's supplier, shipping and ad lines.
- */
-export function ownNumbersProfit(m: LandedMargin, supplierCost: number, adShipping: number) {
-  const taxAndFees = cents(m.lines.filter((l) => !SELLER_LINES.has(l.kind)).reduce((s, l) => s + l.amount.amount, 0));
-  const net = cents(m.retailPrice.amount - taxAndFees - supplierCost - adShipping);
-  return { taxAndFees, net, marginPct: Math.round((net / m.retailPrice.amount) * 1000) / 10 };
-}
+// ── Money inputs ─────────────────────────────────────────────────────────────
 
 /** Parses a money input; blank or invalid → null. */
 export function parseMoney(s: string): number | null {
@@ -259,26 +243,6 @@ function csvCell(v: string) {
   return `"${safe.replace(/"/g, '""')}"`;
 }
 
-const escapeHtml = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-
-const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
-
-/** Store pages often encode their text once or twice ("AM &amp;amp; PM"); undo that before escaping once. */
-function decodeEntities(s: string) {
-  for (let i = 0; i < 3; i++) {
-    const next = s.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (m, e: string) => {
-      const k = e.toLowerCase();
-      if (k.startsWith("#x")) return String.fromCodePoint(parseInt(k.slice(2), 16));
-      if (k.startsWith("#")) return String.fromCodePoint(Number(k.slice(1)));
-      return ENTITIES[k] ?? m;
-    });
-    if (next === s) break;
-    s = next;
-  }
-  return s;
-}
-
 export function slugify(s: string) {
   return (
     s
@@ -332,7 +296,7 @@ export const shopifyHandle = (p: Pick<ShopifyProduct, "name"> & { merchant?: str
 
 /**
  * One-product Shopify import file. Imported as a draft, so nothing goes live until the seller
- * reviews it. `costPerItem` is the seller's supplier cost (the dossier's calculator, which starts at
+ * reviews it. The description is a placeholder and the image is left blank (no copied brand content). `costPerItem` is the seller's supplier cost (the dossier's calculator, which starts at
  * the sourced AliExpress price when there is one); without it the column is left blank.
  */
 export function shopifyCsv(p: ShopifyProduct, { costPerItem = null }: { costPerItem?: number | null } = {}) {
@@ -342,12 +306,7 @@ export function shopifyCsv(p: ShopifyProduct, { costPerItem = null }: { costPerI
   const row: Record<(typeof SHOPIFY_COLUMNS)[number], string> = {
     Handle: slugify(title),
     Title: title,
-    "Body (HTML)": p.description
-      ? p.description
-          .split(/\n{2,}/)
-          .map((para) => `<p>${escapeHtml(decodeEntities(para.trim()))}</p>`)
-          .join("")
-      : "",
+    "Body (HTML)": SHOPIFY_PLACEHOLDER_BODY,
     Vendor: p.brand ?? "",
     Type: humanizeSlug(p.category),
     Tags: `${humanizeSlug(p.category)}, ProductRadar`,
@@ -358,7 +317,7 @@ export function shopifyCsv(p: ShopifyProduct, { costPerItem = null }: { costPerI
     "Variant SKU": `PR-${p.id.slice(-8).toUpperCase()}`,
     "Variant Price": amount(price),
     "Variant Compare At Price": amount(compareAtPrice),
-    "Image Src": p.imageUrl ?? "",
+    "Image Src": "", // never the brand's photo: the seller adds their own
     "Cost per item": amount(costPerItem),
     Status: "draft",
   };

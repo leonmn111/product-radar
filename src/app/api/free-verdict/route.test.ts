@@ -38,7 +38,12 @@ const dossier = (verdict: Dossier["verdict"]): Dossier =>
   ({
     product: { title: "Plain White Ceramic Coffee Mug 350ml", query: "B0TESTMUG1", market: "UK", country: "GB", currency: "GBP", identifiers: { asin: "B0TESTMUG1" } },
     verdict,
-    evidence: [{ id: "a" }, { id: "b" }, { id: "c" }],
+    // Three readings from two pages: the count is of pages.
+    evidence: [
+      { id: "a", sourceUrl: "https://www.amazon.co.uk/dp/B0TESTMUG1" },
+      { id: "b", sourceUrl: "https://www.aliexpress.com/item/1.html" },
+      { id: "c", sourceUrl: "https://www.amazon.co.uk/dp/B0TESTMUG1" },
+    ],
     supplierMatches: [{ title: "Mug" }],
     resellability: flags(),
     landedMargin: { status: "shown", confidence: 0.8, value: { uk: { netProfit: { amount: 5.63, currency: "GBP" } } }, evidenceIds: [] },
@@ -78,7 +83,7 @@ describe("POST /api/free-verdict", () => {
       asin: "B0TESTMUG1",
       title: "Plain White Ceramic Coffee Mug 350ml",
       verdict: { status: "shown", kind: "TEST", confidence: 0.82 },
-      evidenceCount: 3,
+      evidenceCount: 2,
       supplierMatches: 1,
       risk: null,
       fromCache: false,

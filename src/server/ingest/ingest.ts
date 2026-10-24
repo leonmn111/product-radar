@@ -259,7 +259,8 @@ export async function ingestUrl(db: PrismaClient, input: IngestInput, deps: Inge
       const outOfFive = Math.round((value / best) * 5 * 100) / 100;
       await add(
         evidence({
-          claim: `Average rating ${value} / ${best} on ${host}`,
+          // One decimal in the words (4.8, not 4.755351681957187); the metric keeps the precise value.
+          claim: `Average rating ${(Math.round(value * 10) / 10).toFixed(1)} / ${best} on ${host}`,
           qualityScore: Math.min(METHOD_QUALITY[extracted.rating.method], SELLER_HOSTED_REVIEW_CAP),
           metric: "RATING",
           metricValue: outOfFive,

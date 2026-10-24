@@ -24,27 +24,29 @@ export type FeeSchedule = {
   source: SourceRef;
 };
 
-// Marketplace: eBay US's standard rate for most categories (incl. health &
-// beauty, electronics, phone accessories, home & garden): 13.6% of the sale up
-// to $7,500, plus $0.30 per order of $10 or less, otherwise $0.40. Used for every
-// currency as a proxy.
+// Marketplace: eBay UK's business seller fees (v2.1.0; US rates before). The final value fee for the
+// default "Everything Else" category is 12.9% of the total sale, plus the 0.35% regulatory operating fee,
+// plus £0.40 per order (£0.30 on orders of £10 or less), all before VAT, which a VAT-registered business
+// reclaims. Category rates run 9.9–12.9%, so 12.9% is the highest a typical category pays. Used for every
+// currency as a proxy, as UK sellers are who ProductRadar serves.
 //
-// Quality 90: the marketplace's own published, current fee schedule.
+// Quality 90: the marketplace's own published fee schedule ("last updated on 30 September, 2026").
 
 export const EBAY_FEE_SOURCE: SourceRef = {
-  name: "eBay, Selling fees (US, most categories)",
-  url: "https://www.ebay.com/help/selling/fees-credits-invoices/selling-fees?id=4822",
-  publishedAt: null,
-  retrievedAt: "2026-10-12",
+  name: "eBay UK, Fees for business sellers",
+  url: "https://www.ebay.co.uk/help/selling/selling-fees/Fees-business-sellers?id=4809",
+  publishedAt: "2026-09-30",
+  retrievedAt: "2026-10-25",
   qualityScore: 90,
 };
 
 export const MARKETPLACE_FEE: FeeSchedule = {
-  rate: 0.136,
+  rate: 0.1325,
   perOrder: 0.4,
   perOrderSmall: 0.3,
   smallOrderMax: 10,
-  description: "13.6% of the sale plus 0.40 per order (0.30 on orders of 10.00 or less), eBay US standard rate",
+  description:
+    "12.9% final value fee plus the 0.35% regulatory operating fee on the sale, and 0.40 per order (0.30 on orders of 10.00 or less): eBay UK business seller rates for the default category, before VAT",
   source: EBAY_FEE_SOURCE,
 };
 

@@ -41,11 +41,28 @@ export const complianceNote = (flags: ResellabilityFlags) => {
   return `Regulated goods (${rules.join(", ")}): sell only with the right UK safety marking and paperwork in place.`;
 };
 
-/** On a premium feature that stays locked while the product fails a resale check. */
-export const LOCKED_NOTE = "Feature unlocks for low-risk, viable products.";
-
 /** The short line under the badge where space is tight (catalog and landing cards). */
 export const RISK_SHORT_NOTE: Record<NonNullable<ResaleRisk>, string> = {
   ip: IP_RISK_NOTE,
   compliance: "Regulated goods: needs the right UK safety marking and paperwork before it can be sold.",
+};
+
+// ── Warnings on premium features for a product that fails a resale check (owner's wording) ──────────
+
+/** Above the calculator. */
+export const CALCULATOR_WARNING: Record<NonNullable<ResaleRisk>, string> = {
+  ip: "⚠️ HIGH IP RISK: Dropshipping this brand risks a store ban. Margins shown are for authorized wholesale only.",
+  compliance: "⚠️ REGULATED GOODS: Selling without the right UK safety marking and paperwork can get listings removed. Margins shown assume a compliant supply.",
+};
+
+/** On the supplier search. */
+export const SUPPLIER_WARNING: Record<NonNullable<ResaleRisk>, string> = {
+  ip: "⚠️ Unauthorized Suppliers: Sourcing branded goods here carries high counterfeit risk.",
+  compliance: "⚠️ Regulated goods: check each supplier's UKCA or CE marking and safety paperwork before you buy.",
+};
+
+/** The confirmation before the Shopify file downloads. */
+export const EXPORT_CONFIRM: Record<NonNullable<ResaleRisk>, string> = {
+  ip: "Warning: Exporting trademarked goods to your store can result in a permanent ban. Click OK to proceed anyway.",
+  compliance: "Warning: Selling regulated goods without the right UK safety marking can get your listings removed. Click OK to proceed anyway.",
 };

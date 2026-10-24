@@ -67,6 +67,8 @@ describe("catalog landed margin: the gates", () => {
     const p = { ...unbranded(fourStores()), name: "Allbirds Men's Tree Runner", brand: "Allbirds", category: "running-shoes" };
     const r = await getCatalogMargin(p, { supplier, now: () => now, cache: memorySupplierCache() });
     expect(r.margin).toMatchObject({ status: "withheld", reason: "Not Sellable" });
+    // The UK price on its own still comes through for the calculator: median of the four stores.
+    expect(r.retail).toEqual({ price: 22.24, confidence: expect.any(Number), stores: 4 });
     expect(r.margin.status === "withheld" && r.margin.missing).toEqual([expect.stringMatching(/^Brand or trademark: .*"Allbirds"/)]);
     expect(r.resellability.trademarkRisk.value).toBe(true);
     expect(supplier.search).not.toHaveBeenCalled();

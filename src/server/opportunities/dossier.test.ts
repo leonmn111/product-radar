@@ -10,6 +10,7 @@ const score = (value: number, confidence: number) => ({
   methodologyVersion: "1.1.0",
   calculatedAt: "2026-10-01T00:00:00.000Z",
   evidenceIds: ["e1", "e2"],
+  sourceCount: 2,
 });
 
 const evidence = [
@@ -100,7 +101,7 @@ describe("agent dossier", () => {
 
   it("includes the price gaps with their sources", () => {
     expect(d.margin).toMatchObject({ currency: "GBP", arbitrage: { rating: "RETAIL_ONLY", label: "Retail Only" } });
-    expect(d.margin!.arbitrage.feeSource.url).toMatch(/^https:\/\/www\.ebay\.com\//);
+    expect(d.margin!.arbitrage.feeSource.url).toMatch(/^https:\/\/www\.ebay\.co\.uk\//);
   });
 
   it("strips the store name from the title and builds supplier searches and a Shopify draft", () => {

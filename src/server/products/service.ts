@@ -25,7 +25,7 @@ const PRODUCT_INCLUDE = {
   scores: {
     orderBy: [{ dimension: "asc" }, { calculatedAt: "desc" }, { id: "desc" }],
     distinct: ["dimension"],
-    include: { evidence: { select: { evidenceId: true } } },
+    include: { evidence: { select: { evidenceId: true, evidence: { select: { sourceUrl: true } } } } },
   },
 } satisfies Prisma.ProductInclude;
 
@@ -154,7 +154,7 @@ export type CatalogStats = {
   products: number;
   stores: number; // distinct merchants with a captured price
   prices: number; // captured offers
-  evidence: number;
+  evidence: number; // distinct source pages the live catalog's evidence comes from
   priceGaps: number; // resellable products two or more stores sell right now, in one currency, at different prices
   lastObservedAt: string | null; // newest evidence capture
 };
@@ -173,7 +173,8 @@ export async function showcaseSnapshot(db: PrismaClient, asOf = new Date()): Pro
     db.product.count({ where: { isSample: false } }),
     db.offer.groupBy({ by: ["merchant"], where: live }),
     db.offer.count({ where: live }),
-    db.evidence.count({ where: live }),
+    // Distinct source pages, not captures: a page read four times counts once.
+    db.evidence.groupBy({ by: ["sourceUrl"], where: live }).then((pages) => pages.length),
     db.evidence.aggregate({ where: live, _max: { observedAt: true } }),
     db.$queryRaw<{ id: string }[]>`
       SELECT o."productId" AS id
@@ -227,7 +228,7 @@ type ProductRow = Prisma.ProductGetPayload<{
   include: {
     offers: { include: { sourceEvidence: { select: { qualityScore: true, sourceType: true, claim: true } } } };
     evidence: true;
-    scores: { include: { evidence: { select: { evidenceId: true } } } };
+    scores: { include: { evidence: { select: { evidenceId: true; evidence: { select: { sourceUrl: true } } } } } };
     _count: { select: { evidence: true } };
   };
 }>;
@@ -288,6 +289,8 @@ function toDto(p: ProductRow, asOf: Date, sources: SourceSummary = { sourceCount
           methodologyVersion: s.methodologyVersion,
           calculatedAt: s.calculatedAt.toISOString(),
           evidenceIds: s.evidence.map((e) => e.evidenceId).sort(),
+          // Distinct pages behind the score: one page read four times is one source.
+          sourceCount: new Set(s.evidence.map((e) => e.evidence.sourceUrl)).size,
         },
       ]),
     ),

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RetailListing, SupplierOffer } from "@/server/live/types";
 import { buildDossier } from "@/services/dossierService";
 import type { Dossier } from "@/types/dossier";
-import { ExportUnavailableError, generateShopifyCSV, SHOPIFY_COLUMNS, shopifyHandle } from "./exports";
+import { ExportUnavailableError, generateShopifyCSV, SHOPIFY_COLUMNS, SHOPIFY_PLACEHOLDER_BODY, shopifyHandle } from "./exports";
 
 const NOW = new Date("2026-10-16T12:00:00Z");
 const listing = (n: number, price: number, title = "Plain White Ceramic Coffee Mug 350ml"): RetailListing => ({
@@ -44,7 +44,7 @@ describe("generateShopifyCSV", () => {
     expect(cells).toEqual({
       Handle: "plain-white-ceramic-coffee-mug-350ml",
       Title: "Plain White Ceramic Coffee Mug 350ml",
-      "Body (HTML)": "<p>Plain White Ceramic Coffee Mug 350ml</p>",
+      "Body (HTML)": SHOPIFY_PLACEHOLDER_BODY, // no copied text
       Vendor: "ProductRadar Import",
       Type: "",
       Tags: "ProductRadar",
@@ -53,17 +53,17 @@ describe("generateShopifyCSV", () => {
       "Option1 Value": "Default Title",
       "Variant Price": "13.24", // the margin's retail price: the median of the four listings
       "Variant Compare At Price": "", // no RRP captured, none invented
-      "Image Src": "https://ae01.alicdn.com/kf/mug1.jpg",
+      "Image Src": "", // no copied photo, not even the supplier's
     });
     expect(strong.landedMargin.status === "shown" && strong.landedMargin.value.uk.retailPrice.amount).toBe(13.24);
   });
 
-  it("quotes every cell, escapes HTML, and neutralises spreadsheet formulas in listing text", () => {
+  it("quotes every cell and neutralises spreadsheet formulas in listing text", () => {
     const sneaky = { ...strong, product: { ...strong.product, title: '=HYPERLINK("x") Mug, "350ml" <b>' } };
     const csv = generateShopifyCSV(sneaky);
     const { cells } = parse(csv);
     expect(cells.Title).toBe(`'=HYPERLINK("x") Mug, "350ml" <b>`);
-    expect(cells["Body (HTML)"]).toBe("<p>=HYPERLINK(&quot;x&quot;) Mug, &quot;350ml&quot; &lt;b&gt;</p>");
+    expect(cells["Body (HTML)"]).toBe(SHOPIFY_PLACEHOLDER_BODY);
     expect(csv.split("\r\n")).toHaveLength(3); // header, row, and the final line ending
   });
 

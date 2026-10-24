@@ -11,6 +11,7 @@ import type { ReactNode } from "react";
 import { FINANCIAL_THRESHOLD, VERDICT_THRESHOLD } from "@/engine/confidence";
 import type { ComplianceFlag, Dossier, Evidence, Gated, Momentum, ResellabilityFlags, VerdictKind } from "@/types/dossier";
 import type { LandedMargin, LineBasis, Money } from "@/types/financials";
+import { roundRatings } from "./dashboard/format";
 import { complianceNote, IP_RISK_NOTE, resaleRisk, RISK_BADGE } from "./dashboard/resellability";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
@@ -357,7 +358,7 @@ function EvidencePanel({ evidence }: { evidence: Evidence[] }) {
           {evidence.map((e) => (
             <tr key={e.id} className="align-top">
               <td className="min-w-[14rem] py-1 pr-3">
-                {e.claim}
+                {roundRatings(e.claim)}
                 {e.imageMatch && (
                   <span className="ml-1">
                     <Tag tone={e.imageMatch.method === "simulated" ? "warn" : "off"}>

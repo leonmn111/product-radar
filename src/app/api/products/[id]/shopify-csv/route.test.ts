@@ -24,6 +24,7 @@ const product = {
   imageUrl: null,
   bestOffer: { merchant: "Shop", url: "https://shop.test", price: { amount: "40.00", currency: "GBP" } },
   resellable: true,
+  resaleRisk: null,
   margin: null,
 };
 const call = (query = "", id = product.id) =>
@@ -71,12 +72,16 @@ describe("GET /api/products/:id/shopify-csv (the Pro Shopify export)", () => {
     expect(await (await call()).text()).toContain('"","draft"');
   });
 
-  it("has no file for a product that fails a resale check", async () => {
+  it("exports a product that fails a resale check only once its warning was confirmed", async () => {
     viewer("PRO");
-    vi.mocked(getProduct).mockResolvedValue({ ...product, resellable: false } as never);
-    const res = await call("?cost=12.5");
-    expect(res.status).toBe(409);
-    expect((await res.json()).error).toBe("not_resellable");
+    vi.mocked(getProduct).mockResolvedValue({ ...product, resellable: false, resaleRisk: "ip" } as never);
+    const refused = await call("?cost=12.5");
+    expect(refused.status).toBe(409);
+    expect((await refused.json()).error).toBe("risk_not_acknowledged");
+    expect((await call("?cost=12.5&acknowledgeRisk=compliance")).status).toBe(409); // a different risk than the product's
+    const res = await call("?cost=12.5&acknowledgeRisk=ip");
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('"12.50","draft"');
   });
 
   it("rejects a bad cost, and says when the product doesn't exist", async () => {

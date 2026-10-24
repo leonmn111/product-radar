@@ -7,7 +7,7 @@ import { FINANCIAL_THRESHOLD } from "@/engine/confidence";
 import type { CatalogMargin } from "@/services/catalogMargin";
 import type { ComplianceFlag } from "@/types/dossier";
 import type { LandedMargin, LineBasis, Money } from "@/types/financials";
-import { formatDateTime, formatPrice } from "./format";
+import { formatDateTime, formatPrice, roundRatings } from "./format";
 import { RESELLABILITY_LABEL, RESELLABILITY_ORDER, resaleRisk, RISK_BADGE } from "./resellability";
 
 const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 dark:border-line-dark dark:bg-surface-dark";
@@ -174,7 +174,7 @@ function Sources({ landed }: { landed: CatalogMargin }) {
               {" "}
               · seen {formatDateTime(e.observedAt)} · quality {Math.round(e.quality)}/100
             </span>
-            <p className="text-slate-700 dark:text-slate-300">{e.claim}</p>
+            <p className="text-slate-700 dark:text-slate-300">{roundRatings(e.claim)}</p>
           </li>
         ))}
       </ul>
@@ -224,8 +224,8 @@ export function LandedMarginCard({ productId, landed }: { productId: string; lan
             </p>
             {g.reason === "Not Sellable" ? (
               <p className={`mt-1 text-sm ${muted}`}>
-                It fails {g.missing.length === 1 ? "a resale check" : `${g.missing.length} resale checks`} below, so no supplier cost is
-                sourced and no money maths is shown.
+                It fails {g.missing.length === 1 ? "a resale check" : `${g.missing.length} resale checks`} below, so ProductRadar sources no
+                supplier cost for it. The calculator below works from your own cost instead.
               </p>
             ) : (
               <>

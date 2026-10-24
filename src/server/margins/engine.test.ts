@@ -41,7 +41,7 @@ describe("margin engine: retail price", () => {
     expect(m).not.toHaveProperty("wholesaleEstimate");
     expect(m).not.toHaveProperty("grossSpread");
     expect(m).not.toHaveProperty("benchmark");
-    expect(m.methodologyVersion).toBe("2.0.0");
+    expect(m.methodologyVersion).toBe("2.1.0");
     expect(m.caveats.join(" ")).not.toMatch(/census|wholesale/i);
   });
 });
@@ -63,32 +63,33 @@ describe("margin engine: arbitrage rating (eBay)", () => {
 
   it("rates a big same-currency gap High Arbitrage, after fees", () => {
     const a = insight([offer("cheap.test", 40), offer("dear.test", 80)])!.arbitrage;
-    // fees = 80 × 13.6% + 0.40 = 11.28; net = 80 − 40 − 11.28 = 28.72 (71.8%, €22.98)
-    expect(a).toMatchObject({ rating: "HIGH_ARBITRAGE", label: "High Arbitrage", resalePrice: 80, fees: 11.28, netProfit: 28.72, returnPct: 71.8, currency: "USD" });
+    // eBay UK: fees = 80 × (12.9% + 0.35%) + 0.40 = 11.00; net = 80 − 40 − 11.00 = 29.00 (72.5%, €23.20)
+    expect(a).toMatchObject({ rating: "HIGH_ARBITRAGE", label: "High Arbitrage", resalePrice: 80, fees: 11, netProfit: 29, returnPct: 72.5, currency: "USD" });
     expect(a.buy?.merchant).toBe("cheap.test");
     expect(a.sell?.merchant).toBe("dear.test");
-    expect(a.summary).toBe("Buying at cheap.test for $40.00 and reselling at $80.00 leaves about $28.72 per unit (71.8% return) after eBay fees, before shipping.");
+    expect(a.summary).toBe("Buying at cheap.test for $40.00 and reselling at $80.00 leaves about $29.00 per unit (72.5% return) after eBay fees, before shipping.");
   });
 
   it("rates a modest gap Moderate", () => {
     const a = insight([offer("cheap.test", 40), offer("dear.test", 52)])!.arbitrage;
-    // fees = 7.47; net = 4.53 (11.3%, €3.62)
-    expect(a).toMatchObject({ rating: "MODERATE", netProfit: 4.53, returnPct: 11.3 });
+    // fees = 52 × 13.25% + 0.40 = 7.29; net = 4.71 (11.8%, €3.77)
+    expect(a).toMatchObject({ rating: "MODERATE", fees: 7.29, netProfit: 4.71, returnPct: 11.8 });
   });
 
-  it("needs real money, not just a good percentage: a £1.88 gap is too thin", () => {
+  it("needs real money, not just a good percentage: a £1.95 gap is too thin", () => {
     const gbp = { currency: "GBP" };
     const a = insight([offer("discount.test", 15, gbp), offer("brand.test", 20, gbp)])!.arbitrage;
-    // fees = 3.12; net = 1.88 (12.5% return, but only €2.35)
-    expect(a).toMatchObject({ rating: "RETAIL_ONLY", netProfit: 1.88, returnPct: 12.5 });
-    expect(a.summary).toMatch(/leaves £1\.88 per unit after eBay fees: too thin/);
+    // fees = 20 × 13.25% + 0.40 = 3.05; net = 1.95 (13% return, but only €2.44)
+    expect(a).toMatchObject({ rating: "RETAIL_ONLY", fees: 3.05, netProfit: 1.95, returnPct: 13 });
+    expect(a.summary).toMatch(/leaves £1\.95 per unit after eBay fees: too thin/);
   });
 
   it("says when reselling would lose money", () => {
     const gbp = { currency: "GBP" };
     const a = insight([offer("a.test", 31, gbp), offer("b.test", 35, gbp)])!.arbitrage;
-    expect(a).toMatchObject({ rating: "RETAIL_ONLY", netProfit: -1.16 });
-    expect(a.summary).toMatch(/would lose £1\.16 per unit/);
+    // fees = 35 × 13.25% + 0.40 = 5.04; net = 35 − 31 − 5.04 = −1.04
+    expect(a).toMatchObject({ rating: "RETAIL_ONLY", netProfit: -1.04 });
+    expect(a.summary).toMatch(/would lose £1\.04 per unit/);
   });
 
   it("resells at the median of the other stores, not the most expensive one", () => {
@@ -139,9 +140,10 @@ describe("margin engine: which offers count", () => {
     expect(a.buy).toBeNull();
   });
 
-  it("charges eBay's smaller per-order fee on orders of 10 or less", () => {
-    expect(resaleFee(10, MARKETPLACE_FEE)).toBe(1.66); // 1.36 + 0.30
-    expect(resaleFee(10.01, MARKETPLACE_FEE)).toBe(1.76); // 1.36 + 0.40
+  it("charges eBay UK's smaller per-order fee on orders of 10 or less", () => {
+    expect(resaleFee(10, MARKETPLACE_FEE)).toBe(1.63); // 12.9% + 0.35% of 10 = 1.325, + 0.30
+    expect(resaleFee(10.01, MARKETPLACE_FEE)).toBe(1.73); // 1.326 + 0.40
+    expect(EBAY_FEE_SOURCE.url).toMatch(/^https:\/\/www\.ebay\.co\.uk\//);
   });
 
   it("charges own-shop card fees at the UK rate in pounds and the US rate otherwise", () => {

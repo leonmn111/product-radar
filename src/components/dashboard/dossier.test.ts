@@ -3,14 +3,13 @@ import type { ProductDto } from "@/server/products/service";
 import {
   cleanTitle,
   opportunityVerdict,
-  ownNumbersProfit,
   parseMoney,
   shopifyCsv,
   type ShopifyProduct,
   sourcingKeywords,
   supplierSearchUrls,
 } from "./dossier";
-import { calculateUKMargin } from "@/engine/margin";
+import { SHOPIFY_PLACEHOLDER_BODY } from "@/engine/exports";
 import { marginInsight } from "@/server/margins/engine";
 import { LATEST_FX } from "@/server/scoring/fx-latest";
 
@@ -20,6 +19,7 @@ const score = (value: number, confidence = 0.7) => ({
   methodologyVersion: "1.1.0",
   calculatedAt: "2026-10-01T00:00:00.000Z",
   evidenceIds: ["a", "b", "c"],
+  sourceCount: 2, // two of the three items are the same page, read twice
 });
 
 let n = 0;
@@ -94,21 +94,7 @@ describe("opportunity verdict", () => {
   });
 });
 
-describe("profit estimate", () => {
-  it("re-prices the sourced landed margin with the seller's own supplier cost and ad & shipping", () => {
-    const m = calculateUKMargin({
-      retailPrice: { amount: 22.24, basis: "sourced", evidenceIds: ["r1"] },
-      supplierCost: { amount: 3.5, basis: "sourced", evidenceIds: ["s1"] },
-      shipping: null,
-      returns: null,
-      adCostPerSale: null,
-    });
-    // VAT 3.71 + TikTok Shop UK 1.67 + 0.50 + 2.78 carry over; at the sourced cost it is the waterfall's own net.
-    expect(ownNumbersProfit(m, 3.5, 0)).toEqual({ taxAndFees: 8.66, net: m.netProfit.amount, marginPct: m.netMarginPct });
-    expect(ownNumbersProfit(m, 5, 2.5)).toEqual({ taxAndFees: 8.66, net: 6.08, marginPct: 27.3 });
-    expect(ownNumbersProfit(m, 15, 4).net).toBe(-5.42);
-  });
-
+describe("money inputs", () => {
   it("parses money inputs leniently and rejects negatives", () => {
     expect(parseMoney("£1,234.50")).toBe(1234.5);
     expect(parseMoney("")).toBeNull();
@@ -210,7 +196,7 @@ describe("Shopify CSV", () => {
     expect(cells).toEqual({
       Handle: "men-s-tree-runners",
       Title: "Men's Tree Runners",
-      "Body (HTML)": "<p>Light &quot;comfy&quot; shoes.</p><p>&lt;b&gt;Machine&lt;/b&gt; washable.</p>",
+      "Body (HTML)": SHOPIFY_PLACEHOLDER_BODY, // never the brand's own copy
       Vendor: "Allbirds",
       Type: "Shoes",
       Tags: "Shoes, ProductRadar",
@@ -220,7 +206,7 @@ describe("Shopify CSV", () => {
       "Variant SKU": "PR-0C406B2F",
       "Variant Price": "20.00", // the going price at other stores (the margin engine's resale price)
       "Variant Compare At Price": "", // no RRP is captured, and a store's lower price would read as a price rise
-      "Image Src": "https://cdn.test/runners.jpg",
+      "Image Src": "", // never the brand's photo
       "Cost per item": "", // never estimated: only the seller's own supplier cost goes here
       Status: "draft",
     });
@@ -265,9 +251,10 @@ describe("Shopify CSV", () => {
     expect(rows(shopifyCsv(base, { costPerItem: 7.5 })).cells["Cost per item"]).toBe("7.50");
   });
 
-  it("escapes store text exactly once, even when the store already encoded it", () => {
-    const { cells } = rows(shopifyCsv({ ...base, description: "Use AM &amp;amp; PM &#8211; <i>daily</i> &copy;" }));
-    expect(cells["Body (HTML)"]).toBe("<p>Use AM &amp; PM – &lt;i&gt;daily&lt;/i&gt; &amp;copy;</p>");
+  it("never copies the brand's description or photo, whatever the store page held", () => {
+    const csv = shopifyCsv({ ...base, description: "Our signature <b>wool</b> runner, made by Allbirds.", imageUrl: "https://cdn.allbirds.test/runner.jpg" });
+    expect(csv).not.toMatch(/signature|cdn\.allbirds/);
+    expect(rows(csv).cells["Body (HTML)"]).toBe(SHOPIFY_PLACEHOLDER_BODY);
   });
 
   it("drops trademark symbols from the handle", () => {

@@ -35,7 +35,7 @@ function teaser(d: Dossier, asin: string, fromCache: boolean): FreeVerdict {
       v.status === "shown"
         ? { status: "shown", kind: v.value.kind, confidence: v.confidence }
         : { status: "withheld", reason: v.reason, confidence: v.confidence, missing: v.missing },
-    evidenceCount: d.evidence.length,
+    evidenceCount: new Set(d.evidence.map((e) => e.sourceUrl)).size, // distinct pages: one read four times counts once
     supplierMatches: d.supplierMatches.length,
     risk: resaleRisk(d.resellability),
     fromCache,

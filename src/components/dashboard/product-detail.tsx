@@ -6,6 +6,7 @@ import {
   SOURCE_TYPE_LABEL,
   formatMetric,
   formatPrice,
+  roundRatings,
   type Dimension,
 } from "./format";
 import { RelativeTime } from "./relative-time";
@@ -34,6 +35,18 @@ export function ProductDetail({ product }: { product: ProductDto }) {
     }
   }
   const missing = DIM_ORDER.filter((d) => !product.scores[d]);
+  // One entry per page: a page read four times is one source. It shows the newest reading of each
+  // fact (evidence arrives newest first) and how many times the page was read.
+  const byUrl = new Map<string, typeof product.evidence>();
+  for (const e of product.evidence) byUrl.set(e.source.url, [...(byUrl.get(e.source.url) ?? []), e]);
+  const pages = [...byUrl].map(([url, items]) => {
+    const seen = new Set<string>();
+    const facts = items.filter((e) => {
+      const key = e.metric?.type ?? e.claim;
+      return !seen.has(key) && seen.add(key);
+    });
+    return { url, items, facts, reads: new Set(items.map((e) => e.observedAt)).size };
+  });
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
@@ -67,7 +80,7 @@ export function ProductDetail({ product }: { product: ProductDto }) {
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
                     <ConfidenceBadge confidence={s.confidence} />
                     <span>
-                      {DIMENSION_HELP[d]} · {s.evidenceIds.length} evidence item{s.evidenceIds.length === 1 ? "" : "s"}
+                      {DIMENSION_HELP[d]} · {s.sourceCount} source{s.sourceCount === 1 ? "" : "s"}
                     </span>
                   </div>
                 </li>
@@ -120,51 +133,49 @@ export function ProductDetail({ product }: { product: ProductDto }) {
         <h3 id={`evidence-${product.id}`} className="text-sm font-semibold text-slate-900 dark:text-white">
           Evidence{" "}
           <span className="font-normal text-slate-400 dark:text-slate-400">
-            ({product.evidenceCount > product.evidence.length
-              ? `newest ${product.evidence.length} of ${product.evidenceCount}`
-              : product.evidenceCount})
+            ({pages.length} source{pages.length === 1 ? "" : "s"}
+            {product.evidenceCount > product.evidence.length ? `, from the newest ${product.evidence.length} readings` : ""})
           </span>
         </h3>
         <ul className="mt-3 space-y-2">
-          {product.evidence.map((e) => {
-            const dims = usedIn.get(e.id) ?? [];
+          {pages.map((page) => {
+            const latest = page.items[0];
+            const dims = [...new Set(page.items.flatMap((e) => usedIn.get(e.id) ?? []))];
             return (
-              <li
-                key={e.id}
-                className="rounded-lg border border-gray-200 bg-white p-3 dark:border-line-dark dark:bg-surface-dark"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <p className="min-w-0 flex-1 text-sm text-slate-900 dark:text-slate-100">{e.claim}</p>
-                  {e.metric && (
-                    <span className={`${badge} bg-accent-mint/10 text-accent-mint ring-accent-mint/20`}>
-                      {formatMetric(e.metric)}
-                    </span>
-                  )}
-                </div>
+              <li key={page.url} className="rounded-lg border border-gray-200 bg-white p-3 dark:border-line-dark dark:bg-surface-dark">
+                <ul className="space-y-1.5">
+                  {page.facts.map((e) => (
+                    <li key={e.id} className="flex flex-wrap items-start justify-between gap-2">
+                      <p className="min-w-0 flex-1 text-sm text-slate-900 dark:text-slate-100">{roundRatings(e.claim)}</p>
+                      {e.metric && <span className={`${badge} bg-accent-mint/10 text-accent-mint ring-accent-mint/20`}>{formatMetric(e.metric)}</span>}
+                    </li>
+                  ))}
+                </ul>
                 <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
                   <div className="flex gap-1">
                     <dt className="sr-only">Source</dt>
                     <dd>
-                      <a href={e.source.url} target="_blank" rel="noopener noreferrer" className={link}>
-                        {e.source.name}
+                      <a href={page.url} target="_blank" rel="noopener noreferrer" className={link}>
+                        {latest.source.name}
                         <span className="sr-only"> (opens in new tab)</span>
                       </a>{" "}
-                      · {SOURCE_TYPE_LABEL[e.source.type]}
+                      · {SOURCE_TYPE_LABEL[latest.source.type]}
                     </dd>
                   </div>
                   <div className="flex gap-1">
-                    <dt>Observed</dt>
+                    <dt>Last read</dt>
                     <dd>
-                      <RelativeTime iso={e.observedAt} />
+                      <RelativeTime iso={latest.observedAt} />
+                      {page.reads > 1 ? ` · read ${page.reads} times` : ""}
                     </dd>
                   </div>
                   <div className="flex gap-1">
                     <dt>Quality</dt>
-                    <dd className="tabular-nums">{e.qualityScore}/100</dd>
+                    <dd className="tabular-nums">{latest.qualityScore}/100</dd>
                   </div>
                   <div className="flex gap-1">
                     <dt>Used in</dt>
-                    <dd>{dims.length ? dims.map((d) => DIMENSION_LABEL[d]).join(", ") : "Context only, not used in a score"}</dd>
+                    <dd>{dims.length ? DIM_ORDER.filter((d) => dims.includes(d)).map((d) => DIMENSION_LABEL[d]).join(", ") : "Context only, not used in a score"}</dd>
                   </div>
                 </dl>
               </li>

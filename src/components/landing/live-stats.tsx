@@ -9,7 +9,7 @@ export function LiveStats({ stats }: { stats: CatalogStats }) {
     { value: stats.stores, label: stats.stores === 1 ? "store tracked" : "stores tracked" },
     { value: stats.products, label: stats.products === 1 ? "live product scored" : "live products scored" },
     { value: stats.priceGaps, label: stats.priceGaps === 1 ? "price gap between stores now" : "price gaps between stores now" },
-    { value: stats.evidence, label: "evidence items, each sourced" },
+    { value: stats.evidence, label: stats.evidence === 1 ? "source page, cited" : "source pages, each cited" },
   ].filter((i) => i.value > 0);
   const cols = ["", "sm:grid-cols-1", "sm:grid-cols-2", "sm:grid-cols-3", "sm:grid-cols-4"][items.length];
 

@@ -40,6 +40,11 @@ export type CatalogMargin = {
   checkedAt: string;
   resellability: ResellabilityFlags;
   margin: Gated<LandedMargin>;
+  /**
+   * The UK selling price on its own, for the dossier's calculator: the median of the stores' current GBP
+   * prices and how strongly they agree. The calculator fills it in only from FINANCIAL_THRESHOLD (0.7).
+   */
+  retail: { price: number | null; confidence: number; stores: number };
   /** The UK store prices the retail price is the median of. */
   retailOffers: { merchant: string; url: string; price: number; observedAt: string; evidenceId: string }[];
   /** The AliExpress offers the supplier cost is the median of, best match first. */
@@ -142,6 +147,11 @@ export function buildCatalogMargin(product: CatalogProduct, supplier: SupplierRe
   const base = {
     checkedAt: now.toISOString(),
     resellability: flags,
+    retail: {
+      price: uk.length ? Math.round(median(uk.map((o) => Number(o.price.amount))) * 100) / 100 : null,
+      confidence: calculateConfidence(retail, now),
+      stores: uk.length,
+    },
     retailOffers: uk.map((o) => ({ merchant: o.merchant, url: o.url, price: Number(o.price.amount), observedAt: o.observedAt, evidenceId: o.sourceEvidenceId })),
   };
   const result = (margin: Gated<LandedMargin>, matched: { offer: SupplierOffer; score: number }[] = []): CatalogMargin => {

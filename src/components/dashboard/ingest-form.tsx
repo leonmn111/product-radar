@@ -180,7 +180,7 @@ export function IngestForm({
 function Summary({ result: r }: { result: IngestResult }) {
   const facts = [
     r.extracted.price && `price ${formatPrice(r.extracted.price.amount, r.extracted.price.currency)}`,
-    r.extracted.rating && `rating ${r.extracted.rating.value}/${r.extracted.rating.best}`,
+    r.extracted.rating && `rating ${(Math.round(r.extracted.rating.value * 10) / 10).toFixed(1)}/${r.extracted.rating.best}`,
     r.extracted.reviewCount !== null && `${r.extracted.reviewCount.toLocaleString("en-US")} ratings`,
   ].filter(Boolean);
   const overall = r.scores.find((s) => s.dimension === "OVERALL");

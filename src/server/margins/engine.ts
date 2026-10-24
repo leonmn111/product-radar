@@ -19,7 +19,8 @@
 //        buy       = the cheapest store
 //        sell      = median price of the other stores
 //        fees      = sell × rate + per-order fee, for two resale routes (v1.1.0):
-//                      arbitrage          eBay US standard rate, 13.6% + 0.40
+//                      arbitrage          eBay UK business seller rate (v2.1.0):
+//                                         12.9% + 0.35% regulatory fee + 0.40 per order
 //                      arbitrageOwnStore  Shopify Payments Basic card rate,
 //                                         2% + 0.25 in GBP, otherwise 2.9% + 0.30
 //        net       = sell − buy − fees,   return = net / buy
@@ -38,7 +39,7 @@ import { bestCurrentOffer, currentOffers } from "@/server/scoring/engine";
 import { toEur, type FxRates } from "@/server/scoring/fx";
 import { MARKETPLACE_FEE, ownStoreFee, type FeeSchedule, type SourceRef } from "./benchmarks";
 
-export const MARGIN_METHODOLOGY_VERSION = "2.0.0";
+export const MARGIN_METHODOLOGY_VERSION = "2.1.0";
 
 const HIGH = { returnPct: 25, netEur: 10 };
 const MODERATE = { returnPct: 10, netEur: 3 };

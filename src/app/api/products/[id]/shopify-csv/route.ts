@@ -6,12 +6,17 @@ import { canExportToShopify, getViewer } from "@/server/auth/entitlements";
 import { getProduct } from "@/server/products/service";
 
 // The supplier cost in the dossier's calculator (the sourced AliExpress price, or the seller's own quote).
-const Query = z.object({ cost: z.coerce.number().positive().max(1_000_000).optional() });
+// acknowledgeRisk: the risk the seller confirmed in the dossier's warning, for a product that fails a resale check.
+const Query = z.object({
+  cost: z.coerce.number().positive().max(1_000_000).optional(),
+  acknowledgeRisk: z.enum(["ip", "compliance"]).optional(),
+});
 
 // GET /api/products/:id/shopify-csv?cost=12.50
 // The dossier's "Download Shopify CSV": one product as a draft listing in Shopify's
-// product import format, sent as a file download. Signed-out → 401, Free → 403, a product that fails a
-// resale check (CLAUDE.md Rule 7) → 409.
+// product import format, sent as a file download. Signed-out → 401, Free → 403. A product that fails a
+// resale check (High IP Risk or Compliance Gated) exports only with acknowledgeRisk naming that risk,
+// which the dossier adds once the seller confirms its warning; otherwise 409.
 export async function GET(request: NextRequest, ctx: RouteContext<"/api/products/[id]/shopify-csv">) {
   await connection(); // request-time only, never prerendered
 
@@ -36,9 +41,12 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/products
     return Response.json({ error: "internal_error", message: "Couldn't build the Shopify file." }, { status: 500, headers });
   }
   if (!product) return Response.json({ error: "not_found", message: "No product with that id." }, { status: 404, headers });
-  if (!product.resellable) {
+  if (!product.resellable && query.data.acknowledgeRisk !== product.resaleRisk) {
     return Response.json(
-      { error: "not_resellable", message: "This product fails ProductRadar's resale checks, so there's no Shopify file for it." },
+      {
+        error: "risk_not_acknowledged",
+        message: "This product fails ProductRadar's resale checks. Confirm the warning in its dossier to export it.",
+      },
       { status: 409, headers },
     );
   }

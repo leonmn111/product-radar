@@ -32,13 +32,19 @@ export class ExportUnavailableError extends Error {
 /** The Vendor on every export (owner, 2026-10-16): never the supplier, which shoppers can see in many themes. */
 export const SHOPIFY_VENDOR = "ProductRadar Import";
 
+/**
+ * Every Shopify export's description: a neutral placeholder for the seller to replace. A brand's or a
+ * supplier's own copy and photos are their copyright, so no export carries either (and Image Src is blank).
+ */
+export const SHOPIFY_PLACEHOLDER_BODY =
+  "<p>Write your own description of this product here. Don't copy the brand's or another seller's text or photos: they're protected by copyright.</p>";
+
 /** Text from listings is untrusted: neutralise spreadsheet formulas, then quote (RFC 4180). */
 function csvCell(v: string) {
   const safe = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
   return `"${safe.replace(/"/g, '""')}"`;
 }
 
-const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 /** "UGREEN Nexode 10000mAh …" → "ugreen-nexode-10000mah-…", at most 80 characters. */
 export function shopifyHandle(title: string) {
@@ -59,8 +65,8 @@ export function shopifyHandle(title: string) {
  * The Dossier's product as a Shopify import file (header row and one product row, CRLF line ends).
  * - Variant Price: the Dossier's retail price (the median of the cited Amazon UK listings, VAT included).
  * - Vendor: "ProductRadar Import" (the seller renames it to their own brand).
- * - Image Src: the best supplier match's product image, when it lists one. Never an Amazon photo,
- *   and the body is only the title: the seller sources their own creative.
+ * - Body (HTML): a neutral placeholder; Image Src: blank. The seller writes their own copy and adds their
+ *   own photos, so the file copies no brand's or supplier's text or images.
  * - Published FALSE: it imports as a draft, so nothing goes live until the seller reviews it.
  * - Compare-at price is empty: no RRP is captured, and none is invented.
  * Throws ExportUnavailableError when the margin (and so the price) is withheld.
@@ -74,12 +80,11 @@ export function generateShopifyCSV(dossier: Dossier): string {
     );
   }
   const price = dossier.landedMargin.value.uk.retailPrice;
-  const supplier = dossier.supplierMatches[0];
   const title = dossier.product.title.trim();
   const row: Record<(typeof SHOPIFY_COLUMNS)[number], string> = {
     Handle: shopifyHandle(title),
     Title: title,
-    "Body (HTML)": `<p>${escapeHtml(title)}</p>`,
+    "Body (HTML)": SHOPIFY_PLACEHOLDER_BODY,
     Vendor: SHOPIFY_VENDOR,
     Type: "",
     Tags: "ProductRadar",
@@ -89,7 +94,7 @@ export function generateShopifyCSV(dossier: Dossier): string {
     "Option1 Value": "Default Title",
     "Variant Price": price.amount.toFixed(2),
     "Variant Compare At Price": "",
-    "Image Src": supplier?.image ?? "",
+    "Image Src": "",
   };
   const line = (cells: readonly string[]) => cells.map(csvCell).join(",");
   return `${line(SHOPIFY_COLUMNS)}\r\n${line(SHOPIFY_COLUMNS.map((c) => row[c]))}\r\n`;

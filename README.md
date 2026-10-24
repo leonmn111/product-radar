@@ -366,7 +366,8 @@ range: a category average is not a supplier cost (CLAUDE.md Rule 6).
   current price, so "lowest current price", the Value score and the margin figures all use the same prices.
 - **Arbitrage ratings:** only from those current offers, in the same currency.
   Buy at the cheapest store and resell at the median of the others, then rate the trade twice:
-  `arbitrage` after eBay's standard US fee (13.6% + $0.40 per order), and `arbitrageOwnStore` after Shopify
+  `arbitrage` after eBay UK's business seller fee (12.9% + the 0.35% regulatory fee + £0.40 per order, £0.30 up to
+  £10; margin v2.1.0), and `arbitrageOwnStore` after Shopify
   Payments card fees for your own shop (Basic plan: 2% + 25p in GBP, otherwise the US 2.9% + 30¢; advertising and
   the plan fee are not included). `HIGH_ARBITRAGE` needs a return of 25% or more and at least €10 per unit,
   `MODERATE` 10% and €3, and anything else (including a single store) is `RETAIL_ONLY`.

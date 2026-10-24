@@ -13,6 +13,7 @@
 
 import { z } from "zod";
 import type { Currency, FeeStack, LandedMargin, MarginLine, ExcludedLine, EUMarginParams, UKMarginParams } from "@/types/financials";
+import { feeLines, money2, pct1 } from "./sellingCosts";
 import {
   EU_DUTY_EVIDENCE,
   EU_FIXED_DUTY_EUR,
@@ -91,35 +92,12 @@ function parse<T>(schema: z.ZodType<T>, input: unknown): T {
 }
 
 // ── Arithmetic ───────────────────────────────────────────────────────────────
+// money2, pct1 and feeLines live in sellingCosts.ts (no validation library there), so the dossier's
+// calculator runs the very same VAT and fee arithmetic in the browser.
 
-/** Rounds to the penny / cent, half away from zero, without binary-float surprises (4.165 → 4.17). */
-const money2 = (x: number) => Math.sign(x) * Math.round((Math.abs(x) + Number.EPSILON) * 100) / 100;
-const pct1 = (x: number) => Math.round(x * 1000) / 10;
 const sum = (xs: number[]) => money2(xs.reduce((a, b) => a + b, 0));
 
 type Built = { lines: MarginLine[]; excluded: ExcludedLine[]; extraEvidence: string[] };
-
-function feeLines(stack: FeeStack, priceInc: number, priceEx: number, units: number, currency: Currency, out: Built) {
-  const add = (label: string, amount: number, b: MarginLine["basis"], evidenceIds: string[]) =>
-    out.lines.push({ kind: "platform_fee", label, amount: { amount: money2(amount), currency }, basis: b, evidenceIds });
-  const percentOf = (f: { rate: number; base: "price_ex_vat" | "price_inc_vat" }) => f.rate * (f.base === "price_ex_vat" ? priceEx : priceInc);
-
-  if (stack.channel === "tiktok_shop_uk") {
-    add(stack.referral.label, percentOf(stack.referral), stack.referral.basis, stack.referral.evidenceIds);
-    // Charged once per order: identical units shipped together share it.
-    if (stack.perOrder) add(stack.perOrder.label, stack.perOrder.amount / units, stack.perOrder.basis, stack.perOrder.evidenceIds);
-    if (stack.creatorCommission) {
-      add(stack.creatorCommission.label, percentOf(stack.creatorCommission), stack.creatorCommission.basis, stack.creatorCommission.evidenceIds);
-    }
-  } else if (stack.channel === "custom") {
-    for (const f of stack.fees) add(f.label, f.kind === "percent" ? percentOf(f) : f.amount, f.basis, f.evidenceIds);
-  } else {
-    add(stack.referral.label, Math.max(percentOf(stack.referral), stack.referral.minimumPerItem ?? 0), stack.referral.basis, stack.referral.evidenceIds);
-    add(stack.fulfilmentPerUnit.label, stack.fulfilmentPerUnit.amount, stack.fulfilmentPerUnit.basis, stack.fulfilmentPerUnit.evidenceIds);
-    if (stack.storagePerUnit) add(stack.storagePerUnit.label, stack.storagePerUnit.amount, stack.storagePerUnit.basis, stack.storagePerUnit.evidenceIds);
-    else out.excluded.push({ kind: "platform_fee", label: "Amazon FBA storage", reason: "no storage fee per unit was given" });
-  }
-}
 
 type Common = z.infer<typeof UKParams> | z.infer<typeof EUParams>;
 

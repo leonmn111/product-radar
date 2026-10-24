@@ -69,6 +69,15 @@ export function formatDateTime(iso: string) {
   return `${DATE_TIME_UTC.format(new Date(iso))} UTC`;
 }
 
+/**
+ * A rating in an evidence claim, shown to one decimal: "Average rating 4.755351681957187 / 5" reads
+ * "Average rating 4.8 / 5". Only numbers with two or more decimals followed by "/ 5", "/5" or "out of 5"
+ * (or 10) are rounded; the stored claim, and the metric value behind it, keep their precision.
+ */
+export function roundRatings(text: string) {
+  return text.replace(/(\d+\.\d{2,})(?=\s*(?:\/|out of)\s*(?:5|10)\b)/g, (n) => (Math.round(Number(n) * 10) / 10).toFixed(1));
+}
+
 export function formatMetric(m: NonNullable<Evidence["metric"]>) {
   switch (m.type) {
     case "RATING":

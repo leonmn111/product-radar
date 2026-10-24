@@ -63,13 +63,13 @@ const { GET } = await import("./route");
 const ASIN = "B0MUGAAAA1";
 const BASE = "http://localhost:3457/api/agent/v2/dossier";
 const NOW = new Date();
-const listing = (id: string): RetailListing => ({
+const listing = (id: string, price = 12.99): RetailListing => ({
   market: "GB",
   id,
   title: "Plain White Ceramic Coffee Mug 350ml",
   url: `https://www.amazon.co.uk/dp/${id}`,
   image: null,
-  price: { amount: 12.99, currency: "GBP" },
+  price: { amount: price, currency: "GBP" },
   rating: null,
   ratingsTotal: null,
   sponsored: false,
@@ -86,8 +86,9 @@ const offer = (n: number): SupplierOffer => ({
   shipsTo: "GB",
   evidence: { id: `aliexpress:${n}`, provider: "aliexpress", sourceUrl: `https://www.aliexpress.com/item/${n}.html`, observedAt: NOW.toISOString(), quality: 80, claim: "offered" },
 });
-const dossier = (id: string, listings: string[], offers: number[]): Dossier =>
-  buildDossier({ query: ASIN, productId: listings[0], ukListings: listings.map(listing), suppliers: offers.map(offer) }, { id, now: NOW });
+// Each copy is priced differently, so a test can tell which copy's file it was sent.
+const dossier = (id: string, listings: string[], offers: number[], price = 12.99): Dossier =>
+  buildDossier({ query: ASIN, productId: listings[0], ukListings: listings.map((l) => listing(l, price)), suppliers: offers.map(offer) }, { id, now: NOW });
 const keep = (d: Dossier) => mem.records.push({ id: d.id, productKey: `amazon.co.uk:${d.product.identifiers.asin}`, body: d });
 
 const buyer = privateKeyToAccount("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d");
@@ -105,7 +106,7 @@ async function signIn(signer = buyer, asin = ASIN) {
 describe("GET /api/agent/v2/dossier/{asin}/export/csv", () => {
   beforeEach(() => vi.mocked(getViewer).mockResolvedValue(null));
   keep(dossier("dossier-wallet", [ASIN, "B0MUGAAAA2", "B0MUGAAAA3", "B0MUGAAAA4"], [1, 2]));
-  keep(dossier("dossier-credits", [ASIN, "B0MUGAAAA2", "B0MUGAAAA3", "B0MUGAAAA4"], [2]));
+  keep(dossier("dossier-credits", [ASIN, "B0MUGAAAA2", "B0MUGAAAA3", "B0MUGAAAA4"], [2], 13.49));
   keep(dossier("dossier-thin", ["B0THINAAA1"], []));
   mem.payments.push({ payer: buyer.address, resourcePath: `/api/agent/v2/dossier/${ASIN}`, status: "SETTLED", reference: "dossier-wallet" });
   mem.ledger.push(
@@ -127,14 +128,14 @@ describe("GET /api/agent/v2/dossier/{asin}/export/csv", () => {
       '"Handle","Title","Body (HTML)","Vendor","Type","Tags","Published","Option1 Name","Option1 Value","Variant Price","Variant Compare At Price","Image Src"',
     );
     expect(csv).toContain('"ProductRadar Import"');
-    expect(csv).toContain('"https://ae01.alicdn.com/kf/mug2.jpg"'); // their copy: its best supplier is offer 2
+    expect(csv).toContain('"13.49"'); // their copy, priced at 13.49
   });
 
   it("sends it to the wallet that bought it over x402, once per signed sign-in", async () => {
     const proof = await signIn();
     const res = await call(ASIN, { [HEADER_SIWX]: proof });
     expect(res.status).toBe(200);
-    expect(await res.text()).toContain('"https://ae01.alicdn.com/kf/mug1.jpg"'); // the wallet's own copy
+    expect(await res.text()).toContain('"12.99"'); // the wallet's own copy, priced at 12.99
     const replay = await call(ASIN, { [HEADER_SIWX]: proof });
     expect([replay.status, (await replay.json()).error]).toEqual([402, "invalid_siwx_nonce"]);
   });
