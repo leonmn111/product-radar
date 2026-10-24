@@ -3,7 +3,8 @@
 // The landing page's live showcase: one or two real products as a bento grid, each a
 // clickable card beside what its price gap is worth on both resale routes. Every number
 // comes straight from the margin engine's output for captured store prices (Rule 3),
-// and every price links to the store page it was read from.
+// and every price links to the store page it was read from. A product that fails a resale
+// check shows its risk (High IP Risk, or Compliance Gated) instead, with no price gap at all.
 
 import Link from "next/link";
 import type { ArbitrageScenario, MarginInsight, OfferRef } from "@/server/margins/engine";
@@ -11,6 +12,7 @@ import type { ProductDto } from "@/server/products/service";
 import { dossierHref, formatDateTime, formatPrice } from "../dashboard/format";
 import { ArbitrageBadge } from "../dashboard/margin";
 import { ProductCard } from "../dashboard/product-card";
+import { RISK_BADGE, RISK_SHORT_NOTE, type ResaleRisk } from "../dashboard/resellability";
 
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 const link = "font-medium text-accent-mint underline decoration-accent-mint/40 underline-offset-2 hover:decoration-accent-mint " + focusRing;
@@ -205,25 +207,51 @@ function Difference({ ebay, own }: { ebay: ArbitrageScenario; own: ArbitrageScen
 
 const shortName = (p: ShowcaseProduct) => p.name.replace(/\s*\(.*?\)\s*/g, " ").trim();
 
+/** In place of the price gap, for a product that fails a resale check. */
+function RiskTile({ risk, brand }: { risk: NonNullable<ResaleRisk>; brand: string | null }) {
+  return (
+    <>
+      <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-rose-400 px-3 py-1 font-mono text-xs font-bold tracking-wider text-background-dark uppercase">
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
+          <path d="M10 2.5 3.5 5v4.5c0 4 2.8 7.1 6.5 8 3.7-.9 6.5-4 6.5-8V5L10 2.5ZM10 7v3.5m0 2.5v.5" />
+        </svg>
+        {RISK_BADGE[risk]}
+      </span>
+      <p className="text-xl font-semibold tracking-tight text-balance text-white sm:text-2xl">{RISK_SHORT_NOTE[risk]}</p>
+      <p className="text-sm text-slate-300">
+        {risk === "ip" && brand ? `It's sold under the brand "${brand}". ` : ""}
+        ProductRadar flags it before any money maths, so it shows no price gap and no margin.
+      </p>
+    </>
+  );
+}
+
 /**
  * One product's tiles: the product card (tall), the price gap with the headline result,
  * and one tile per resale route. Every other product mirrors, card on the right, so
  * two products read as one bento grid rather than two identical rows.
  */
 function ProductBento({ product: p, flip }: { product: ShowcaseProduct; flip: boolean }) {
-  const m = p.margin;
+  const risk = p.resaleRisk;
+  const m = risk ? null : p.margin;
   const shared = m !== null && sameTrade(m.arbitrage, m.arbitrageOwnStore);
   return (
     <article aria-label={shortName(p)} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <ul className={`sm:row-span-3 lg:row-span-2 ${flip ? "sm:col-start-2 sm:row-start-1 lg:col-start-3" : ""}`}>
         <ProductCard product={{ ...p, margin: null }} href={dossierHref(p)} frame="bento" marginSummary={false} />
       </ul>
-      <div className={`${tile} flex flex-col gap-4 p-5 sm:p-6 lg:col-span-2 ${flip ? "sm:col-start-1 sm:row-start-1" : ""}`}>
+      <div
+        // A risk tile is as tall as the card beside it (there are no route tiles under it). The lg: row start
+        // is repeated because lg:row-span-2 would otherwise reset the sm: one.
+        className={`${tile} flex flex-col gap-4 p-5 sm:p-6 lg:col-span-2 ${risk ? "sm:row-span-3 lg:row-span-2" : ""} ${flip ? `sm:col-start-1 sm:row-start-1 ${risk ? "lg:row-start-1" : ""}` : ""}`}
+      >
         <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-accent-mint uppercase">
           <span aria-hidden="true" className="size-1.5 rounded-full bg-accent-mint" />
-          Live price gap
+          {risk ? "Resale check" : "Live price gap"}
         </p>
-        {m ? (
+        {risk ? (
+          <RiskTile risk={risk} brand={p.brand} />
+        ) : m ? (
           <>
             <Difference ebay={m.arbitrage} own={m.arbitrageOwnStore} />
             {shared && isTrade(m.arbitrage) && (
@@ -268,8 +296,9 @@ export function Showcase({ products }: { products: ShowcaseProduct[] }) {
         <ProductBento key={p.id} product={p} flip={i % 2 === 1} />
       ))}
       <p className="pt-2 text-xs text-slate-400">
-        Rule-based estimates from captured store prices, not guarantees. Shipping, VAT and returns aren&apos;t included,
-        and a new shop usually needs advertising too.
+        {products.some((p) => !p.resaleRisk)
+          ? "Rule-based estimates from captured store prices, not guarantees. Shipping, VAT and returns aren't included, and a new shop usually needs advertising too."
+          : "Resale checks are rule-based, from each product's own listing text: a risk screen, not legal advice."}
       </p>
     </div>
   );

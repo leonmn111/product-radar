@@ -6,6 +6,8 @@ export type FreeVerdict = {
   verdict: { status: "shown"; kind: "LAUNCH" | "TEST" | "AVOID"; confidence: number } | { status: "withheld"; reason: string; confidence: number; missing: string[] };
   evidenceCount: number;
   supplierMatches: number;
+  /** A failed resale check: "ip" shows as High IP Risk, "compliance" as Compliance Gated. */
+  risk: "ip" | "compliance" | null;
   fromCache: boolean;
   fullDossier: string; // where to sign up and open the full Dossier
 };

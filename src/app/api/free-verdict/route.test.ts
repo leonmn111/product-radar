@@ -26,12 +26,21 @@ let ip = 0;
 const call = (link: unknown, from = `203.0.113.${++ip}`) =>
   POST(new NextRequest("http://localhost/api/free-verdict", { method: "POST", body: JSON.stringify({ link }), headers: { "x-forwarded-for": from } }));
 
+const flag = (value: boolean, reason: string) => ({ value, reason, evidenceIds: [] });
+const flags = (brand?: string) => ({
+  brandDirect: flag(false, "the listing names no brand"),
+  trademarkRisk: brand ? flag(true, `the product is sold under the brand "${brand}"`) : flag(false, "no brand in the listing text"),
+  requiresUKCA: flag(false, "no electrical or toy terms"),
+  cosmetics: flag(false, "no cosmetics terms"),
+  batteries: flag(false, "no battery terms"),
+});
 const dossier = (verdict: Dossier["verdict"]): Dossier =>
   ({
     product: { title: "Plain White Ceramic Coffee Mug 350ml", query: "B0TESTMUG1", market: "UK", country: "GB", currency: "GBP", identifiers: { asin: "B0TESTMUG1" } },
     verdict,
     evidence: [{ id: "a" }, { id: "b" }, { id: "c" }],
     supplierMatches: [{ title: "Mug" }],
+    resellability: flags(),
     landedMargin: { status: "shown", confidence: 0.8, value: { uk: { netProfit: { amount: 5.63, currency: "GBP" } } }, evidenceIds: [] },
   }) as unknown as Dossier;
 const shown = dossier({ status: "shown", confidence: 0.82, value: { kind: "TEST", reasons: ["£5.63 net per unit (21% of the price)"] }, evidenceIds: [] });
@@ -45,6 +54,12 @@ beforeEach(() => {
 });
 
 describe("POST /api/free-verdict", () => {
+  it("names the risk when a branded product fails the resale checks: High IP Risk", async () => {
+    const branded = { ...shown, resellability: flags("Anker") } as Dossier;
+    vi.mocked(getProductDossier).mockResolvedValue({ dossier: branded, cache: "miss" });
+    expect((await (await call(LINK)).json()).risk).toBe("ip");
+  });
+
   it("refuses what it can't read before anything is spent", async () => {
     for (const link of ["", "https://www.aliexpress.com/item/1005010414755062.html", "https://amzn.eu/d/abc", 42]) {
       const res = await call(link);
@@ -65,6 +80,7 @@ describe("POST /api/free-verdict", () => {
       verdict: { status: "shown", kind: "TEST", confidence: 0.82 },
       evidenceCount: 3,
       supplierMatches: 1,
+      risk: null,
       fromCache: false,
       fullDossier: "/signin?tab=register&callbackUrl=%2Fterminal%3Fasin%3DB0TESTMUG1",
     });

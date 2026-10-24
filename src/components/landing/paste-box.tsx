@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useId, useRef, useState, type FormEvent } from "react";
 import { parseAmazonUkLink } from "@/server/live/amazonLink";
 import type { FreeVerdict } from "@/types/freeVerdict";
+import { RISK_BADGE, RISK_SHORT_NOTE } from "../dashboard/resellability";
 
 type State =
   | { kind: "idle" }
@@ -35,7 +36,10 @@ function Result({ result: r }: { result: FreeVerdict }) {
       <p className="mt-2 line-clamp-2 font-semibold text-white">{r.title}</p>
       {v.status === "shown" ? (
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <span className={`rounded-full px-3 py-1 font-mono text-xs font-bold tracking-wider ${PILL[v.kind].tone}`}>{PILL[v.kind].label}</span>
+          <span className={`rounded-full px-3 py-1 font-mono text-xs font-bold tracking-wider ${PILL[v.kind].tone}`}>
+            {PILL[v.kind].label}
+            {r.risk && ` · ${RISK_BADGE[r.risk]}`}
+          </span>
           <span className="text-sm text-slate-300">
             Confidence <span className="font-semibold text-white tabular-nums">{v.confidence.toFixed(2)}</span>
           </span>
@@ -52,6 +56,7 @@ function Result({ result: r }: { result: FreeVerdict }) {
           </ul>
         </div>
       )}
+      {r.risk && <p className="mt-3 text-sm font-semibold text-white">{RISK_SHORT_NOTE[r.risk]}</p>}
       <p className="mt-3 text-xs text-slate-400">
         Built from {r.evidenceCount} cited source{r.evidenceCount === 1 ? "" : "s"} and {r.supplierMatches} supplier match{r.supplierMatches === 1 ? "" : "es"}. The full Dossier shows the landed margin, every
         cost line and the suppliers, and your first one is free with a new account.

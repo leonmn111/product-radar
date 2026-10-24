@@ -47,6 +47,7 @@ function product(scores: Record<string, ReturnType<typeof score>>, evidence = [m
     rrp: null,
     bestOffer: null,
     resellable: false,
+    resaleRisk: "ip",
     margin: null,
     scores,
     offers: [],

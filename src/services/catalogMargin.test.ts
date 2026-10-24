@@ -108,7 +108,7 @@ describe("catalog landed margin: the gates", () => {
 
   it("withholds when no supplier listing matches the product", () => {
     const r = buildCatalogMargin(unbranded(fourStores()), { status: "found", offers: [matching[3]] }, now);
-    expect(r.margin.status === "withheld" && r.margin.missing[0]).toMatch(/AliExpress returned 1, none close enough/);
+    expect(r.margin.status === "withheld" && r.margin.missing[0]).toMatch(/^No exact supplier match found: none of the 1 AliExpress listings carries at least 80%/);
   });
 
   it("withholds below the 0.7 numbers gate and names the evidence it needs", () => {

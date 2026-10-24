@@ -43,3 +43,25 @@ export function titleSimilarity(a: string, b: string): number {
 export function searchTermFor(title: string, maxWords = 8): string {
   return [...tokens(title)].slice(0, maxWords).join(" ");
 }
+
+/** A supplier listing counts as the product only when its title carries at least this share of the product's key words. */
+export const SUPPLIER_MATCH_MIN = 0.8;
+
+// "utensils" and "utensil", "pieces" and "piece" are the same word here.
+const singular = (t: string) => (t.length > 3 && t.endsWith("s") && !t.endsWith("ss") ? t.slice(0, -1) : t);
+
+/**
+ * How exactly a supplier listing matches the product, from 0 to 1: the share of the product's key
+ * words (the words its supplier search uses, see searchTermFor) found in the supplier's title. It is
+ * one-way on purpose: a short or generic supplier title ("Silicone Tongs") can't match a specific
+ * product just by being made of some of its words. A size or spec both titles state must agree, else 0.
+ */
+export function supplierMatchScore(productTitle: string, supplierTitle: string): number {
+  const key = [...new Set(searchTermFor(productTitle).split(" ").filter(Boolean).map(singular))];
+  const offer = new Set([...tokens(supplierTitle)].map(singular));
+  if (key.length === 0 || offer.size === 0) return 0;
+  const keySpecs = key.filter(hasDigit);
+  const offerSpecs = [...offer].filter(hasDigit);
+  if (keySpecs.length && offerSpecs.length && !keySpecs.some((s) => offer.has(s))) return 0;
+  return key.filter((t) => offer.has(t)).length / key.length;
+}

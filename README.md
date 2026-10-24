@@ -16,7 +16,6 @@ npm install                 # also generates the Prisma client
 cp .env.example .env        # already done locally; edit if your DB differs
 npm run db:start            # terminal 1: local Postgres (leave running)
 npm run db:migrate          # terminal 2: apply migrations
-npm run db:seed             # optional: 5 sample products with scores
 npm run dev                 # http://localhost:3000
 ```
 
@@ -32,7 +31,6 @@ Check it works: open http://localhost:3000/api/health
 | `npm run db:status` | Show which migrations are applied. |
 | `npm run db:studio` | Browse the database in a web UI. |
 | `npm run db:verify` | Tries to break every data rule against the real database and reports pass/fail. Cleans up after itself. |
-| `npm run db:seed` | Replace sample products (fictional brands, example.com sources) and calculate their scores. Refuses to run in production. |
 | `npm run db:rescore` | Recalculate scores for every category (e.g. after a formula change). History is kept. |
 | `npm run products:import -- <list.json>` | Import real products from a list of store pages, each with optional extra sources (other stores, expert reviews). See "Bulk import" below. |
 | `npm run fx:update` | Refresh the ECB euro reference rates in `src/server/scoring/fx-rates.json` (used only to compare prices across currencies). Commit, deploy, then rescore. |
@@ -464,7 +462,7 @@ src/app/signin/             sign-in pages
 src/app/upgrade, billing/   upgrade, manage-billing and success routes
 src/app/account/            account page: profile, plan & billing, password
 src/app/api/ingest/         ingestion endpoint
-prisma/seed.ts              sample data
+scripts/delete-sample-products.mjs  removes the old demo products (fictional "(sample)" brands, example.com sources)
 src/app/api/health/route.ts health check
 scripts/db-start.mjs        local Postgres runner
 scripts/verify-schema.ts    data-rule checks (npm run db:verify)

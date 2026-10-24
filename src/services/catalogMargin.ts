@@ -3,9 +3,9 @@
 //
 //   1. Resellability first (engine/compliance.ts): a product that can't be resold gets no margin.
 //   2. Retail price: the median of the stores' current UK (GBP) prices, each citing its capture.
-//   3. Supplier cost: the median of the live AliExpress offers whose titles match the product. One
-//      budgeted, timed-out call, cached for a day per search term. A failed search is never cached and
-//      never read as "no supplier": the margin is withheld and says so.
+//   3. Supplier cost: the median of the live AliExpress offers that match the product exactly (80% of
+//      its key words, live/match.ts). One budgeted, timed-out call, cached for a day per search term.
+//      A failed search is never cached and never read as "no supplier": the margin is withheld and says so.
 //   4. The 0.7 confidence gate over all of that evidence (engine/confidence.ts).
 //   5. calculateUKMargin: UK VAT, the £135 low-value import rule and the TikTok Shop UK fee stack, each
 //      line citing its source. Whatever can't be sourced (shipping, returns, ad cost) is named, not guessed.
@@ -20,7 +20,7 @@ import { calculateUKMargin } from "@/engine/margin";
 import { POLICY_EVIDENCE } from "@/engine/policy";
 import { QueryBudget } from "@/server/live/budget";
 import { median } from "@/server/live/margin";
-import { searchTermFor, titleSimilarity } from "@/server/live/match";
+import { searchTermFor, SUPPLIER_MATCH_MIN, supplierMatchScore } from "@/server/live/match";
 import type { SupplierOffer } from "@/server/live/types";
 import type { ProductDto } from "@/server/products/service";
 import { currentOffers } from "@/server/scoring/engine";
@@ -28,7 +28,6 @@ import type { SupplierSource } from "@/server/sources/types";
 import type { Evidence, EvidenceSourceType, Gated, ResellabilityFlags } from "@/types/dossier";
 import type { CostInput, LandedMargin } from "@/types/financials";
 
-const SUPPLIER_MATCH_MIN = 0.5; // the v2 Dossier's bar: a supplier title must match at least this well
 const CORROBORATED = 4; // UK store prices that clear the numbers gate on their own (engine/confidence.ts)
 export const SUPPLIER_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -122,9 +121,12 @@ export function catalogResellability(product: ResaleText): ResellabilityFlags {
   });
 }
 
-/** What the supplier source is searched for: the product's title words, without store tags. */
+/** The product's title without store tags: what suppliers are searched for and matched against. */
+const supplierTitle = (product: CatalogProduct) => cleanTitle(product.name, product.offers[0]?.merchant ?? null);
+
+/** What the supplier source is searched for: the product's key words. */
 export function supplierSearchTerm(product: CatalogProduct): string {
-  return searchTermFor(cleanTitle(product.name, product.offers[0]?.merchant ?? null));
+  return searchTermFor(supplierTitle(product));
 }
 
 /** Only a sellable product with a current UK price is worth a supplier call. */
@@ -180,10 +182,11 @@ export function buildCatalogMargin(product: CatalogProduct, supplier: SupplierRe
       withheld("Insufficient Data", retailConfidence, ["live AliExpress supplier prices: the supplier search failed just now, so nothing is estimated. Reload the page to try again."]),
     );
   }
-  const title = cleanTitle(product.name, uk[0].merchant);
+  // Exact matches only: the supplier's title must carry 80% of the product's key words (live/match.ts).
+  const title = supplierTitle(product);
   const matched = supplier.offers
     .filter((o) => o.unitPrice.currency === "GBP")
-    .map((offer) => ({ offer, score: Math.round(titleSimilarity(title, offer.title) * 1000) / 1000 }))
+    .map((offer) => ({ offer, score: Math.round(supplierMatchScore(title, offer.title) * 1000) / 1000 }))
     .filter((m) => m.score >= SUPPLIER_MATCH_MIN)
     .sort((a, b) => b.score - a.score || a.offer.unitPrice.amount - b.offer.unitPrice.amount);
 
@@ -191,7 +194,9 @@ export function buildCatalogMargin(product: CatalogProduct, supplier: SupplierRe
   const confidence = calculateConfidence([...retail, ...matched.map((m) => supplierEvidence(m.offer, m.score))], now);
   if (matched.length === 0) {
     return result(
-      withheld("Insufficient Data", confidence, [`a supplier listing that matches this product (AliExpress returned ${supplier.offers.length}, none close enough)`]),
+      withheld("Insufficient Data", confidence, [
+        `No exact supplier match found: none of the ${supplier.offers.length} AliExpress listings carries at least 80% of this product's key words, so no margin is calculated.`,
+      ]),
     );
   }
   if (confidence < FINANCIAL_THRESHOLD) {

@@ -8,7 +8,7 @@ import type { CatalogMargin } from "@/services/catalogMargin";
 import type { ComplianceFlag } from "@/types/dossier";
 import type { LandedMargin, LineBasis, Money } from "@/types/financials";
 import { formatDateTime, formatPrice } from "./format";
-import { RESELLABILITY_LABEL, RESELLABILITY_ORDER } from "./resellability";
+import { RESELLABILITY_LABEL, RESELLABILITY_ORDER, resaleRisk, RISK_BADGE } from "./resellability";
 
 const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 dark:border-line-dark dark:bg-surface-dark";
 const muted = "text-slate-600 dark:text-slate-400";
@@ -186,11 +186,12 @@ function Sources({ landed }: { landed: CatalogMargin }) {
 export function LandedMarginCard({ productId, landed }: { productId: string; landed: CatalogMargin }) {
   const headingId = `landed-${productId}`;
   const g = landed.margin;
+  const risk = resaleRisk(landed.resellability);
   const status =
     g.status === "shown" ? (
       <Chip tone="ok">Shown · confidence {conf(g.confidence)}</Chip>
     ) : g.reason === "Not Sellable" ? (
-      <Chip tone="bad">Not sellable</Chip>
+      <Chip tone="bad">{RISK_BADGE[risk ?? "ip"]}</Chip>
     ) : (
       <Chip tone="warn">Withheld</Chip>
     );
@@ -216,15 +217,15 @@ export function LandedMarginCard({ productId, landed }: { productId: string; lan
           <div className="mt-4 rounded-lg border border-gray-200 p-3 dark:border-line-dark">
             <p className="text-sm font-semibold text-slate-900 dark:text-white">
               {g.reason === "Not Sellable"
-                ? "Not sellable, so no margin is calculated"
+                ? `${RISK_BADGE[risk ?? "ip"]}, so no margin is calculated`
                 : g.confidence > 0 && g.confidence < FINANCIAL_THRESHOLD
                   ? `Withheld: the evidence's confidence is ${conf(g.confidence)}, below the ${conf(FINANCIAL_THRESHOLD)} numbers need`
                   : "Withheld: not enough evidence yet"}
             </p>
             {g.reason === "Not Sellable" ? (
               <p className={`mt-1 text-sm ${muted}`}>
-                It fails {g.missing.length === 1 ? "a resale check" : `${g.missing.length} resale checks`} below. A product you can&apos;t resell gets
-                no money maths at all.
+                It fails {g.missing.length === 1 ? "a resale check" : `${g.missing.length} resale checks`} below, so no supplier cost is
+                sourced and no money maths is shown.
               </p>
             ) : (
               <>

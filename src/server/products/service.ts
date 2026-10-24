@@ -1,6 +1,7 @@
 // Read model for products: latest score per dimension, offers, and the
 // evidence behind them. Returns plain JSON-safe objects (no Prisma Decimals).
 
+import { resaleRisk } from "@/components/dashboard/resellability";
 import { isSellable } from "@/engine/compliance";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { marginInsight } from "@/server/margins/engine";
@@ -154,7 +155,7 @@ export type CatalogStats = {
   stores: number; // distinct merchants with a captured price
   prices: number; // captured offers
   evidence: number;
-  priceGaps: number; // products two or more stores sell right now, in one currency, at different prices
+  priceGaps: number; // resellable products two or more stores sell right now, in one currency, at different prices
   lastObservedAt: string | null; // newest evidence capture
 };
 
@@ -190,7 +191,7 @@ export async function showcaseSnapshot(db: PrismaClient, asOf = new Date()): Pro
       stores: new Set(merchants.map((m) => m.merchant.toLowerCase())).size,
       prices,
       evidence,
-      priceGaps: candidates.filter(hasPriceGap).length,
+      priceGaps: candidates.filter((p) => p.resellable && hasPriceGap(p)).length,
       lastObservedAt: newest._max.observedAt?.toISOString() ?? null,
     },
   };
@@ -253,6 +254,8 @@ function toDto(p: ProductRow, asOf: Date, sources: SourceSummary = { sourceCount
   const best = bestCurrentOffer(offerFacts, asOf, LATEST_FX);
   const bestOffer = best ? offers.find((o) => o.sourceEvidenceId === best.sourceEvidenceId) ?? null : null;
 
+  const resale = catalogResellability({ name: p.name, brand: p.brand, category: p.category, description: p.description, offers });
+
   return {
     id: p.id,
     slug: p.slug,
@@ -271,7 +274,8 @@ function toDto(p: ProductRow, asOf: Date, sources: SourceSummary = { sourceCount
     ),
     // The resale checks (engine/compliance.ts) on the product's own text: a product that fails one gets no
     // money figures anywhere in the dossier (CLAUDE.md Rule 7).
-    resellable: isSellable(catalogResellability({ name: p.name, brand: p.brand, category: p.category, description: p.description, offers })),
+    resellable: isSellable(resale),
+    resaleRisk: resaleRisk(resale), // "ip" (High IP Risk), "compliance" (regulated goods) or null
     // Rule-based estimate from captured store prices only: the retail price and two resale price gaps
     // (src/server/margins). The UK landed margin is src/services/catalogMargin.ts.
     margin: marginInsight({ offers: offerFacts, asOf, fx: LATEST_FX }),

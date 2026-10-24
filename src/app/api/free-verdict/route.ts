@@ -3,6 +3,7 @@ import { connection, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { clientAddress } from "@/server/auth/password";
+import { resaleRisk } from "@/components/dashboard/resellability";
 import { parseAmazonUkLink } from "@/server/live/amazonLink";
 import { liveSources } from "@/server/live/config";
 import { isSourceFailure, reportSourceFailure } from "@/server/live/unavailable";
@@ -36,6 +37,7 @@ function teaser(d: Dossier, asin: string, fromCache: boolean): FreeVerdict {
         : { status: "withheld", reason: v.reason, confidence: v.confidence, missing: v.missing },
     evidenceCount: d.evidence.length,
     supplierMatches: d.supplierMatches.length,
+    risk: resaleRisk(d.resellability),
     fromCache,
     fullDossier: signUpFor(asin),
   };

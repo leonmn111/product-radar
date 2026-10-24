@@ -12,12 +12,11 @@ import { SourceError, type RetailSource, type SupplierSource } from "@/server/so
 import { BudgetExceededError, QueryBudget, type BudgetLimits } from "./budget";
 import { CONFIDENCE_GATE, confidenceOf } from "./confidence";
 import { liveMargin, type LiveMargin } from "./margin";
-import { searchTermFor, titleSimilarity } from "./match";
+import { searchTermFor, SUPPLIER_MATCH_MIN, supplierMatchScore, titleSimilarity } from "./match";
 import { MARKETS, type Evidence, type Market, type RetailListing, type SupplierOffer } from "./types";
 
 export const DEFAULT_LIMITS: BudgetLimits = { maxCalls: 8, deadlineMs: 45_000 };
 const SAME_PRODUCT = 0.6; // retail titles this similar are one product
-const SUPPLIER_MATCH = 0.5; // a supplier title must match the product at least this well
 const GROUPS_PER_MARKET = 3; // supplier lookups per market, strongest groups first
 
 export type LiveOpportunity = {
@@ -109,8 +108,8 @@ export async function runLiveSearch(query: string, markets: Market[], deps: Live
         sourceErrors.push(describeFailure(e));
       }
       const suppliers = offers
-        .map((offer) => ({ offer, match: round3(titleSimilarity(title, offer.title)) }))
-        .filter((s) => s.match >= SUPPLIER_MATCH)
+        .map((offer) => ({ offer, match: round3(supplierMatchScore(title, offer.title)) }))
+        .filter((s) => s.match >= SUPPLIER_MATCH_MIN)
         .sort((a, b) => b.match - a.match);
 
       const retailC = confidenceOf(group.map((l) => ({ evidence: l.evidence })), asOf);
@@ -122,7 +121,7 @@ export async function runLiveSearch(query: string, markets: Market[], deps: Live
       if (retailC < CONFIDENCE_GATE) {
         missing.push(`more independent ${MARKETS[market].label} listings of this product (${group.length} found agree on it)`);
       }
-      if (suppliers.length === 0) missing.push("a supplier offer that matches this product");
+      if (suppliers.length === 0) missing.push("an exact supplier match (no exact supplier match found: no supplier listing carries 80% of the product's key words)");
       else if (supplierC < CONFIDENCE_GATE) missing.push(`more or closer supplier matches (${suppliers.length} found)`);
       if (!margin && suppliers.length > 0) missing.push("prices in currencies the ECB publishes, to compare them");
 

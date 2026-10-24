@@ -5,7 +5,7 @@ import { SourceError } from "@/server/sources/types";
 import { BudgetExceededError, QueryBudget } from "./budget";
 import { CONFIDENCE_GATE, confidenceOf } from "./confidence";
 import { liveMargin } from "./margin";
-import { searchTermFor, titleSimilarity } from "./match";
+import { searchTermFor, SUPPLIER_MATCH_MIN, supplierMatchScore, titleSimilarity } from "./match";
 import { groupSameProduct, runLiveSearch } from "./search";
 import type { Market, RetailListing, SupplierOffer } from "./types";
 
@@ -53,6 +53,32 @@ describe("title matching", () => {
 
   it("builds a supplier search term from the title's words", () => {
     expect(searchTermFor("The NEW Magnetic Power Bank, 10000 mAh (Pack of 1)")).toBe("magnetic power bank 10000mah");
+  });
+});
+
+describe("supplier matching (strict: 80% of the product's key words)", () => {
+  const set = "Silicone Kitchen Utensil Set 12 Piece";
+  const exact = (t: string) => supplierMatchScore(set, t) >= SUPPLIER_MATCH_MIN;
+
+  it("matches a supplier title that carries the product's key words, plurals included", () => {
+    expect(SUPPLIER_MATCH_MIN).toBe(0.8);
+    expect(supplierMatchScore(set, "12-Pc Silicone Kitchen Utensil Set - Non-Stick Spatula, Soup Spoon")).toBe(1);
+    expect(exact("Kitchen Utensils Silicone 12 Pieces Heat Resistant")).toBe(true);
+  });
+
+  it("rejects related but different products instead of inventing a margin from them", () => {
+    expect(exact("Silicone Food Toast Tongs Trivet Tongs for Kitchen Tongs Non-slip Cooking Clip")).toBe(false); // 2 of 4
+    expect(exact("Silicone Kitchen Utensils, Turner Tongs, Spatula, Spoon, Brush")).toBe(false); // no "12": 3 of 4
+    expect(exact("Magnetic Power Bank 10000mAh 20W Wireless")).toBe(false);
+  });
+
+  it("is one-way: a short, generic supplier title can't match a specific product", () => {
+    expect(titleSimilarity(set, "Silicone Kitchen Utensil")).toBe(1); // the shorter title's words all appear in the longer
+    expect(supplierMatchScore(set, "Silicone Kitchen Utensil")).toBe(0.75);
+  });
+
+  it("scores 0 when a size or spec both titles state disagrees", () => {
+    expect(supplierMatchScore("Magnetic Power Bank 10000mAh 20W", "Magnetic Power Bank 5000mAh 10W")).toBe(0);
   });
 });
 
@@ -120,7 +146,8 @@ describe("runLiveSearch", () => {
 
   it("shows a product only when retail and supplier evidence both clear the gate, with citations", async () => {
     const strong = [21.99, 19.99, 22.49, 20.99].map((p, i) => listing(`${product} ${["Portable", "Charger", "PD", "Slim"][i]}`, p));
-    const suppliers = [5, 5.5, 4.8, 5.2].map((u) => offer(`${product} Power Bank`, u, 2));
+    // Supplier titles are keyword-stuffed: each carries every key word of the product's listings.
+    const suppliers = [5, 5.5, 4.8, 5.2].map((u) => offer(`${product} Portable Charger PD Slim Power Bank`, u, 2));
     const r = await runLiveSearch("power bank", ["GB"], { retail: retail({ GB: strong }), supplier: supplier(suppliers), fx, now: () => asOf });
     expect(r.results).toHaveLength(1);
     const [top] = r.results;
@@ -159,7 +186,7 @@ describe("runLiveSearch", () => {
     const r = await runLiveSearch("power bank", ["US", "GB"], { retail: failing, supplier: supplier([]), fx, now: () => asOf });
     expect(r.sourceErrors).toEqual(["rainforest: timed out"]);
     expect(r.withheld.map((w) => w.market)).toEqual(["GB"]);
-    expect(r.withheld[0].missing).toContain("a supplier offer that matches this product");
+    expect(r.withheld[0].missing.join(" ")).toMatch(/no exact supplier match found/);
   });
 
   it("groups listings of the same product, most corroborated first", () => {

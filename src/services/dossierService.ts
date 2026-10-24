@@ -25,7 +25,7 @@ import { POLICY_EVIDENCE } from "@/engine/policy";
 import { expandQuery } from "@/engine/synonyms";
 import { QueryBudget } from "@/server/live/budget";
 import { median } from "@/server/live/margin";
-import { searchTermFor, titleSimilarity } from "@/server/live/match";
+import { searchTermFor, SUPPLIER_MATCH_MIN, supplierMatchScore } from "@/server/live/match";
 import { groupSameProduct } from "@/server/live/search";
 import type { ProductHistory, RetailListing, RetailProductDetail, SupplierOffer } from "@/server/live/types";
 import type { AdDurationSource } from "@/server/sources/metaAds";
@@ -34,7 +34,6 @@ import type { DossierCacheStore } from "@/services/dossierCache";
 import type { Dossier, Evidence, Gated, LandedMargins, Momentum, ResellabilityFlags, Saturation, SupplierMatch, SupplierMatches, Verdict } from "@/types/dossier";
 import type { CostInput, FeeStack, ReturnsInput } from "@/types/financials";
 
-const SUPPLIER_MATCH_MIN = 0.5; // a supplier title must match the product at least this well
 const LAUNCH_MIN_MARGIN_PCT = 25; // net margin, % of the retail price
 const LAUNCH_MIN_ROI_PCT = 50; // net profit ÷ landed cost
 const CORROBORATED = 4; // listings of one product that clear the numbers gate on their own (engine/confidence.ts)
@@ -197,7 +196,7 @@ function decideVerdict(args: {
 }): Verdict {
   const blocked = tripped(args.flags);
   if (blocked.length) return { kind: "AVOID", reasons: blocked.map(([name, f]) => `${name}: ${f.reason}`) };
-  if (args.supplierCount === 0) return { kind: "AVOID", reasons: ["No supplier listing matches this product, so it can't be sourced."] };
+  if (args.supplierCount === 0) return { kind: "AVOID", reasons: ["No exact supplier match found: no AliExpress listing carries at least 80% of this product's key words, so it can't be sourced from there."] };
   const uk = args.margins?.uk;
   if (!uk) {
     return { kind: "TEST", reasons: ["Sellable and matched to a supplier, but the evidence is too thin to show the numbers yet."] };
@@ -234,17 +233,18 @@ export function buildDossier(input: DossierInput, ctx: { id: string; now: Date; 
   const imageScore = (offer: SupplierOffer) =>
     imageMatcher && lead.image && offer.image ? Math.round(imageMatcher.compare(lead.image, offer.image) * 1000) / 1000 : null;
 
-  // Suppliers that match the product, best first, in one currency (nothing is converted here). Title
-  // and image similarity are independent signals, so they combine as 1 − (1 − title)(1 − image).
+  // Suppliers that match the product exactly, best first, in one currency (nothing is converted here).
+  // The title must carry 80% of the product's key words (live/match.ts); an image can't make up for a
+  // weaker title. Title and image are independent signals, so the score combines them as 1 − (1 − title)(1 − image).
   const matchIn = (offers: SupplierOffer[], currency: string) =>
     offers
       .filter((o) => o.unitPrice.currency === currency)
       .map((offer) => {
-        const title = Math.round(titleSimilarity(lead.title, offer.title) * 1000) / 1000;
+        const title = Math.round(supplierMatchScore(lead.title, offer.title) * 1000) / 1000;
         const image = imageScore(offer);
         return { offer, title, image, score: image === null ? title : Math.round((1 - (1 - title) * (1 - image)) * 1000) / 1000 };
       })
-      .filter((m) => m.score >= SUPPLIER_MATCH_MIN)
+      .filter((m) => m.title >= SUPPLIER_MATCH_MIN)
       .sort((a, b) => b.score - a.score);
   const matched = matchIn(input.suppliers, "GBP");
   const skippedCurrency = input.suppliers.filter((o) => o.unitPrice.currency !== "GBP").length;
@@ -279,7 +279,7 @@ export function buildDossier(input: DossierInput, ctx: { id: string; now: Date; 
   const confidence = calculateConfidence([...retailEvidence, ...supplierEvidence, ...historyEvidence], ctx.now);
   const evidenceGap = [
     ...(group.length < 4 ? [`more independent Amazon UK listings of this product (${group.length} found agree on it)`] : []),
-    ...(matched.length === 0 ? ["a supplier listing that matches this product"] : matched.length < 3 ? [`more or closer supplier matches (${matched.length} found)`] : []),
+    ...(matched.length === 0 ? ["an exact supplier match (no exact supplier match found: no AliExpress listing carries 80% of the product's key words)"] : matched.length < 3 ? [`more or closer supplier matches (${matched.length} found)`] : []),
   ];
 
   // 3. The financial gate, then the margins.

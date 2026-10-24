@@ -109,10 +109,11 @@ async function HeroStats() {
 async function ShowcaseContent() {
   await connection();
   const { products: all } = await getShowcase();
-  // Only the two real-price resale routes go to the browser, nothing else from the margin insight.
+  // Only the two real-price resale routes go to the browser, nothing else from the margin insight, and
+  // none at all for a product that fails a resale check: it shows its risk instead of a price gap.
   const products: ShowcaseProduct[] = all.map(({ margin, ...p }) => ({
     ...p,
-    margin: margin && { arbitrage: margin.arbitrage, arbitrageOwnStore: margin.arbitrageOwnStore },
+    margin: p.resellable && margin ? { arbitrage: margin.arbitrage, arbitrageOwnStore: margin.arbitrageOwnStore } : null,
   }));
   if (products.length === 0) {
     return (
@@ -188,7 +189,7 @@ const FAQ: { q: string; a: ReactNode }[] = [
   },
   {
     q: "What are the two fee routes in the showcase?",
-    a: "When two stores sell the same product at different prices, the showcase works out what you'd keep reselling it on eBay, and what you'd keep in your own Shopify shop after card fees. Its prices are captured from the store pages, and each fee rule links to its source. Shipping, VAT and advertising aren't included there.",
+    a: "When two stores sell a product that passes the resale checks at different prices, the showcase works out what you'd keep reselling it on eBay, and what you'd keep in your own Shopify shop after card fees. A product flagged High IP Risk shows no price gap. Its prices are captured from the store pages, and each fee rule links to its source. Shipping, VAT and advertising aren't included there.",
   },
   {
     q: "What's a credit?",
@@ -315,8 +316,9 @@ export default function Home() {
                 The margin engine, on real products
               </h2>
               <p className="mt-4 text-lg/8 text-slate-400">
-                Real prices captured from real stores. See what the same price gap is worth on eBay and in your own
-                shop, after each route&apos;s fees. Click the card for the full dossier.
+                Real prices captured from real stores, checked for IP and compliance risk before any money maths. A
+                branded product is flagged High IP Risk and gets no margin, so you never source one that could get your
+                store banned. Click the card for the full dossier.
               </p>
             </div>
             <div className="mt-10">

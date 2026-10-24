@@ -11,6 +11,7 @@ import type { ReactNode } from "react";
 import { FINANCIAL_THRESHOLD, VERDICT_THRESHOLD } from "@/engine/confidence";
 import type { ComplianceFlag, Dossier, Evidence, Gated, Momentum, ResellabilityFlags, VerdictKind } from "@/types/dossier";
 import type { LandedMargin, LineBasis, Money } from "@/types/financials";
+import { complianceNote, IP_RISK_NOTE, resaleRisk, RISK_BADGE } from "./dashboard/resellability";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
@@ -152,17 +153,21 @@ const flagTag = (f: ComplianceFlag) =>
   f.value === true ? <Tag tone="bad">Tripped</Tag> : f.value === false ? <Tag tone="ok">Clear</Tag> : <Tag tone="off">Unknown</Tag>;
 
 function ResellabilityPanel({ flags }: { flags: ResellabilityFlags }) {
+  const risk = resaleRisk(flags);
   return (
-    <dl className="divide-y divide-gray-100 dark:divide-line-dark">
-      {(Object.keys(FLAG_LABEL) as (keyof ResellabilityFlags)[]).map((k) => (
-        <div key={k} className="py-1.5 first:pt-0 last:pb-0">
-          <dt className="flex items-center justify-between gap-2 font-medium">
-            {FLAG_LABEL[k]} {flagTag(flags[k])}
-          </dt>
-          <dd className={`mt-0.5 text-xs ${muted}`}>{flags[k].reason}</dd>
-        </div>
-      ))}
-    </dl>
+    <>
+      {risk && <p className="mb-2 text-xs font-semibold">{risk === "ip" ? IP_RISK_NOTE : complianceNote(flags)}</p>}
+      <dl className="divide-y divide-gray-100 dark:divide-line-dark">
+        {(Object.keys(FLAG_LABEL) as (keyof ResellabilityFlags)[]).map((k) => (
+          <div key={k} className="py-1.5 first:pt-0 last:pb-0">
+            <dt className="flex items-center justify-between gap-2 font-medium">
+              {FLAG_LABEL[k]} {flagTag(flags[k])}
+            </dt>
+            <dd className={`mt-0.5 text-xs ${muted}`}>{flags[k].reason}</dd>
+          </div>
+        ))}
+      </dl>
+    </>
   );
 }
 
@@ -438,7 +443,7 @@ export function DossierTerminal({ dossier }: { dossier: Dossier }) {
         <Panel n={1} title="Verdict" status={gateTag(d.verdict)}>
           <VerdictPanel verdict={d.verdict} />
         </Panel>
-        <Panel n={2} title="Resellability" status={tripped ? <Tag tone="bad">{tripped} tripped</Tag> : <Tag tone="ok">Clear</Tag>}>
+        <Panel n={2} title="Resellability" status={tripped ? <Tag tone="bad">{RISK_BADGE[resaleRisk(d.resellability) ?? "ip"]}</Tag> : <Tag tone="ok">Clear</Tag>}>
           <ResellabilityPanel flags={d.resellability} />
         </Panel>
         <Panel n={3} title="Landed margin" status={verdictWithheld ? <Tag tone="warn">Withheld</Tag> : gateTag(d.landedMargin)} className="md:col-span-2">

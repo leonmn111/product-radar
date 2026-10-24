@@ -128,7 +128,7 @@ describe("buildDossier", () => {
     expect(d.verdict.confidence).toBeLessThan(0.5);
     expect(d.verdict).toMatchObject({ status: "withheld", reason: "Insufficient Data" });
     if (d.verdict.status !== "withheld") throw new Error("unreachable");
-    expect(d.verdict.missing).toEqual(expect.arrayContaining([expect.stringContaining("Amazon UK listings"), "a supplier listing that matches this product"]));
+    expect(d.verdict.missing).toEqual(expect.arrayContaining([expect.stringContaining("Amazon UK listings"), expect.stringMatching(/^an exact supplier match \(no exact supplier match found/)]));
   });
 
   it("leaves out supplier offers that don't match the product or aren't in GBP", () => {
@@ -139,7 +139,7 @@ describe("buildDossier", () => {
 });
 
 describe("buildDossier: image matching", () => {
-  // Two listings and two suppliers whose titles match only partly: below the financial gate on titles alone.
+  // Two listings, and two suppliers whose titles carry only half the mug's key words.
   const withImages: DossierInput = {
     query: "ceramic coffee mug",
     ukListings: [1, 2].map((n) => ({ ...listing(n, 12.99), image: `https://m.media-amazon.com/images/I/mug${n}.jpg` })),
@@ -148,17 +148,27 @@ describe("buildDossier: image matching", () => {
   };
   const fixedMatcher = (score: number): ImageMatcher => ({ method: "simulated", compare: () => score });
 
-  it("lets a high image similarity lift confidence past 0.7, so the numbers show", () => {
-    const titlesOnly = buildDossier(withImages, ctx);
-    expect(titlesOnly.landedMargin.confidence).toBeLessThan(0.7);
-    expect(titlesOnly.landedMargin.status).toBe("withheld");
-
+  it("never lets an image make up for a supplier title that isn't an exact match", () => {
+    // "Coffee Cup 350ml Ceramic Large" carries 3 of the mug's 6 key words: 50%, under the 80% bar.
     const d = buildDossier(withImages, { ...ctx, imageMatcher: fixedMatcher(0.95) });
-    expect(d.landedMargin.confidence).toBeGreaterThanOrEqual(0.7);
-    expect(d.landedMargin.status).toBe("shown");
+    expect(d.supplierMatches).toEqual([]);
+    expect(d.landedMargin.status).toBe("withheld");
+    expect(d.landedMargin.status === "withheld" && d.landedMargin.missing.join(" ")).toMatch(/no exact supplier match found/i);
+  });
+
+  it("adds a matching image to an exact title match's score and confidence", () => {
+    // 5 of the mug's 6 key words (no "plain"): 83%, an exact match on its title alone.
+    const exact: DossierInput = {
+      ...withImages,
+      suppliers: [1, 2].map((n) => ({ ...offer(n, 2.2, "GBP", "Ceramic Coffee Mug 350ml White"), image: `https://ae01.alicdn.com/kf/cup${n}.jpg` })),
+    };
+    const titlesOnly = buildDossier(exact, ctx);
+    const d = buildDossier(exact, { ...ctx, imageMatcher: fixedMatcher(0.95) });
+    expect(titlesOnly.supplierMatches[0]?.matchScore).toBe(0.833);
+    expect(d.landedMargin.confidence).toBeGreaterThan(titlesOnly.landedMargin.confidence);
     const supplierEvidence = d.evidence.filter((e) => e.sourceType === "supplier");
     expect(supplierEvidence[0].imageMatch).toEqual({ score: 0.95, method: "simulated", comparedWith: "rainforest:www.amazon.co.uk:B0MUG1" });
-    expect(d.supplierMatches[0]?.matchScore).toBeGreaterThan(0.95); // 1 − (1 − title)(1 − 0.95)
+    expect(d.supplierMatches[0]?.matchScore).toBeGreaterThan(0.95); // 1 − (1 − 0.833)(1 − 0.95)
     expect(d.notes.join(" ")).toContain("SIMULATED");
   });
 

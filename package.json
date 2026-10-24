@@ -16,7 +16,6 @@
     "typecheck": "tsc --noEmit",
     "db:verify": "tsx scripts/verify-schema.ts",
     "test": "vitest run",
-    "db:seed": "prisma db seed",
     "db:rescore": "tsx scripts/rescore.ts",
     "products:import": "tsx scripts/import-products.ts",
     "trends:enrich": "tsx scripts/enrich-trends.ts",

@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { ProductDto } from "@/server/products/service";
 import { formatPrice, getScore, humanizeSlug, type Score } from "./format";
 import { MarginSummary } from "./margin";
+import { RISK_BADGE, RISK_SHORT_NOTE, type ResaleRisk } from "./resellability";
 import { ConfidenceBadge } from "./score";
 
 const initials = (s: string) =>
@@ -140,13 +141,28 @@ function StatusChip({ sample }: { sample: boolean }) {
   );
 }
 
+/** In place of the price gap, for a product that fails a resale check: its risk, in a few words. */
+function RiskSummary({ risk }: { risk: NonNullable<ResaleRisk> }) {
+  return (
+    <div className="rounded-lg bg-rose-50 p-3 ring-1 ring-rose-600/20 ring-inset dark:bg-rose-950/30 dark:ring-rose-400/25">
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-rose-800 dark:text-rose-200">
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
+          <path d="M10 2.5 3.5 5v4.5c0 4 2.8 7.1 6.5 8 3.7-.9 6.5-4 6.5-8V5L10 2.5ZM10 7v3.5m0 2.5v.5" />
+        </svg>
+        {RISK_BADGE[risk]}
+      </p>
+      <p className="mt-1 text-xs text-slate-700 dark:text-slate-300">{RISK_SHORT_NOTE[risk]}</p>
+    </div>
+  );
+}
+
 /**
  * One product in a card grid. The whole card is one link to the product's dossier:
  * the title's link stretches over the card, so screen readers hear a single link
  * named after the product. Hovering lifts the card; pressing settles it back down.
  * The "bento" frame is a hairline ring that lights up in the accent on hover (the landing page and the
- * dashboard's catalog). The price-gap summary shows only for a product that passes the resale checks
- * (a product that fails one gets no money figures); `marginSummary={false}` leaves it out.
+ * dashboard's catalog). A product that fails a resale check shows its risk (High IP Risk, or Compliance
+ * Gated) instead of any price gap; for the others, `marginSummary={false}` leaves the price-gap summary out.
  */
 export function ProductCard({
   product: p,
@@ -222,7 +238,7 @@ export function ProductCard({
             <ValueBadge score={getScore(p, "VALUE")} />
           </div>
 
-          {marginSummary && p.resellable && p.margin && <MarginSummary margin={p.margin} />}
+          {p.resaleRisk ? <RiskSummary risk={p.resaleRisk} /> : marginSummary && p.margin && <MarginSummary margin={p.margin} />}
 
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
             <SourcesBadge product={p} />

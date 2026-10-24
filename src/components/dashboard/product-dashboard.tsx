@@ -277,10 +277,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
       ) : products.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-300 p-10 text-center dark:border-white/15">
           <p className="text-sm font-medium text-slate-900 dark:text-slate-100">No products yet.</p>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Run <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-xs dark:bg-surface-raised">npm run db:seed</code>{" "}
-            to load sample data.
-          </p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Products appear here once they&apos;re imported.</p>
         </div>
       ) : (
         <>

@@ -98,8 +98,11 @@ An unknown flag stays `null` with the reason. It is never assumed safe.
   - The daily snapshot job will take over the history so Keepa isn't needed per Dossier.
 - **Saturation:** sellers listing the same product, distinct stores, and ad density (active ads per
   seller or per keyword).
-- **SupplierMatches:** the top 3 matches from 1688 and AliExpress by image and title similarity, each
-  with unit price, MOQ, delivery days to the market and its listing as evidence.
+- **SupplierMatches:** the top 3 exact matches from 1688 and AliExpress, each with unit price, MOQ, delivery
+  days to the market and its listing as evidence. A listing is a match only when its title carries at least
+  80% of the product's key words and agrees on any size or spec (`src/server/live/match.ts`); an image match
+  adds to its score but can't make up for a weaker title. No match means "No exact supplier match found",
+  never a looser match.
 
 ## Daily snapshot job
 
