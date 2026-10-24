@@ -2,20 +2,23 @@
 
 import { useId, useState } from "react";
 import type { ProductDto } from "@/server/products/service";
+import type { CatalogMargin } from "@/services/catalogMargin";
+import type { LandedMargin } from "@/types/financials";
 import {
-  estimateProfit,
   opportunityVerdict,
+  ownNumbersProfit,
   parseMoney,
   shopifyPrices,
   sourcingKeywords,
-  startingWholesale,
   supplierSearchUrls,
   type VerdictKind,
 } from "./dossier";
 import { PLANS, planPriceLabel } from "@/server/billing/plans";
 import { formatPrice } from "./format";
+import { LandedMarginCard } from "./landed-margin";
 import { MarginCard } from "./margin";
 import { ProductDetail } from "./product-detail";
+import { RESELLABILITY_LABEL, RESELLABILITY_ORDER } from "./resellability";
 
 export type DossierViewer = { signedIn: boolean; proTools: boolean };
 
@@ -24,24 +27,39 @@ const focusRing =
 const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 dark:border-line-dark dark:bg-surface-dark";
 const cardTitle = "text-sm font-semibold text-slate-900 dark:text-white";
 
-export function OpportunityDossier({ product, viewer }: { product: ProductDto; viewer: DossierViewer }) {
-  const [wholesale, setWholesale] = useState(startingWholesale(product.margin)?.toFixed(2) ?? "");
+/**
+ * The v1 dossier. A product that fails a resale check (product.resellable) gets no money figures at
+ * all: no landed margin, price gaps, calculator, supplier search or export. The calculator and the
+ * Shopify export need the landed margin to clear its gate, and start from its sourced supplier cost.
+ */
+export function OpportunityDossier({ product, landed, viewer }: { product: ProductDto; landed: CatalogMargin; viewer: DossierViewer }) {
+  const shown = landed.margin.status === "shown" ? landed.margin.value : null;
+  const sourcedCost = shown?.lines.find((l) => l.kind === "supplier")?.amount.amount;
+  const [supplierCost, setSupplierCost] = useState(sourcedCost?.toFixed(2) ?? "");
   const [adShipping, setAdShipping] = useState("");
 
   return (
     <div className="space-y-4">
-      <VerdictCard product={product} />
-      <MarginCard productId={product.id} margin={product.margin} />
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ProfitCalculator
-          product={product}
-          wholesale={wholesale}
-          adShipping={adShipping}
-          onWholesale={setWholesale}
-          onAdShipping={setAdShipping}
-        />
-        <SupplierAndExport product={product} viewer={viewer} costPerItem={parseMoney(wholesale)} />
-      </div>
+      <VerdictCard product={product} landed={landed} />
+      <LandedMarginCard productId={product.id} landed={landed} />
+      {product.resellable && (
+        <>
+          <MarginCard productId={product.id} margin={product.margin} />
+          <div className={shown ? "grid gap-4 lg:grid-cols-2" : ""}>
+            {shown && (
+              <ProfitCalculator
+                productId={product.id}
+                m={shown}
+                supplierCost={supplierCost}
+                adShipping={adShipping}
+                onSupplierCost={setSupplierCost}
+                onAdShipping={setAdShipping}
+              />
+            )}
+            <SupplierAndExport product={product} viewer={viewer} exportReady={shown !== null} costPerItem={parseMoney(supplierCost)} />
+          </div>
+        </>
+      )}
       <details className="group rounded-xl border border-gray-200 bg-white shadow-sm dark:border-line-dark dark:bg-surface-dark">
         <summary
           className={`flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 hover:bg-gray-50 sm:px-5 dark:text-slate-100 dark:hover:bg-surface-raised/50 [&::-webkit-details-marker]:hidden ${focusRing}`}
@@ -82,7 +100,8 @@ const VERDICT_STYLE: Record<VerdictKind, { card: string; badge: string; icon: st
   },
 };
 
-function VerdictCard({ product }: { product: ProductDto }) {
+function VerdictCard({ product, landed }: { product: ProductDto; landed: CatalogMargin }) {
+  if (!product.resellable) return <NotResellableCard product={product} landed={landed} />;
   const verdict = opportunityVerdict(product);
   if (!verdict) {
     return (
@@ -118,6 +137,33 @@ function VerdictCard({ product }: { product: ProductDto }) {
   );
 }
 
+/** The verdict for a product that fails a resale check: never one to source, whatever its scores say. */
+function NotResellableCard({ product, landed }: { product: ProductDto; landed: CatalogMargin }) {
+  const fails = RESELLABILITY_ORDER.filter((k) => landed.resellability[k].value === true).map((k) => RESELLABILITY_LABEL[k].toLowerCase());
+  const facts = opportunityVerdict(product)?.sentences[0];
+  return (
+    <section aria-labelledby={`verdict-${product.id}`} className="rounded-xl border border-rose-200 bg-rose-50/60 p-4 shadow-sm sm:p-5 dark:border-rose-500/30 dark:bg-rose-950/20">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h3 id={`verdict-${product.id}`} className={cardTitle}>
+          Opportunity verdict
+        </h3>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-700 px-3 py-1 text-sm font-semibold text-white">
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="size-4">
+            <path d="M5 5l10 10M15 5 5 15" />
+          </svg>
+          Not resellable
+        </span>
+      </div>
+      <p className="mt-3 max-w-3xl text-base/7 text-slate-800 dark:text-slate-200">
+        {facts ? `${facts} ` : ""}
+        It fails ProductRadar&apos;s resale checks ({fails.length === 1 ? fails[0] : `${fails.slice(0, -1).join(", ")} and ${fails.at(-1)}`}), so it
+        isn&apos;t one to source and resell, and it gets no margin.
+      </p>
+      <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">Rule-based, from the product&apos;s own listing text. See the resale checks below.</p>
+    </section>
+  );
+}
+
 // ── Profit calculator ────────────────────────────────────────────────────────
 
 function currencySymbol(currency: string) {
@@ -129,56 +175,52 @@ function currencySymbol(currency: string) {
 }
 
 function ProfitCalculator({
-  product,
-  wholesale,
+  productId,
+  m,
+  supplierCost,
   adShipping,
-  onWholesale,
+  onSupplierCost,
   onAdShipping,
 }: {
-  product: ProductDto;
-  wholesale: string;
+  productId: string;
+  m: LandedMargin;
+  supplierCost: string;
   adShipping: string;
-  onWholesale: (v: string) => void;
+  onSupplierCost: (v: string) => void;
   onAdShipping: (v: string) => void;
 }) {
-  const offer = product.bestOffer;
-  if (!offer) {
-    return (
-      <section aria-label="Profit calculator" className={card}>
-        <h3 className={cardTitle}>Profit calculator</h3>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          No current retail price was found for this product, so profit can&apos;t be estimated.
-        </p>
-      </section>
-    );
-  }
-  const price = Number(offer.price.amount);
-  const currency = offer.price.currency;
-  const w = parseMoney(wholesale);
+  const currency = m.currency;
+  const s = parseMoney(supplierCost);
   const a = parseMoney(adShipping);
-  const valid = w !== null && (adShipping.trim() === "" || a !== null);
-  const result = valid ? estimateProfit(price, w, a ?? 0) : null;
+  const valid = s !== null && (adShipping.trim() === "" || a !== null);
+  const result = valid ? ownNumbersProfit(m, s, a ?? 0) : null;
+  const { taxAndFees } = ownNumbersProfit(m, 0, 0);
   const loss = result !== null && result.net < 0;
+  const money = (x: number) => formatPrice(String(x), currency);
 
   return (
-    <section aria-labelledby={`profit-${product.id}`} className={card}>
-      <h3 id={`profit-${product.id}`} className={cardTitle}>
-        Profit calculator
+    <section aria-labelledby={`profit-${productId}`} className={card}>
+      <h3 id={`profit-${productId}`} className={cardTitle}>
+        Try your own numbers
       </h3>
-      <div className="mt-3 flex items-baseline justify-between gap-3 border-b border-gray-200 pb-3 dark:border-line-dark">
-        <span className="text-sm text-slate-600 dark:text-slate-400">Retail price at {offer.merchant}</span>
-        <span className="text-lg font-semibold tabular-nums text-slate-900 dark:text-white">
-          {formatPrice(offer.price.amount, currency)}
-        </span>
-      </div>
+      <dl className="mt-3 divide-y divide-gray-200 border-b border-gray-200 text-sm dark:divide-line-dark dark:border-line-dark">
+        <div className="flex items-baseline justify-between gap-3 pb-2">
+          <dt className="text-slate-600 dark:text-slate-400">Retail price, from the waterfall</dt>
+          <dd className="font-semibold tabular-nums text-slate-900 dark:text-white">{money(m.retailPrice.amount)}</dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-3 py-2">
+          <dt className="text-slate-600 dark:text-slate-400">VAT and platform fees</dt>
+          <dd className="font-semibold tabular-nums text-slate-900 dark:text-white">−{money(taxAndFees)}</dd>
+        </div>
+      </dl>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <MoneyInput
-          label="Wholesale cost"
-          hint="Starts mid-way through the estimate above"
+          label="Supplier cost per unit"
+          hint="Starts at the sourced AliExpress price"
           currency={currency}
-          value={wholesale}
-          onChange={onWholesale}
-          invalid={w === null}
+          value={supplierCost}
+          onChange={onSupplierCost}
+          invalid={s === null}
         />
         <MoneyInput
           label="Ad & shipping per sale"
@@ -192,24 +234,24 @@ function ProfitCalculator({
       </div>
       <dl className="mt-4 grid grid-cols-2 gap-3" aria-live="polite">
         <div className={`rounded-lg p-3 ${loss ? "bg-rose-50 dark:bg-rose-950/30" : "bg-emerald-50 dark:bg-emerald-950/30"}`}>
-          <dt className="text-xs font-medium text-slate-700 dark:text-slate-300">Projected net profit</dt>
+          <dt className="text-xs font-medium text-slate-700 dark:text-slate-300">Net profit</dt>
           <dd
             className={`mt-1 text-2xl font-semibold tabular-nums ${loss ? "text-rose-700 dark:text-rose-300" : "text-emerald-700 dark:text-emerald-300"}`}
           >
-            {result ? formatPrice(String(result.net), currency) : "—"}
+            {result ? money(result.net) : "—"}
           </dd>
           <dd className="text-xs text-slate-600 dark:text-slate-400">per sale</dd>
         </div>
         <div className="rounded-lg bg-gray-100 p-3 dark:bg-surface-raised/60">
-          <dt className="text-xs font-medium text-slate-700 dark:text-slate-300">Profit margin</dt>
+          <dt className="text-xs font-medium text-slate-700 dark:text-slate-300">Net margin</dt>
           <dd className="mt-1 text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
-            {result?.marginPct != null ? `${result.marginPct.toFixed(1)}%` : "—"}
+            {result ? `${result.marginPct.toFixed(1)}%` : "—"}
           </dd>
           <dd className="text-xs text-slate-600 dark:text-slate-400">of retail price</dd>
         </div>
       </dl>
       <p className="mt-3 text-xs text-slate-600 dark:text-slate-400">
-        Estimate only, before VAT, payment fees and returns. Assumes you sell at the retail price shown.
+        Same VAT and fee rules as the waterfall; only your two figures change. Returns aren&apos;t included.
       </p>
     </section>
   );
@@ -271,10 +313,13 @@ function MoneyInput({
 function SupplierAndExport({
   product,
   viewer,
+  exportReady,
   costPerItem,
 }: {
   product: ProductDto;
   viewer: DossierViewer;
+  /** The Shopify file is built from shown parts only: the landed margin must clear its gate. */
+  exportReady: boolean;
   costPerItem: number | null;
 }) {
   const merchant = product.bestOffer?.merchant ?? null;
@@ -283,7 +328,7 @@ function SupplierAndExport({
   const [exported, setExported] = useState(false);
   const prices = shopifyPrices(product);
   const money = (x: number) => formatPrice(String(x), prices.currency ?? "GBP");
-  // Built on the server, which checks for Pro; the cost is whatever the profit calculator holds.
+  // Built on the server, which checks for Pro; the cost is whatever the calculator holds.
   const csvHref = `/api/products/${encodeURIComponent(product.id)}/shopify-csv${costPerItem !== null && costPerItem > 0 ? `?cost=${costPerItem}` : ""}`;
 
   const supplierBtn = `inline-flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold shadow-sm ${focusRing}`;
@@ -313,47 +358,49 @@ function SupplierAndExport({
         ) : null}
       </div>
 
-      <div className="border-t border-gray-200 pt-4 dark:border-line-dark">
-        <h3 className={cardTitle}>Sell it on Shopify</h3>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          A ready-to-import file with the title, description, photo, prices and your wholesale cost. It imports as a
-          draft, so nothing goes live until you publish it.
-        </p>
-        {prices.price !== null && (
-          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
-            <dt className="font-medium text-slate-900 dark:text-slate-100">Price {money(prices.price)}</dt>
-            <dd>{prices.priceIsGoingRate ? "the going price at other stores" : "the best price found"}</dd>
-            <dt className="font-medium text-slate-900 dark:text-slate-100">
-              Compare-at{prices.compareAtPrice !== null && ` ${money(prices.compareAtPrice)}`}
-            </dt>
-            <dd>
-              {prices.compareAtPrice !== null && prices.rrp
-                ? `the RRP on ${prices.rrp.merchant}`
-                : prices.rrp
-                  ? `left blank: the RRP (${money(Number(prices.rrp.amount))} on ${prices.rrp.merchant}) isn't above the price`
-                  : "left blank: no RRP found"}
-            </dd>
-          </dl>
-        )}
-        {viewer.proTools ? (
-          <>
-            <a
-              href={csvHref}
-              download
-              onClick={() => setExported(true)}
-              className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:w-auto dark:bg-surface-raised dark:text-white dark:ring-line-dark dark:hover:bg-slate-700 ${focusRing}`}
-            >
-              <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-4">
-                <path d="M10 3v10m0 0-4-4m4 4 4-4M3.5 15.5v1h13v-1" />
-              </svg>
-              Download Shopify CSV
-            </a>
-            <p role="status" className="mt-2 text-xs text-slate-600 dark:text-slate-400">
-              {exported ? "Downloaded. In Shopify go to Products › Import and choose this file." : ""}
-            </p>
-          </>
-        ) : null}
-      </div>
+      {exportReady && (
+        <div className="border-t border-gray-200 pt-4 dark:border-line-dark">
+          <h3 className={cardTitle}>Sell it on Shopify</h3>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            A ready-to-import file with the title, description, photo, prices and your supplier cost. It imports as a
+            draft, so nothing goes live until you publish it.
+          </p>
+          {prices.price !== null && (
+            <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
+              <dt className="font-medium text-slate-900 dark:text-slate-100">Price {money(prices.price)}</dt>
+              <dd>{prices.priceIsGoingRate ? "the going price at other stores" : "the best price found"}</dd>
+              <dt className="font-medium text-slate-900 dark:text-slate-100">
+                Compare-at{prices.compareAtPrice !== null && ` ${money(prices.compareAtPrice)}`}
+              </dt>
+              <dd>
+                {prices.compareAtPrice !== null && prices.rrp
+                  ? `the RRP on ${prices.rrp.merchant}`
+                  : prices.rrp
+                    ? `left blank: the RRP (${money(Number(prices.rrp.amount))} on ${prices.rrp.merchant}) isn't above the price`
+                    : "left blank: no RRP found"}
+              </dd>
+            </dl>
+          )}
+          {viewer.proTools ? (
+            <>
+              <a
+                href={csvHref}
+                download
+                onClick={() => setExported(true)}
+                className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:w-auto dark:bg-surface-raised dark:text-white dark:ring-line-dark dark:hover:bg-slate-700 ${focusRing}`}
+              >
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-4">
+                  <path d="M10 3v10m0 0-4-4m4 4 4-4M3.5 15.5v1h13v-1" />
+                </svg>
+                Download Shopify CSV
+              </a>
+              <p role="status" className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+                {exported ? "Downloaded. In Shopify go to Products › Import and choose this file." : ""}
+              </p>
+            </>
+          ) : null}
+        </div>
+      )}
 
       {!viewer.proTools && (
         <div className="rounded-lg bg-accent-mint/10 p-4 ring-1 ring-accent-mint/30 ring-inset">

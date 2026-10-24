@@ -5,12 +5,13 @@ import { db } from "@/lib/db";
 import { canExportToShopify, getViewer } from "@/server/auth/entitlements";
 import { getProduct } from "@/server/products/service";
 
-// The wholesale cost typed into the dossier's profit calculator, e.g. a real supplier quote.
+// The supplier cost in the dossier's calculator (the sourced AliExpress price, or the seller's own quote).
 const Query = z.object({ cost: z.coerce.number().positive().max(1_000_000).optional() });
 
 // GET /api/products/:id/shopify-csv?cost=12.50
 // The dossier's "Download Shopify CSV": one product as a draft listing in Shopify's
-// product import format, sent as a file download. Signed-out → 401, Free → 403.
+// product import format, sent as a file download. Signed-out → 401, Free → 403, a product that fails a
+// resale check (CLAUDE.md Rule 7) → 409.
 export async function GET(request: NextRequest, ctx: RouteContext<"/api/products/[id]/shopify-csv">) {
   await connection(); // request-time only, never prerendered
 
@@ -35,6 +36,12 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/products
     return Response.json({ error: "internal_error", message: "Couldn't build the Shopify file." }, { status: 500, headers });
   }
   if (!product) return Response.json({ error: "not_found", message: "No product with that id." }, { status: 404, headers });
+  if (!product.resellable) {
+    return Response.json(
+      { error: "not_resellable", message: "This product fails ProductRadar's resale checks, so there's no Shopify file for it." },
+      { status: 409, headers },
+    );
+  }
 
   const merchant = product.bestOffer?.merchant ?? null;
   return new Response(shopifyCsv({ ...product, merchant }, { costPerItem: query.data.cost }), {

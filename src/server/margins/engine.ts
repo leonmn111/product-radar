@@ -1,21 +1,17 @@
-// Margin spread & arbitrage engine — pure functions, no I/O, no clock, no LLM.
+// Price-gap (arbitrage) engine — pure functions, no I/O, no clock, no LLM.
 // Same inputs + same `asOf` date ⇒ identical output.
 //
-// Everything here is an ESTIMATE (CLAUDE.md Rule 4). It answers two separate
-// questions from two kinds of evidence (methodology v1.2.0):
+// Everything here is an ESTIMATE (CLAUDE.md Rule 4), built only from real captured store prices
+// (methodology v2.0.0). v1's stocking margin — a wholesale range taken from US Census retail gross
+// margins — was removed in v2.0.0: a benchmark is not a supplier cost (CLAUDE.md Rule 6). The UK
+// landed margin (supplier cost, VAT, platform fees) now comes from src/engine/margin.ts, through
+// src/services/catalogMargin.ts.
 //
-// 1. Stocking margin: if a shop bought this at wholesale and sold it at today's
-//    lowest retail price, what would it keep? ProductRadar has no supplier
-//    quotes, so the wholesale cost is a RANGE from US Census retail gross
-//    margins for the store type that sells the category (benchmarks.ts):
-//      retail      = lowest current price (the card's price): each store's newest
-//                    capture from the last 30 days, if in stock or pre-order (v1.2.0)
-//      wholesale   = retail × (1 − margin), for the lowest and highest 2018–2022 margin
-//      spread      = retail − wholesale  (so spread % = the benchmark margin)
-//    It describes the category, not this product: always say so where it's shown.
+//   retail        = lowest current price (the card's price): each store's newest capture from the
+//                   last 30 days, if in stock or pre-order
 //
-// 2. Arbitrage: is any store we captured selling it cheaply enough to resell at
-//    another store's price, after selling fees? Real captured offers only:
+// Arbitrage: is any store we captured selling it cheaply enough to resell at another store's price,
+// after selling fees?
 //      current     = each store's newest capture from the last 30 days, kept only if
 //                    it is in stock or pre-order (v1.2.0: a store whose newest
 //                    capture is sold out no longer falls back to an older one)
@@ -40,17 +36,9 @@
 import type { Availability } from "@/generated/prisma/enums";
 import { bestCurrentOffer, currentOffers } from "@/server/scoring/engine";
 import { toEur, type FxRates } from "@/server/scoring/fx";
-import {
-  BENCHMARK_YEARS,
-  CENSUS_GROSS_MARGIN_SOURCE,
-  MARKETPLACE_FEE,
-  ownStoreFee,
-  storeTypeFor,
-  type FeeSchedule,
-  type SourceRef,
-} from "./benchmarks";
+import { MARKETPLACE_FEE, ownStoreFee, type FeeSchedule, type SourceRef } from "./benchmarks";
 
-export const MARGIN_METHODOLOGY_VERSION = "1.2.0";
+export const MARGIN_METHODOLOGY_VERSION = "2.0.0";
 
 const HIGH = { returnPct: 25, netEur: 10 };
 const MODERATE = { returnPct: 10, netEur: 3 };
@@ -96,15 +84,6 @@ export type MarginInsight = {
   methodologyVersion: string;
   currency: string;
   retailPrice: OfferRef;
-  wholesaleEstimate: { low: number; high: number };
-  grossSpread: { low: number; high: number; lowPct: number; highPct: number };
-  benchmark: {
-    storeType: string;
-    naicsCode: string | null;
-    years: string;
-    grossMarginPct: { low: number; high: number };
-    source: SourceRef;
-  };
   arbitrage: ArbitrageScenario; // resale on eBay
   arbitrageOwnStore: ArbitrageScenario; // resale through your own shop, at card fees
   caveats: string[];
@@ -251,24 +230,18 @@ function scenario(
 }
 
 export const MARGIN_CAVEATS = [
-  "The wholesale range is the US Census average gross margin for the store type that sells this category, not a supplier quote.",
   "Arbitrage only compares prices we captured from stores in the last 30 days, in the same currency.",
   "Shipping, taxes, returns and brand reselling rules are not included.",
   "The own-shop route leaves out advertising and the shop's monthly plan, which you'll usually need to find buyers at that price.",
 ];
 
 /**
- * Margin spread and arbitrage rating for one product, or null when it has no
+ * The retail price and the two arbitrage ratings for one product, or null when it has no
  * current retail price to work from.
  */
-export function marginInsight(input: { category: string; offers: MarginOffer[]; asOf: Date; fx: FxRates }): MarginInsight | null {
+export function marginInsight(input: { offers: MarginOffer[]; asOf: Date; fx: FxRates }): MarginInsight | null {
   const retail = bestCurrentOffer(input.offers, input.asOf, input.fx);
   if (!retail) return null;
-
-  const store = storeTypeFor(input.category);
-  const gmLow = Math.min(...store.grossMarginPct);
-  const gmHigh = Math.max(...store.grossMarginPct);
-  const price = retail.price;
 
   const current = currentOffersByStore(input.offers, input.asOf);
   const byCurrency = new Map<string, MarginOffer[]>();
@@ -282,15 +255,6 @@ export function marginInsight(input: { category: string; offers: MarginOffer[]; 
     methodologyVersion: MARGIN_METHODOLOGY_VERSION,
     currency: retail.currency,
     retailPrice: ref(retail),
-    wholesaleEstimate: { low: cents(price * (1 - gmHigh / 100)), high: cents(price * (1 - gmLow / 100)) },
-    grossSpread: { low: cents((price * gmLow) / 100), high: cents((price * gmHigh) / 100), lowPct: gmLow, highPct: gmHigh },
-    benchmark: {
-      storeType: store.name,
-      naicsCode: store.naicsCode,
-      years: `${BENCHMARK_YEARS[0]}–${BENCHMARK_YEARS.at(-1)}`,
-      grossMarginPct: { low: gmLow, high: gmHigh },
-      source: CENSUS_GROSS_MARGIN_SOURCE,
-    },
     arbitrage: scenario("MARKETPLACE", () => MARKETPLACE_FEE, pairs, current, retail.currency, input.fx),
     arbitrageOwnStore: scenario("OWN_STORE", ownStoreFee, pairs, current, retail.currency, input.fx),
     caveats: MARGIN_CAVEATS,

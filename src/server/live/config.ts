@@ -62,7 +62,12 @@ function aliexpressSource(): SupplierSource | null {
   return createAliexpressSource({ appKey, appSecret, tokens: aliexpressTokens });
 }
 
-export type RetailSourceStatus = { ready: true; sample: boolean; retail: RetailSource } | { ready: false; missing: string[] };
+/** Just the supplier source (AliExpress, real only), for a catalog product that already has its retail prices. */
+export function liveSupplierSource(): SupplierSource | null {
+  return aliexpressSource();
+}
+
+export type RetailSourceStatus ={ ready: true; sample: boolean; retail: RetailSource } | { ready: false; missing: string[] };
 
 /** Just the retail source (Amazon UK listings), for searches that don't need suppliers. */
 export function liveRetailSource({ allowSample = false }: { allowSample?: boolean } = {}): RetailSourceStatus {

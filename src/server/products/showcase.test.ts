@@ -28,7 +28,7 @@ const product = (name: string, offers: MarginOffer[], over: { category?: string;
     isSample: over.isSample ?? false,
     sourceCount: over.sourceCount ?? offers.length,
     scores: { OVERALL: { value: over.overall ?? 60, confidence: 0.5 } },
-    margin: marginInsight({ category: over.category ?? "beauty", offers, asOf, fx }),
+    margin: marginInsight({ offers, asOf, fx }),
   }) as unknown as ProductDto;
 
 describe("hasPriceGap", () => {

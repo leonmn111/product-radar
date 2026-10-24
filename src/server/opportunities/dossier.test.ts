@@ -46,7 +46,6 @@ const offer = {
 };
 
 const margin = marginInsight({
-  category: "wireless-earbuds",
   offers: [{ ...offer, price: 40, currency: "GBP", observedAt: new Date(offer.observedAt), qualityScore: 80 }],
   asOf: new Date("2026-10-09T00:00:00.000Z"),
   fx: LATEST_FX,
@@ -93,27 +92,14 @@ describe("agent dossier", () => {
     expect(d.scores.demand).toMatchObject({ value: 40, confidenceLevel: "low", evidenceIds: ["e1", "e2"] });
   });
 
-  it("estimates profit from the observed price and states its assumptions", () => {
-    expect(d.profitEstimate).toMatchObject({
-      currency: "GBP",
-      retailPrice: 40,
-      retailPriceSource: { merchant: "Shop", url: "https://shop.test/buds" },
-      // Electronics and appliance stores keep 28.8–33.4% ⇒ wholesale £26.64–£28.48, middle £27.56.
-      assumedWholesaleCost: 27.56,
-      netProfitPerUnit: 12.44,
-      marginPct: 31.1,
-    });
-    expect(d.profitEstimate!.assumptions.join(" ")).toMatch(/Census .*Electronics and appliance stores.*not included/);
+  it("carries no benchmark profit estimate: a Census average is not a supplier cost", () => {
+    expect(d.profitEstimate).toBeNull();
+    expect(JSON.stringify(d)).not.toMatch(/census|wholesaleEstimate|grossSpread/i);
+    expect(d.disclaimer).toMatch(/\/api\/agent\/v2\/dossier\/\{asin\}/);
   });
 
-  it("includes the margin insight with its sources", () => {
-    expect(d.margin).toMatchObject({
-      currency: "GBP",
-      wholesaleEstimate: { low: 26.64, high: 28.48 },
-      grossSpread: { lowPct: 28.8, highPct: 33.4 },
-      arbitrage: { rating: "RETAIL_ONLY", label: "Retail Only" },
-    });
-    expect(d.margin!.benchmark.source.url).toMatch(/^https:\/\/www2\.census\.gov\//);
+  it("includes the price gaps with their sources", () => {
+    expect(d.margin).toMatchObject({ currency: "GBP", arbitrage: { rating: "RETAIL_ONLY", label: "Retail Only" } });
     expect(d.margin!.arbitrage.feeSource.url).toMatch(/^https:\/\/www\.ebay\.com\//);
   });
 
@@ -123,9 +109,8 @@ describe("agent dossier", () => {
     expect(d.shopifyImportCsv).toContain('"draft"');
   });
 
-  it("gives no profit estimate without a current price, and no verdict without an overall score", () => {
+  it("gives no verdict without an overall score", () => {
     const bare = buildDossier(product({ bestOffer: null, margin: null, offers: [], scores: {} }));
-    expect(bare.profitEstimate).toBeNull();
     expect(bare.verdict).toBeNull();
   });
 });

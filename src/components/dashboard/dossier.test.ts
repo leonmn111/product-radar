@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import type { ProductDto } from "@/server/products/service";
 import {
   cleanTitle,
-  estimateProfit,
   opportunityVerdict,
+  ownNumbersProfit,
   parseMoney,
   shopifyCsv,
   type ShopifyProduct,
   sourcingKeywords,
-  startingWholesale,
   supplierSearchUrls,
 } from "./dossier";
+import { calculateUKMargin } from "@/engine/margin";
 import { marginInsight } from "@/server/margins/engine";
 import { LATEST_FX } from "@/server/scoring/fx-latest";
 
@@ -46,6 +46,7 @@ function product(scores: Record<string, ReturnType<typeof score>>, evidence = [m
     isSample: true,
     rrp: null,
     bestOffer: null,
+    resellable: false,
     margin: null,
     scores,
     offers: [],
@@ -93,12 +94,18 @@ describe("opportunity verdict", () => {
 });
 
 describe("profit estimate", () => {
-  it("starts wholesale at the middle of the Census-based estimate, and computes net profit and margin", () => {
-    const margin = { wholesaleEstimate: { low: 39.28, high: 46.32 } } as ProductDto["margin"];
-    expect(startingWholesale(margin)).toBe(42.8);
-    expect(startingWholesale(null)).toBeNull();
-    expect(estimateProfit(59, 17.7, 10)).toEqual({ net: 31.3, marginPct: 53.1 });
-    expect(estimateProfit(20, 15, 10)).toEqual({ net: -5, marginPct: -25 });
+  it("re-prices the sourced landed margin with the seller's own supplier cost and ad & shipping", () => {
+    const m = calculateUKMargin({
+      retailPrice: { amount: 22.24, basis: "sourced", evidenceIds: ["r1"] },
+      supplierCost: { amount: 3.5, basis: "sourced", evidenceIds: ["s1"] },
+      shipping: null,
+      returns: null,
+      adCostPerSale: null,
+    });
+    // VAT 3.71 + TikTok Shop UK 1.67 + 0.50 + 2.78 carry over; at the sourced cost it is the waterfall's own net.
+    expect(ownNumbersProfit(m, 3.5, 0)).toEqual({ taxAndFees: 8.66, net: m.netProfit.amount, marginPct: m.netMarginPct });
+    expect(ownNumbersProfit(m, 5, 2.5)).toEqual({ taxAndFees: 8.66, net: 6.08, marginPct: 27.3 });
+    expect(ownNumbersProfit(m, 15, 4).net).toBe(-5.42);
   });
 
   it("parses money inputs leniently and rejects negatives", () => {
@@ -154,13 +161,13 @@ describe("Shopify CSV", () => {
     availability: "IN_STOCK" as const,
     observedAt: at.toISOString(),
     sourceEvidenceId: `e-${id}`,
+    source: { quality: 80, type: "RETAILER" as const, claim: `£${price.toFixed(2)} at ${merchant}` },
     rrp: null,
   });
   const cheap = offer("o1", "cheap.test", 15);
   const dear = offer("o2", "dear.test", 20);
   // A real margin insight for a £15 / £20 price gap between two stores.
   const gap = marginInsight({
-    category: "wireless-earbuds",
     offers: [cheap, dear].map((o) => ({ ...o, price: Number(o.price.amount), currency: "GBP", observedAt: at, qualityScore: 80 })),
     asOf: at,
     fx: LATEST_FX,
@@ -213,7 +220,7 @@ describe("Shopify CSV", () => {
       "Variant Price": "20.00", // the going price at other stores (the margin engine's resale price)
       "Variant Compare At Price": "", // no RRP is captured, and a store's lower price would read as a price rise
       "Image Src": "https://cdn.test/runners.jpg",
-      "Cost per item": startingWholesale(gap)!.toFixed(2),
+      "Cost per item": "", // never estimated: only the seller's own supplier cost goes here
       Status: "draft",
     });
   });
@@ -235,7 +242,6 @@ describe("Shopify CSV", () => {
 
   it("prices at the best price, with no compare-at, when there's no price gap", () => {
     const single = marginInsight({
-      category: "wireless-earbuds",
       offers: [{ ...cheap, price: 15, currency: "GBP", observedAt: at, qualityScore: 80 }],
       asOf: at,
       fx: LATEST_FX,
@@ -250,7 +256,6 @@ describe("Shopify CSV", () => {
     const { cells } = rows(shopifyCsv({ ...base, bestOffer: usd }));
     expect(cells["Variant Price"]).toBe("18.00");
     expect(cells["Variant Compare At Price"]).toBe("");
-    expect(cells["Cost per item"]).toBe(""); // the wholesale estimate is in GBP
   });
 
   it("leaves prices and cost empty without an offer, and takes the seller's own cost when given", () => {

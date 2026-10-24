@@ -23,6 +23,7 @@ const product = {
   category: "wireless-earbuds",
   imageUrl: null,
   bestOffer: { merchant: "Shop", url: "https://shop.test", price: { amount: "40.00", currency: "GBP" } },
+  resellable: true,
   margin: null,
 };
 const call = (query = "", id = product.id) =>
@@ -64,9 +65,18 @@ describe("GET /api/products/:id/shopify-csv (the Pro Shopify export)", () => {
     }
   });
 
-  it("uses the cost typed into the profit calculator", async () => {
+  it("uses the cost typed into the calculator, and never estimates one", async () => {
     viewer("PRO");
     expect(await (await call("?cost=12.5")).text()).toContain('"12.50","draft"');
+    expect(await (await call()).text()).toContain('"","draft"');
+  });
+
+  it("has no file for a product that fails a resale check", async () => {
+    viewer("PRO");
+    vi.mocked(getProduct).mockResolvedValue({ ...product, resellable: false } as never);
+    const res = await call("?cost=12.5");
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("not_resellable");
   });
 
   it("rejects a bad cost, and says when the product doesn't exist", async () => {

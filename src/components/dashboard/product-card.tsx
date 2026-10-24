@@ -145,9 +145,8 @@ function StatusChip({ sample }: { sample: boolean }) {
  * the title's link stretches over the card, so screen readers hear a single link
  * named after the product. Hovering lifts the card; pressing settles it back down.
  * The "bento" frame is a hairline ring that lights up in the accent on hover (the landing page and the
- * dashboard's catalog). `marginSummary={false}` leaves out the catalog's
- * estimated gross margin, which rests on v1's benchmark wholesale range (the public landing page
- * shows only figures from real captured prices).
+ * dashboard's catalog). The price-gap summary shows only for a product that passes the resale checks
+ * (a product that fails one gets no money figures); `marginSummary={false}` leaves it out.
  */
 export function ProductCard({
   product: p,
@@ -223,7 +222,7 @@ export function ProductCard({
             <ValueBadge score={getScore(p, "VALUE")} />
           </div>
 
-          {marginSummary && p.margin && <MarginSummary margin={p.margin} />}
+          {marginSummary && p.resellable && p.margin && <MarginSummary margin={p.margin} />}
 
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
             <SourcesBadge product={p} />

@@ -21,9 +21,8 @@ const tile =
 const money = (amount: number, currency: string) => formatPrice(String(amount), currency);
 
 /**
- * A showcase product: only the two resale routes, priced from real captured store prices. v1's benchmark
- * wholesale estimate (and its caveats) is left out, so it never reaches the public page, not even in
- * the data sent to the browser.
+ * A showcase product: only the two resale routes, priced from real captured store prices. The rest of
+ * the margin insight is left out, so only what the page shows reaches the browser.
  */
 export type ShowcaseProduct = Omit<ProductDto, "margin"> & { margin: Pick<MarginInsight, "arbitrage" | "arbitrageOwnStore"> | null };
 

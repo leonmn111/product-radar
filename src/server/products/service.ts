@@ -1,10 +1,12 @@
 // Read model for products: latest score per dimension, offers, and the
 // evidence behind them. Returns plain JSON-safe objects (no Prisma Decimals).
 
+import { isSellable } from "@/engine/compliance";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { marginInsight } from "@/server/margins/engine";
 import { bestCurrentOffer } from "@/server/scoring/engine";
 import { LATEST_FX } from "@/server/scoring/fx-latest";
+import { catalogResellability } from "@/services/catalogMargin";
 import { highestRrp } from "./rrp";
 import { minimumMatch, type SearchTerm } from "./search";
 import { hasPriceGap, pickShowcase } from "./showcase";
@@ -14,7 +16,7 @@ const MAX_EVIDENCE_PER_PRODUCT = 50;
 const PRODUCT_INCLUDE = {
   offers: {
     orderBy: [{ price: "asc" }, { observedAt: "desc" }],
-    include: { sourceEvidence: { select: { qualityScore: true } } },
+    include: { sourceEvidence: { select: { qualityScore: true, sourceType: true, claim: true } } },
   },
   // Newest evidence only — re-ingests add rows, so an unbounded list would grow forever.
   evidence: { orderBy: [{ observedAt: "desc" }, { id: "asc" }], take: MAX_EVIDENCE_PER_PRODUCT },
@@ -222,7 +224,7 @@ const webImage = (url: string | null) => (url && /^https?:\/\//i.test(url) ? url
 
 type ProductRow = Prisma.ProductGetPayload<{
   include: {
-    offers: { include: { sourceEvidence: { select: { qualityScore: true } } } };
+    offers: { include: { sourceEvidence: { select: { qualityScore: true, sourceType: true, claim: true } } } };
     evidence: true;
     scores: { include: { evidence: { select: { evidenceId: true } } } };
     _count: { select: { evidence: true } };
@@ -238,6 +240,8 @@ function toDto(p: ProductRow, asOf: Date, sources: SourceSummary = { sourceCount
     availability: o.availability,
     observedAt: o.observedAt.toISOString(),
     sourceEvidenceId: o.sourceEvidenceId,
+    // The evidence the price was captured from: how it's weighed for confidence, and what it says.
+    source: { quality: o.sourceEvidence.qualityScore.toNumber(), type: o.sourceEvidence.sourceType, claim: o.sourceEvidence.claim },
     rrp: o.rrp ? o.rrp.toFixed(2) : null, // the page's own RRP for this listing, same currency
   }));
 
@@ -265,8 +269,12 @@ function toDto(p: ProductRow, asOf: Date, sources: SourceSummary = { sourceCount
       bestOffer?.price.currency ?? null,
       asOf,
     ),
-    // Rule-based estimate: Census wholesale range + arbitrage from captured prices (src/server/margins).
-    margin: marginInsight({ category: p.category, offers: offerFacts, asOf, fx: LATEST_FX }),
+    // The resale checks (engine/compliance.ts) on the product's own text: a product that fails one gets no
+    // money figures anywhere in the dossier (CLAUDE.md Rule 7).
+    resellable: isSellable(catalogResellability({ name: p.name, brand: p.brand, category: p.category, description: p.description, offers })),
+    // Rule-based estimate from captured store prices only: the retail price and two resale price gaps
+    // (src/server/margins). The UK landed margin is src/services/catalogMargin.ts.
+    margin: marginInsight({ offers: offerFacts, asOf, fx: LATEST_FX }),
     scores: Object.fromEntries(
       p.scores.map((s) => [
         s.dimension,

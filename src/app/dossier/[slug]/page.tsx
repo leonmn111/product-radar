@@ -5,14 +5,16 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { formatDateTime, formatPrice, getScore, humanizeSlug } from "@/components/dashboard/format";
-import { OpportunityDossier } from "@/components/dashboard/opportunity-dossier";
+import { OpportunityDossier, type DossierViewer } from "@/components/dashboard/opportunity-dossier";
 import { ProductImage } from "@/components/dashboard/product-card";
 import { ConfidenceBadge } from "@/components/dashboard/score";
 import { UpgradeCard } from "@/components/dashboard/upgrade-card";
 import { db } from "@/lib/db";
 import { canIngest, canViewCatalog, canViewDossier, getViewer } from "@/server/auth/entitlements";
+import { liveSupplierSource } from "@/server/live/config";
 import { getProductBySlug, type ProductDto } from "@/server/products/service";
 import { getShowcase } from "@/server/products/showcase-cache";
+import { getCatalogMargin } from "@/services/catalogMargin";
 
 type Params = PageProps<"/dossier/[slug]">["params"];
 
@@ -24,7 +26,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const product = await db.product.findUnique({ where: { slug }, select: { name: true } });
   return {
     title: product ? `${product.name} — Dossier | ProductRadar` : "Dossier not found | ProductRadar",
-    description: "Evidence-backed opportunity dossier: verdict, margin and arbitrage after fees, profit calculator and sources.",
+    description: "Evidence-backed opportunity dossier: resale checks, the UK landed margin after VAT and fees, and every source.",
     robots: { index: false, follow: false },
   };
 }
@@ -112,6 +114,15 @@ function LockedDossier({ name, liveProducts }: { name: string; liveProducts: num
   );
 }
 
+/**
+ * The dossier below the summary, once the landed margin is known. Only a resellable product with a UK
+ * price asks the supplier source (one cached AliExpress call); everything else resolves at once.
+ */
+async function LandedDossier({ product, viewer }: { product: ProductDto; viewer: DossierViewer }) {
+  const landed = await getCatalogMargin(product, { supplier: liveSupplierSource() });
+  return <OpportunityDossier product={product} landed={landed} viewer={viewer} />;
+}
+
 async function DossierContent({ params }: { params: Params }) {
   const { slug } = await params;
   await connection(); // per request: the product read below uses the current time
@@ -136,12 +147,21 @@ async function DossierContent({ params }: { params: Params }) {
       </Link>
       <ProductSummary product={product} />
       {showcased && !pro && (
-        <p className="rounded-lg bg-accent-mint/10 px-4 py-3 text-sm text-slate-100 ring-1 ring-accent-mint/30 ring-inset">
+        <p className="rounded-lg bg-accent-mint/10 px-4 py-3 text-sm text-slate-900 ring-1 ring-accent-mint/30 ring-inset">
           <strong className="font-semibold">Free preview.</strong> This live product is open to everyone. Pro opens a
           dossier like this for every product in the catalog.
         </p>
       )}
-      <OpportunityDossier product={product} viewer={{ signedIn: viewer !== null, proTools: canIngest(viewer) }} />
+      <Suspense
+        fallback={
+          <div aria-hidden="true" className="space-y-4">
+            <div className="h-40 animate-pulse rounded-xl bg-slate-200/70 dark:bg-surface-raised/70" />
+            <div className="h-72 animate-pulse rounded-xl bg-slate-200/70 dark:bg-surface-raised/70" />
+          </div>
+        }
+      >
+        <LandedDossier product={product} viewer={{ signedIn: viewer !== null, proTools: canIngest(viewer) }} />
+      </Suspense>
       <p className="text-xs text-slate-600 dark:text-slate-400">
         Scores are calculated estimates (0–100) with a confidence (0–1), derived only from the linked evidence. They
         are not guarantees.

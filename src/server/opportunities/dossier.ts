@@ -4,29 +4,14 @@
 // code — knows nothing about how the caller paid.
 
 import type { PrismaClient } from "@/generated/prisma/client";
-import {
-  cleanTitle,
-  estimateProfit,
-  opportunityVerdict,
-  shopifyCsv,
-  sourcingKeywords,
-  startingWholesale,
-  supplierSearchUrls,
-} from "@/components/dashboard/dossier";
+import { cleanTitle, opportunityVerdict, shopifyCsv, sourcingKeywords, supplierSearchUrls } from "@/components/dashboard/dossier";
 import { confidenceLevel } from "@/components/dashboard/format";
 import { getProduct, type ProductDto } from "@/server/products/service";
 import { METHODOLOGY_VERSION } from "@/server/scoring/engine";
 
-function profitBeforeCosts(price: number, wholesale: number) {
-  const { net, marginPct } = estimateProfit(price, wholesale, 0);
-  return { netProfitPerUnit: net, marginPct };
-}
-
 export function buildDossier(p: ProductDto, now = new Date()) {
   const offer = p.bestOffer;
   const merchant = offer?.merchant ?? null;
-  const price = offer ? Number(offer.price.amount) : null;
-  const wholesale = startingWholesale(p.margin);
   const verdict = opportunityVerdict(p);
   const keywords = sourcingKeywords({ ...p, merchant });
 
@@ -34,7 +19,7 @@ export function buildDossier(p: ProductDto, now = new Date()) {
     generatedAt: now.toISOString(),
     methodologyVersion: METHODOLOGY_VERSION,
     disclaimer:
-      "Scores, the verdict, the margin insight and the profit figures are rule-based estimates calculated only from the cited evidence and benchmarks. They are not guarantees.",
+      "Scores, the verdict and the price gaps are rule-based estimates calculated only from the cited evidence. They are not guarantees. This v1 endpoint carries no landed margin: use GET /api/agent/v2/dossier/{asin} for the UK landed margin (sourced supplier cost, VAT and platform fees).",
     product: {
       id: p.id,
       name: cleanTitle(p.name, merchant),
@@ -69,20 +54,9 @@ export function buildDossier(p: ProductDto, now = new Date()) {
     bestOffer: offer,
     offers: p.offers,
     margin: p.margin,
-    profitEstimate:
-      offer && price !== null && wholesale !== null && p.margin
-        ? {
-            currency: offer.price.currency,
-            retailPrice: price,
-            retailPriceSource: { merchant: offer.merchant, url: offer.url, observedAt: offer.observedAt },
-            assumedWholesaleCost: wholesale,
-            ...profitBeforeCosts(price, wholesale),
-            assumptions: [
-              `Wholesale cost assumed at the middle of the estimate in margin.wholesaleEstimate (US Census gross margin for ${p.margin.benchmark.storeType}, ${p.margin.benchmark.years}): replace it with a real supplier quote.`,
-              "Advertising, shipping, platform fees and taxes are not included.",
-            ],
-          }
-        : null,
+    // Retired in methodology 2.0.0: it priced the wholesale cost from US Census averages, not a supplier
+    // (CLAUDE.md Rule 6). Kept as null so existing clients don't break.
+    profitEstimate: null,
     sourcing: {
       keywords,
       searchUrls: supplierSearchUrls(keywords),

@@ -4,6 +4,7 @@
 // evidence (CLAUDE.md Rule 3), and everything is presented as an estimate (Rule 4).
 
 import type { ProductDto } from "@/server/products/service";
+import type { LandedMargin } from "@/types/financials";
 import { humanizeSlug, type Evidence } from "./format";
 
 // ── Verdict ──────────────────────────────────────────────────────────────────
@@ -144,14 +145,18 @@ export function opportunityVerdict(p: ProductDto): Verdict | null {
 
 const cents = (x: number) => Math.round(x * 100) / 100;
 
-/** Where the wholesale cost starts: the middle of the Census-based estimate (src/server/margins), or null without a price. */
-export function startingWholesale(margin: ProductDto["margin"]) {
-  return margin ? cents((margin.wholesaleEstimate.low + margin.wholesaleEstimate.high) / 2) : null;
-}
+// Lines of the landed margin that the seller's own figures replace; every other line (VAT, duty,
+// handling, platform fees, returns) depends only on the retail price, so it carries over unchanged.
+const SELLER_LINES = new Set(["supplier", "shipping", "ad_cost"]);
 
-export function estimateProfit(price: number, wholesale: number, adShipping: number) {
-  const net = cents(price - wholesale - adShipping);
-  return { net, marginPct: price > 0 ? Math.round((net / price) * 1000) / 10 : null };
+/**
+ * The dossier's calculator: the sourced landed margin (src/engine/margin.ts) with the seller's own
+ * supplier cost and ad & shipping per sale in place of the waterfall's supplier, shipping and ad lines.
+ */
+export function ownNumbersProfit(m: LandedMargin, supplierCost: number, adShipping: number) {
+  const taxAndFees = cents(m.lines.filter((l) => !SELLER_LINES.has(l.kind)).reduce((s, l) => s + l.amount.amount, 0));
+  const net = cents(m.retailPrice.amount - taxAndFees - supplierCost - adShipping);
+  return { taxAndFees, net, marginPct: Math.round((net / m.retailPrice.amount) * 1000) / 10 };
 }
 
 /** Parses a money input; blank or invalid → null. */
@@ -229,7 +234,7 @@ export function supplierSearchUrls(keywords: string) {
 // Shopify's classic product import headers, which its importer still accepts
 // (help.shopify.com › Using CSV files: "Shopify maintains backward compatibility
 // with older column names"). "Cost per item" and "Status" are from the same
-// template: they carry the wholesale estimate and keep the import a draft.
+// template: they carry the seller's supplier cost and keep the import a draft.
 const SHOPIFY_COLUMNS = [
   "Handle",
   "Title",
@@ -302,7 +307,7 @@ export type ShopifyProduct = Pick<
  * - compareAtPrice: Shopify shows it struck through as a discount, so it is only ever the
  *   highest RRP a store publishes, and only when that is above the price; otherwise empty
  *   (a lower figure would read as a price rise).
- * - costPerItem: the middle of the wholesale estimate (a rule-based estimate).
+ * The cost per item is never estimated: it is the seller's own figure, passed to shopifyCsv.
  * Nothing is converted: a figure in another currency than the best price is left out.
  */
 export function shopifyPrices(p: Pick<ShopifyProduct, "bestOffer" | "margin" | "rrp">) {
@@ -320,7 +325,6 @@ export function shopifyPrices(p: Pick<ShopifyProduct, "bestOffer" | "margin" | "
     priceIsGoingRate: resale !== null,
     rrp,
     compareAtPrice: rrp && price !== null && Number(rrp.amount) > price ? Number(rrp.amount) : null,
-    costPerItem: p.margin && p.margin.currency === currency ? startingWholesale(p.margin) : null,
   };
 }
 
@@ -328,13 +332,12 @@ export const shopifyHandle = (p: Pick<ShopifyProduct, "name"> & { merchant?: str
 
 /**
  * One-product Shopify import file. Imported as a draft, so nothing goes live until the seller
- * reviews it. `costPerItem` replaces the wholesale estimate with the seller's own figure.
+ * reviews it. `costPerItem` is the seller's supplier cost (the dossier's calculator, which starts at
+ * the sourced AliExpress price when there is one); without it the column is left blank.
  */
-export function shopifyCsv(p: ShopifyProduct, { costPerItem: ownCost }: { costPerItem?: number | null } = {}) {
+export function shopifyCsv(p: ShopifyProduct, { costPerItem = null }: { costPerItem?: number | null } = {}) {
   const title = cleanTitle(p.name, p.merchant);
-  const prices = shopifyPrices(p);
-  const { price, compareAtPrice } = prices;
-  const costPerItem = ownCost ?? prices.costPerItem;
+  const { price, compareAtPrice } = shopifyPrices(p);
   const amount = (x: number | null) => (x !== null ? x.toFixed(2) : "");
   const row: Record<(typeof SHOPIFY_COLUMNS)[number], string> = {
     Handle: slugify(title),

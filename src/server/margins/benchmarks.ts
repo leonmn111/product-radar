@@ -1,7 +1,7 @@
-// Reference data behind the margin engine. Every figure here is copied from a
-// published source, with its URL, publication date, the date we read it and a
-// quality score (CLAUDE.md Rule 3). Refresh by re-reading the sources below,
-// then bump MARGIN_METHODOLOGY_VERSION in engine.ts.
+// Reference data behind the arbitrage engine: the resale fee schedules. Every figure here is copied
+// from a published source, with its URL, publication date, the date we read it and a quality score
+// (CLAUDE.md Rule 3). Refresh by re-reading the sources below, then bump MARGIN_METHODOLOGY_VERSION in
+// engine.ts. (The US Census wholesale benchmark that used to live here was removed in v2.0.0.)
 
 export type SourceRef = {
   name: string;
@@ -10,69 +10,6 @@ export type SourceRef = {
   retrievedAt: string; // ISO date we read it
   qualityScore: number; // 0–100, same scale as Evidence.qualityScore
 };
-
-// ── Wholesale cost benchmark ─────────────────────────────────────────────────
-// A retailer's gross margin is (sales − cost of goods sold) / sales, so the
-// wholesale cost of an item is about retail × (1 − gross margin). The US Census
-// Bureau publishes that margin by kind of store every year.
-//
-// Quality 60: official statistics, but an average over everything those stores
-// sell, US only and up to 2022, so it describes the category, not the product.
-
-export const CENSUS_GROSS_MARGIN_SOURCE: SourceRef = {
-  name: "US Census Bureau, Annual Retail Trade Survey: Gross Margin as a Percentage of Sales (1993–2022)",
-  url: "https://www2.census.gov/programs-surveys/arts/tables/2022benchmarked/gmper.xlsx",
-  publishedAt: "2026-08-31",
-  retrievedAt: "2026-10-12",
-  qualityScore: 60,
-};
-
-export const BENCHMARK_YEARS = [2018, 2019, 2020, 2021, 2022] as const;
-
-export type StoreType = {
-  naicsCode: string | null; // null for the all-retail total
-  name: string;
-  // Gross margin as % of sales, in BENCHMARK_YEARS order, as published (2018–2022 revised).
-  grossMarginPct: readonly [number, number, number, number, number];
-};
-
-export const STORE_TYPES = {
-  healthPersonalCare: { naicsCode: "4461", name: "Health and personal care stores", grossMarginPct: [29.1, 29.1, 28.3, 30.0, 32.9] },
-  shoe: { naicsCode: "4482", name: "Shoe stores", grossMarginPct: [46.8, 47.2, 42.1, 50.8, 50.9] },
-  electronicsAppliance: { naicsCode: "443", name: "Electronics and appliance stores", grossMarginPct: [31.0, 30.7, 28.8, 33.4, 29.4] },
-  buildingGarden: {
-    naicsCode: "444",
-    name: "Building material and garden equipment and supplies dealers",
-    grossMarginPct: [34.4, 34.4, 35.3, 36.2, 35.6],
-  },
-  allRetail: {
-    naicsCode: null,
-    name: "All retail stores (excluding motor vehicle and parts dealers)",
-    grossMarginPct: [32.1, 32.0, 32.4, 33.8, 32.9],
-  },
-} as const satisfies Record<string, StoreType>;
-
-/**
- * The store type whose margins stand in for each ProductRadar category. Beauty
- * uses health and personal care stores: the Census table doesn't publish
- * cosmetics stores separately, and this row includes pharmacies, so it errs low.
- * Any category not listed falls back to all retail stores.
- */
-export const CATEGORY_STORE_TYPE: Record<string, keyof typeof STORE_TYPES> = {
-  beauty: "healthPersonalCare",
-  hair: "healthPersonalCare",
-  earplugs: "healthPersonalCare",
-  "running-shoes": "shoe",
-  "tech-accessories": "electronicsAppliance",
-  gadgets: "electronicsAppliance",
-  "wireless-earbuds": "electronicsAppliance",
-  "espresso-machines": "electronicsAppliance",
-  "house-plants": "buildingGarden",
-};
-
-export function storeTypeFor(category: string): StoreType {
-  return STORE_TYPES[CATEGORY_STORE_TYPE[category] ?? "allRetail"];
-}
 
 // ── Resale fees ──────────────────────────────────────────────────────────────
 // What it costs to resell one unit, for two routes a reseller might take. Each

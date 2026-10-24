@@ -109,7 +109,7 @@ async function HeroStats() {
 async function ShowcaseContent() {
   await connection();
   const { products: all } = await getShowcase();
-  // Only the real-price resale routes go to the browser; v1's benchmark wholesale estimate stays out.
+  // Only the two real-price resale routes go to the browser, nothing else from the margin insight.
   const products: ShowcaseProduct[] = all.map(({ margin, ...p }) => ({
     ...p,
     margin: margin && { arbitrage: margin.arbitrage, arbitrageOwnStore: margin.arbitrageOwnStore },

@@ -3,8 +3,8 @@
 > **Pivot in progress (2026-10-15).** ProductRadar is being rebuilt as a **Live Search & Scrape on
 > Demand** engine, paid per query in USDC. This README documents **v1**, the static catalog that
 > still runs on theproductradar.io today. For the target design see [ARCHITECTURE.md](./ARCHITECTURE.md),
-> for the plan and open decisions [ROADMAP.md](./ROADMAP.md). v1 sections such as "Margin engine"
-> (Census benchmarks) and the import scripts describe code that v2 will retire.
+> for the plan and open decisions [ROADMAP.md](./ROADMAP.md). v1 sections such as the import scripts
+> describe code that v2 will retire.
 
 Next.js (App Router) · TypeScript · PostgreSQL · Prisma 7 · Zod · Tailwind CSS.
 Architecture rules live in [CLAUDE.md](./CLAUDE.md).
@@ -352,14 +352,17 @@ scores. Full formulas are in the file header. In short:
 ## Margin engine
 
 `src/server/margins/engine.ts` (pure, like the scoring engine; formulas in the file header) adds `margin` to every
-product with a current price. It is computed when a product is read, so nothing needs rescoring. It's shown on
-catalog cards, in the dossier, and in both agent endpoints and the MCP tools.
+product with a current price: the retail price and two resale price gaps, from captured store prices only. It is
+computed when a product is read, so nothing needs rescoring. Methodology 2.0.0 removed v1's US Census wholesale
+range: a category average is not a supplier cost (CLAUDE.md Rule 6).
 
-- **Wholesale range and gross margin spread:** retail price (the card's lowest current price) × the US Census
-  retail gross margin for the store type that sells the category, lowest to highest over 2018–2022. These are
-  category averages, not supplier quotes, and the UI and API say so. The figures, the category → store-type
-  mapping and the sources live in `src/server/margins/benchmarks.ts`. A new category falls back to all retail
-  stores, so add it to `CATEGORY_STORE_TYPE` when you create one.
+- **UK landed margin (the dossier page):** `src/services/catalogMargin.ts` runs the v2 engine on the catalog's
+  own prices. The resale checks come first (`src/engine/compliance.ts`; a product that fails one gets no money
+  figures anywhere in the dossier, and `product.resellable` is false). Then: retail = median of the stores'
+  current GBP prices; supplier = median of the live AliExpress offers whose titles match (one budgeted call,
+  cached for a day per search term; a failed search is never cached); the 0.7 confidence gate; and
+  `calculateUKMargin` (20% UK VAT, the £135 low-value rule, TikTok Shop UK fees). Shipping, returns and ad cost
+  are named as not counted. Amazon UK fees need the product's category and size tier, so no Amazon figure is shown.
 - **Which prices count (scoring v1.5.0, margin v1.2.0):** each store's newest capture from the last 30 days,
   and only if that capture is in stock or on pre-order. An older, cheaper capture never stands in for a store's
   current price, so "lowest current price", the Value score and the margin figures all use the same prices.
@@ -369,9 +372,10 @@ catalog cards, in the dossier, and in both agent endpoints and the MCP tools.
   Payments card fees for your own shop (Basic plan: 2% + 25p in GBP, otherwise the US 2.9% + 30¢; advertising and
   the plan fee are not included). `HIGH_ARBITRAGE` needs a return of 25% or more and at least €10 per unit,
   `MODERATE` 10% and €3, and anything else (including a single store) is `RETAIL_ONLY`.
-- The calculator's starting wholesale cost, and the dossier's `profitEstimate`, use the middle of the range.
-- To refresh: re-read the Census table (published yearly) and the eBay and Shopify fee pages, update `benchmarks.ts`, and bump
-  `MARGIN_METHODOLOGY_VERSION`.
+- The dossier's calculator starts at the sourced supplier cost and keeps the waterfall's VAT and fee lines; the
+  Shopify export's cost per item is the calculator's figure, never an estimate. The v1 agent dossier's
+  `profitEstimate` is always null since 2.0.0.
+- To refresh: re-read the eBay and Shopify fee pages, update `benchmarks.ts`, and bump `MARGIN_METHODOLOGY_VERSION`.
 
 ## Data model
 
