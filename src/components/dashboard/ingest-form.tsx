@@ -11,8 +11,8 @@ type State =
   | { kind: "error"; message: string };
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
-const field = `h-11 w-full rounded-xl border-0 text-sm text-zinc-900 placeholder:text-zinc-500 disabled:opacity-60 dark:text-zinc-100 dark:placeholder:text-zinc-500 ${focusRing}`;
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
+const field = `h-11 w-full rounded-xl border-0 text-sm text-slate-900 placeholder:text-slate-400 disabled:opacity-60 dark:text-slate-100 dark:placeholder:text-slate-400 ${focusRing}`;
 
 export function IngestForm({
   categories,
@@ -71,7 +71,7 @@ export function IngestForm({
       </h2>
       <form
         onSubmit={submit}
-        className="flex flex-col gap-2 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-zinc-200 transition focus-within:ring-purple-500/60 motion-reduce:transition-none sm:flex-row sm:items-center dark:bg-zinc-900 dark:ring-white/10 dark:focus-within:ring-purple-500/50"
+        className="flex flex-col gap-2 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200 transition focus-within:ring-accent-mint/50 motion-reduce:transition-none sm:flex-row sm:items-center dark:bg-surface-dark dark:ring-white/10"
       >
         <div className="relative min-w-0 flex-1">
           <svg
@@ -82,7 +82,7 @@ export function IngestForm({
             strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-purple-600 dark:text-purple-400"
+            className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-accent-mint"
           >
             <path d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
           </svg>
@@ -108,7 +108,7 @@ export function IngestForm({
           />
           <kbd
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-zinc-500 ring-1 ring-zinc-200 ring-inset sm:block dark:bg-white/5 dark:text-zinc-400 dark:ring-white/10"
+            className="pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-400 ring-1 ring-slate-200 ring-inset sm:block dark:bg-white/5 dark:text-slate-400 dark:ring-white/10"
           >
             /
           </kbd>
@@ -128,7 +128,7 @@ export function IngestForm({
             value={category}
             onChange={(e) => setCategory(e.target.value.toLowerCase())}
             disabled={busy}
-            className={`${field} min-w-0 flex-1 bg-zinc-50 px-3 ring-1 ring-zinc-200 ring-inset sm:w-48 sm:flex-none dark:bg-white/5 dark:ring-white/10`}
+            className={`${field} min-w-0 flex-1 bg-slate-50 px-3 ring-1 ring-slate-200 ring-inset sm:w-48 sm:flex-none dark:bg-white/5 dark:ring-white/10`}
           />
           <datalist id={ids.list}>
             {categories.map((c) => (
@@ -140,7 +140,7 @@ export function IngestForm({
           <button
             type="submit"
             disabled={busy}
-            className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 text-sm font-semibold text-white shadow-sm shadow-purple-600/30 transition hover:bg-purple-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 motion-reduce:transition-none dark:hover:bg-purple-600 dark:hover:shadow-md dark:hover:shadow-purple-500/40 ${focusRing}`}
+            className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-mint px-5 text-sm font-semibold text-background-dark shadow-sm shadow-accent-mint/20 transition hover:bg-accent-mint-strong active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 motion-reduce:transition-none dark:hover:shadow-md hover:shadow-accent-mint/30 ${focusRing}`}
           >
             {busy && (
               <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 animate-spin" fill="none">
@@ -152,14 +152,14 @@ export function IngestForm({
           </button>
         </div>
       </form>
-      <p id={ids.hint} className="mt-2 px-1 text-xs text-zinc-500 dark:text-zinc-400">
+      <p id={ids.hint} className="mt-2 px-1 text-xs text-slate-400 dark:text-slate-400">
         We read the price, stock and rating the store publishes, save them as evidence and score the product. Works best
         with independent stores (e.g. Shopify); some large marketplaces block automated readers.
       </p>
 
       <div aria-live="polite" className="mt-3 empty:hidden">
         {state.kind === "submitting" && (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             Fetching the page, extracting product data and recalculating scores…
           </p>
         )}

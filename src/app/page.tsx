@@ -6,6 +6,8 @@ import { Navbar, type NavLink } from "@/components/layout/Navbar";
 import { LiveStats, LiveStatsSkeleton } from "@/components/landing/live-stats";
 import { Platform, PlatformSkeleton } from "@/components/landing/platform";
 import { Showcase, type ShowcaseProduct } from "@/components/landing/showcase";
+import { TiltTerminal } from "@/components/landing/tilt-terminal";
+import { TrustBento } from "@/components/landing/trust-bento";
 import { SITE_URL } from "@/lib/site";
 import { PLANS } from "@/server/billing/plans";
 import { getShowcase } from "@/server/products/showcase-cache";
@@ -204,22 +206,6 @@ const STEPS = [
   },
 ];
 
-// What the v2 engine guarantees (ARCHITECTURE.md); every claim here is something the code does.
-const TRUST = [
-  [
-    "True landed margin, every line sourced",
-    "Live Amazon UK prices and listings, cross-referenced with live AliExpress supplier costs, then VAT, import duty, platform fees and the most each sale can spend on ads. A cost that can't be sourced is named, never guessed.",
-  ],
-  [
-    "UK and EU compliance, checked first",
-    "Before any money maths, each product is checked for resale risk: a brand selling direct, trademarks, UKCA/CE marking, cosmetics and battery rules. A product you can't resell gets no margin.",
-  ],
-  [
-    "Gated by confidence, never padded",
-    "A verdict needs 0.5 confidence and every number 0.7. Below that, the Dossier says what evidence is missing instead of estimating, and nothing is a guarantee.",
-  ],
-] as const;
-
 const PRO_FEATURES = [
   "100 free Amazon UK searches a month",
   "Standard Dossiers for 1 credit instead of 4",
@@ -339,7 +325,9 @@ export default function Home() {
                   UK + EU margins · 8 parts · every number cited · confidence-gated
                 </p>
               </div>
-              <TerminalPreview />
+              <TiltTerminal>
+                <TerminalPreview />
+              </TiltTerminal>
             </div>
             <div className="mx-auto mt-16 max-w-5xl">
               <Suspense fallback={<LiveStatsSkeleton />}>
@@ -423,22 +411,29 @@ export default function Home() {
                 </li>
               ))}
             </ol>
-            <dl className="mt-12 grid gap-x-8 gap-y-6 border-t border-line-dark pt-10 md:grid-cols-3">
-              {TRUST.map(([title, body]) => (
-                <div key={title} className="flex gap-3">
-                  <Check />
-                  <div>
-                    <dt className="font-semibold text-white">{title}</dt>
-                    <dd className="mt-1 text-sm/6 text-slate-400">{body}</dd>
-                  </div>
-                </div>
-              ))}
-            </dl>
+          </div>
+        </section>
+
+        {/* Why it holds up: the three guarantees, as a bento grid */}
+        <section id="why" aria-labelledby="why-title" className="scroll-mt-16 py-16 sm:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl">
+              <p className={eyebrow}>Why it holds up</p>
+              <h2 id="why-title" className={`mt-2 ${sectionTitle}`}>
+                Numbers you can defend before you buy stock
+              </h2>
+              <p className="mt-4 text-lg/8 text-slate-400">
+                Every Dossier is built the same way, from live sources, with every line cited and nothing estimated to fill a gap.
+              </p>
+            </div>
+            <div className="mt-12">
+              <TrustBento />
+            </div>
           </div>
         </section>
 
         {/* For agents */}
-        <section id="agents" aria-labelledby="agents-title" className="scroll-mt-16 py-16 text-slate-300 sm:py-20">
+        <section id="agents" aria-labelledby="agents-title" className="scroll-mt-16 border-y border-line-dark bg-surface-dark/40 py-16 text-slate-300 sm:py-20">
           <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
             <div>
               <p className="text-sm font-semibold text-accent-mint">For buyer agents</p>
@@ -498,7 +493,7 @@ export default function Home() {
         </section>
 
         {/* Pricing */}
-        <section id="pricing" aria-labelledby="pricing-title" className="scroll-mt-16 border-y border-line-dark bg-surface-dark/40 py-16 sm:py-20">
+        <section id="pricing" aria-labelledby="pricing-title" className="scroll-mt-16 py-16 sm:py-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center">
               <p className={eyebrow}>Pricing</p>
@@ -555,7 +550,7 @@ export default function Home() {
         </section>
 
         {/* FAQ */}
-        <section id="faq" aria-labelledby="faq-title" className="scroll-mt-16 py-16 sm:py-20">
+        <section id="faq" aria-labelledby="faq-title" className="scroll-mt-16 border-y border-line-dark bg-surface-dark/40 py-16 sm:py-20">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <h2 id="faq-title" className={`text-center ${sectionTitle}`}>
               Questions
@@ -579,7 +574,7 @@ export default function Home() {
         </section>
 
         {/* Closing call to action */}
-        <section aria-labelledby="cta-title" className="border-t border-line-dark bg-surface-dark/40 py-16 sm:py-24">
+        <section aria-labelledby="cta-title" className="py-16 sm:py-24">
           <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
             <h2 id="cta-title" className={sectionTitle}>
               Check your next product before you stock it.

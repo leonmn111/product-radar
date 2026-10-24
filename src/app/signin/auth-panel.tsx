@@ -51,7 +51,7 @@ export function AuthPanel({ callbackUrl, initialTab, linkError }: { callbackUrl:
 
   return (
     <div>
-      <div role="tablist" aria-label="Sign in or create an account" className="grid grid-cols-2 gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+      <div role="tablist" aria-label="Sign in or create an account" className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1 dark:bg-surface-raised">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -64,7 +64,7 @@ export function AuthPanel({ callbackUrl, initialTab, linkError }: { callbackUrl:
             tabIndex={tab === t.key ? 0 : -1}
             onClick={() => setTab(t.key)}
             onKeyDown={onTabKey}
-            className="rounded-md px-3 py-1.5 text-sm font-semibold text-zinc-600 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 aria-selected:bg-white aria-selected:text-zinc-950 aria-selected:shadow-sm dark:text-zinc-400 dark:hover:text-zinc-100 dark:aria-selected:bg-zinc-950 dark:aria-selected:text-white"
+            className="rounded-md px-3 py-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint aria-selected:bg-white aria-selected:text-slate-950 aria-selected:shadow-sm dark:text-slate-400 dark:hover:text-slate-100 dark:aria-selected:bg-background-dark dark:aria-selected:text-white"
           >
             {t.label}
           </button>
@@ -83,7 +83,7 @@ export function AuthPanel({ callbackUrl, initialTab, linkError }: { callbackUrl:
               </label>
               <Link
                 href="/signin/forgot"
-                className="text-xs font-medium text-purple-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:text-purple-300"
+                className="text-xs font-medium text-accent-mint hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint"
               >
                 Forgot password?
               </Link>
@@ -93,15 +93,15 @@ export function AuthPanel({ callbackUrl, initialTab, linkError }: { callbackUrl:
           <SubmitButton pendingLabel="Signing in…" notWhile={sendLink}>
             Sign in
           </SubmitButton>
-          <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400" aria-hidden>
-            <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-700" />
+          <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-400" aria-hidden>
+            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
             or
-            <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-700" />
+            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
           </div>
           <SubmitButton formAction={sendLink} variant="secondary" pendingLabel="Sending link…">
             Email me a sign-in link
           </SubmitButton>
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">No password? The link signs you in, and creates an account if you&apos;re new.</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400">No password? The link signs you in, and creates an account if you&apos;re new.</p>
         </form>
       </div>
 
@@ -123,13 +123,13 @@ export function AuthPanel({ callbackUrl, initialTab, linkError }: { callbackUrl:
             {registerState.fieldErrors?.password ? (
               <FieldError id={`${ids}-register-password-hint`} message={registerState.fieldErrors.password} />
             ) : (
-              <p id={`${ids}-register-password-hint`} className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+              <p id={`${ids}-register-password-hint`} className="mt-1 text-xs text-slate-600 dark:text-slate-400">
                 At least 8 characters.
               </p>
             )}
           </div>
           <SubmitButton pendingLabel="Creating account…">Create account</SubmitButton>
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">Free to create. No card needed.</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400">Free to create. No card needed.</p>
         </form>
       </div>
     </div>

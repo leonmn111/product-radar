@@ -40,7 +40,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 ];
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
@@ -148,9 +148,9 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
       {hasSample && (
         <p
           role="note"
-          className="flex items-start gap-2 rounded-xl border border-zinc-200 bg-white/60 px-3 py-1.5 text-xs text-zinc-600 sm:inline-flex sm:items-center sm:rounded-full dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400"
+          className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white/60 px-3 py-1.5 text-xs text-slate-600 sm:inline-flex sm:items-center sm:rounded-full dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400"
         >
-          <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-px size-4 shrink-0 text-zinc-400 sm:mt-0 dark:text-zinc-500">
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="mt-px size-4 shrink-0 text-slate-400 sm:mt-0 dark:text-slate-400">
             <path
               fillRule="evenodd"
               d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z"
@@ -158,7 +158,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
             />
           </svg>
           <span>
-            <span className="font-medium text-zinc-800 dark:text-zinc-200">Includes sample data.</span> &ldquo;Sample&rdquo;
+            <span className="font-medium text-slate-800 dark:text-slate-200">Includes sample data.</span> &ldquo;Sample&rdquo;
             products use fictional brands and example.com sources; &ldquo;Live&rdquo; ones come from real store pages.
           </span>
         </p>
@@ -182,8 +182,8 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
                 onClick={() => setCategory(c)}
                 className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition motion-reduce:transition-none ${focusRing} ${
                   active
-                    ? "bg-purple-600 text-white shadow-sm shadow-purple-600/30"
-                    : "bg-white text-zinc-600 ring-1 ring-zinc-200 ring-inset hover:text-zinc-950 hover:ring-zinc-300 dark:bg-white/[0.03] dark:text-zinc-400 dark:ring-white/10 dark:hover:text-white dark:hover:ring-white/20"
+                    ? "bg-accent-mint text-background-dark shadow-sm shadow-accent-mint/20"
+                    : "bg-white text-slate-600 ring-1 ring-slate-200 ring-inset hover:text-slate-950 hover:ring-slate-300 dark:bg-white/[0.03] dark:text-slate-400 dark:ring-white/10 dark:hover:text-white dark:hover:ring-white/20"
                 }`}
               >
                 {c ? humanizeSlug(c) : "All categories"}
@@ -195,7 +195,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
           <div
             role="group"
             aria-label="Layout"
-            className="hidden rounded-xl bg-zinc-100 p-1 ring-1 ring-zinc-200 ring-inset md:flex dark:bg-white/5 dark:ring-white/10"
+            className="hidden rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200 ring-inset md:flex dark:bg-white/5 dark:ring-white/10"
           >
             {(["cards", "table"] as const).map((v) => (
               <button
@@ -203,7 +203,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
                 type="button"
                 aria-pressed={view === v}
                 onClick={() => setView(v)}
-                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm font-medium text-zinc-500 transition hover:text-zinc-900 aria-pressed:bg-white aria-pressed:text-zinc-950 aria-pressed:shadow-sm motion-reduce:transition-none dark:text-zinc-400 dark:hover:text-zinc-100 dark:aria-pressed:bg-zinc-800 dark:aria-pressed:text-white ${focusRing}`}
+                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm font-medium text-slate-400 transition hover:text-slate-900 aria-pressed:bg-white aria-pressed:text-slate-950 aria-pressed:shadow-sm motion-reduce:transition-none dark:text-slate-400 dark:hover:text-slate-100 dark:aria-pressed:bg-surface-raised dark:aria-pressed:text-white ${focusRing}`}
               >
                 <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-4">
                   {v === "cards" ? (
@@ -220,13 +220,13 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
               </button>
             ))}
           </div>
-          <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+          <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <span className="shrink-0">Sort by</span>
             <span className="relative">
               <select
                 value={sortKey}
                 onChange={(e) => setSortKey(e.target.value as SortKey)}
-                className={`h-9 appearance-none rounded-xl border-0 bg-white py-1.5 pr-9 pl-3 text-sm font-medium text-zinc-900 ring-1 ring-zinc-200 ring-inset hover:ring-zinc-300 dark:bg-white/5 dark:text-zinc-100 dark:ring-white/10 dark:hover:ring-white/20 ${focusRing}`}
+                className={`h-9 appearance-none rounded-xl border-0 bg-white py-1.5 pr-9 pl-3 text-sm font-medium text-slate-900 ring-1 ring-slate-200 ring-inset hover:ring-slate-300 dark:bg-white/5 dark:text-slate-100 dark:ring-white/10 dark:hover:ring-white/20 ${focusRing}`}
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.key} value={o.key}>
@@ -238,7 +238,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
                 aria-hidden="true"
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-zinc-500 dark:text-zinc-400"
+                className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-400"
               >
                 <path
                   fillRule="evenodd"
@@ -275,10 +275,10 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
       ) : loading ? (
         <CardGridSkeleton />
       ) : products.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-zinc-300 p-10 text-center dark:border-white/15">
-          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">No products yet.</p>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Run <code className="rounded bg-zinc-100 px-1 py-0.5 font-mono text-xs dark:bg-zinc-800">npm run db:seed</code>{" "}
+        <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center dark:border-white/15">
+          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">No products yet.</p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Run <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs dark:bg-surface-raised">npm run db:seed</code>{" "}
             to load sample data.
           </p>
         </div>
@@ -290,7 +290,7 @@ export function ProductDashboard({ viewer }: { viewer: DashboardViewer }) {
       )}
 
       {data && (
-        <p className="text-xs text-zinc-600 dark:text-zinc-400">
+        <p className="text-xs text-slate-600 dark:text-slate-400">
           {data.meta.disclaimer} Methodology v{data.meta.methodologyVersion}. &ldquo;conf.&rdquo; = how much evidence
           supports the score.
         </p>
@@ -306,15 +306,15 @@ type ListProps = {
   highlightId: string | null;
 };
 
-const HIGHLIGHT = "bg-purple-50 ring-2 ring-purple-500 ring-inset dark:bg-purple-950/40 dark:ring-purple-400";
+const HIGHLIGHT = "bg-accent-mint/10 ring-2 ring-accent-mint ring-inset";
 
 function ProductTable({ products, highlightId }: ListProps) {
   return (
-    <div className="hidden overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-200 md:block dark:bg-zinc-900 dark:ring-white/10">
+    <div className="hidden overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 md:block dark:bg-surface-dark dark:ring-white/10">
       <div className="overflow-x-auto">
         <table className="min-w-full text-left">
           <caption className="sr-only">Products ranked with evidence-based scores</caption>
-          <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium tracking-wide text-zinc-600 uppercase dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400">
+          <thead className="border-b border-slate-200 bg-slate-50 text-xs font-medium tracking-wide text-slate-600 uppercase dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
             <tr>
               <th scope="col" className="w-10 py-3 pl-4">
                 #
@@ -338,14 +338,14 @@ function ProductTable({ products, highlightId }: ListProps) {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-200 dark:divide-white/10">
+          <tbody className="divide-y divide-slate-200 dark:divide-white/10">
             {products.map((p, i) => (
               <tr
                 key={p.id}
                 data-product-id={p.id}
-                className={`transition-colors duration-700 ${p.id === highlightId ? HIGHLIGHT : "hover:bg-zinc-50 dark:hover:bg-white/[0.03]"}`}
+                className={`transition-colors duration-700 ${p.id === highlightId ? HIGHLIGHT : "hover:bg-slate-50 dark:hover:bg-white/[0.03]"}`}
               >
-                <td className="py-4 pl-4 align-top text-sm tabular-nums text-zinc-500 dark:text-zinc-400">{i + 1}</td>
+                <td className="py-4 pl-4 align-top text-sm tabular-nums text-slate-400 dark:text-slate-400">{i + 1}</td>
                 <td className="px-3 py-4 align-top">
                   <ProductName product={p} />
                 </td>
@@ -363,7 +363,7 @@ function ProductTable({ products, highlightId }: ListProps) {
                 <td className="py-4 pr-4 text-right align-top">
                   <Link
                     href={dossierHref(p)}
-                    className={`group inline-flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-purple-700 hover:bg-purple-50 dark:text-purple-300 dark:hover:bg-purple-950/40 ${focusRing}`}
+                    className={`group inline-flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-accent-mint hover:bg-accent-mint/15 ${focusRing}`}
                   >
                     Dossier
                     <span className="sr-only"> for {p.name}</span>
@@ -396,15 +396,15 @@ function ProductGrid({ products, highlightId, className = "" }: ListProps & { cl
 function ProductName({ product: p }: { product: ProductDto }) {
   return (
     <div className="min-w-0">
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-zinc-950 dark:text-white">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-slate-950 dark:text-white">
         <Link
           href={dossierHref(p)}
-          className={`rounded-sm hover:text-purple-700 hover:underline hover:underline-offset-2 dark:hover:text-purple-300 ${focusRing}`}
+          className={`rounded-sm hover:text-accent-mint hover:underline hover:underline-offset-2 ${focusRing}`}
         >
           {p.name}
         </Link>
         {p.isSample ? (
-          <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-700 ring-1 ring-zinc-500/20 ring-inset dark:bg-white/10 dark:text-zinc-300 dark:ring-white/15">
+          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-slate-500/20 ring-inset dark:bg-white/10 dark:text-slate-300 dark:ring-white/15">
             Sample
           </span>
         ) : (
@@ -413,11 +413,11 @@ function ProductName({ product: p }: { product: ProductDto }) {
           </span>
         )}
       </p>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="text-sm text-slate-600 dark:text-slate-400">
         {p.brand && <>{p.brand} · </>}
         {humanizeSlug(p.category)}
       </p>
-      <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-400">
         {p.evidenceCount} evidence · {p.offers.length} offer{p.offers.length === 1 ? "" : "s"}
       </p>
     </div>
@@ -425,13 +425,13 @@ function ProductName({ product: p }: { product: ProductDto }) {
 }
 
 function BestPrice({ product: p }: { product: ProductDto }) {
-  if (!p.bestOffer) return <span className="text-sm text-zinc-500 dark:text-zinc-400">No current offer</span>;
+  if (!p.bestOffer) return <span className="text-sm text-slate-400 dark:text-slate-400">No current offer</span>;
   return (
     <div>
-      <p className="text-sm font-semibold tabular-nums text-zinc-950 dark:text-white">
+      <p className="text-sm font-semibold tabular-nums text-slate-950 dark:text-white">
         {formatPrice(p.bestOffer.price.amount, p.bestOffer.price.currency)}
       </p>
-      <p className="text-xs text-zinc-600 dark:text-zinc-400">{p.bestOffer.merchant}</p>
+      <p className="text-xs text-slate-600 dark:text-slate-400">{p.bestOffer.merchant}</p>
     </div>
   );
 }

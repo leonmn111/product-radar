@@ -17,7 +17,7 @@ import { getShowcase } from "@/server/products/showcase-cache";
 type Params = PageProps<"/dossier/[slug]">["params"];
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
@@ -33,11 +33,11 @@ function ProductSummary({ product: p }: { product: ProductDto }) {
   const overall = getScore(p, "OVERALL");
   return (
     <section aria-labelledby="product-name" className="flex flex-col gap-5 sm:flex-row sm:items-start">
-      <div className="w-full max-w-56 shrink-0 self-center overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm sm:w-48 sm:self-start dark:border-zinc-800">
+      <div className="w-full max-w-56 shrink-0 self-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:w-48 sm:self-start dark:border-line-dark">
         <ProductImage src={p.imageUrl} alt={p.name} label={p.brand ?? p.name} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-center gap-2 text-xs font-semibold tracking-wide text-purple-700 uppercase dark:text-purple-300">
+        <p className="flex flex-wrap items-center gap-2 text-xs font-semibold tracking-wide text-accent-mint uppercase">
           {p.brand && <span>{p.brand}</span>}
           <span
             className={`rounded-md px-1.5 py-0.5 tracking-normal normal-case ring-1 ring-inset ${
@@ -49,44 +49,44 @@ function ProductSummary({ product: p }: { product: ProductDto }) {
             {p.isSample ? "Sample" : "Live"}
           </span>
         </p>
-        <h1 id="product-name" className="mt-1 text-2xl font-semibold tracking-tight text-balance text-zinc-950 sm:text-3xl dark:text-white">
+        <h1 id="product-name" className="mt-1 text-2xl font-semibold tracking-tight text-balance text-slate-950 sm:text-3xl dark:text-white">
           {p.name}
         </h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{humanizeSlug(p.category)}</p>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{humanizeSlug(p.category)}</p>
 
         <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-4">
           <div>
-            <dt className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Overall score</dt>
+            <dt className="text-xs font-medium text-slate-600 dark:text-slate-400">Overall score</dt>
             <dd className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white">
+              <span className="text-2xl font-semibold tabular-nums text-slate-950 dark:text-white">
                 {overall ? Math.round(overall.value) : "—"}
-                <span className="text-sm font-normal text-zinc-500 dark:text-zinc-400"> / 100</span>
+                <span className="text-sm font-normal text-slate-400 dark:text-slate-400"> / 100</span>
               </span>
               {overall && <ConfidenceBadge confidence={overall.confidence} />}
             </dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Lowest current price</dt>
+            <dt className="text-xs font-medium text-slate-600 dark:text-slate-400">Lowest current price</dt>
             <dd className="mt-1">
               {p.bestOffer ? (
                 <>
-                  <span className="text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white">
+                  <span className="text-2xl font-semibold tabular-nums text-slate-950 dark:text-white">
                     {formatPrice(p.bestOffer.price.amount, p.bestOffer.price.currency)}
                   </span>
-                  <span className="block text-xs text-zinc-600 dark:text-zinc-400">
+                  <span className="block text-xs text-slate-600 dark:text-slate-400">
                     at {p.bestOffer.merchant}, seen {formatDateTime(p.bestOffer.observedAt)}
                   </span>
                 </>
               ) : (
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">No current offer</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">No current offer</span>
               )}
             </dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Evidence</dt>
-            <dd className="mt-1 text-sm text-zinc-950 dark:text-zinc-100">
+            <dt className="text-xs font-medium text-slate-600 dark:text-slate-400">Evidence</dt>
+            <dd className="mt-1 text-sm text-slate-950 dark:text-slate-100">
               <span className="text-2xl font-semibold tabular-nums">{p.sourceCount}</span> source{p.sourceCount === 1 ? "" : "s"}
-              <span className="block text-xs text-zinc-600 dark:text-zinc-400">
+              <span className="block text-xs text-slate-600 dark:text-slate-400">
                 {p.evidenceCount} evidence item{p.evidenceCount === 1 ? "" : "s"}
               </span>
             </dd>
@@ -102,8 +102,8 @@ function LockedDossier({ name, liveProducts }: { name: string; liveProducts: num
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-balance text-zinc-950 sm:text-3xl dark:text-white">{name}</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <h1 className="text-2xl font-semibold tracking-tight text-balance text-slate-950 sm:text-3xl dark:text-white">{name}</h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
           This product&apos;s dossier is part of the Pro catalog.
         </p>
       </div>
@@ -130,19 +130,19 @@ async function DossierContent({ params }: { params: Params }) {
     <div className="space-y-6">
       <Link
         href={pro ? "/dashboard" : "/"}
-        className={`inline-flex items-center gap-1 rounded-sm text-sm font-medium text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white ${focusRing}`}
+        className={`inline-flex items-center gap-1 rounded-sm text-sm font-medium text-slate-600 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white ${focusRing}`}
       >
         <span aria-hidden="true">←</span> {pro ? "Back to catalog" : "Back to ProductRadar"}
       </Link>
       <ProductSummary product={product} />
       {showcased && !pro && (
-        <p className="rounded-lg bg-purple-50 px-4 py-3 text-sm text-purple-950 ring-1 ring-purple-200 ring-inset dark:bg-purple-950/40 dark:text-purple-100 dark:ring-purple-500/30">
+        <p className="rounded-lg bg-accent-mint/10 px-4 py-3 text-sm text-slate-100 ring-1 ring-accent-mint/30 ring-inset">
           <strong className="font-semibold">Free preview.</strong> This live product is open to everyone. Pro opens a
           dossier like this for every product in the catalog.
         </p>
       )}
       <OpportunityDossier product={product} viewer={{ signedIn: viewer !== null, proTools: canIngest(viewer) }} />
-      <p className="text-xs text-zinc-600 dark:text-zinc-400">
+      <p className="text-xs text-slate-600 dark:text-slate-400">
         Scores are calculated estimates (0–100) with a confidence (0–1), derived only from the linked evidence. They
         are not guarantees.
       </p>
@@ -152,16 +152,16 @@ async function DossierContent({ params }: { params: Params }) {
 
 export default function DossierPage({ params }: { params: Params }) {
   return (
-    <div className="min-h-full bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-full bg-slate-50 dark:bg-background-dark">
       <AppHeader />
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <Suspense
           fallback={
             <div aria-hidden="true" className="space-y-4">
-              <div className="h-5 w-32 animate-pulse rounded bg-zinc-200/70 dark:bg-zinc-800/70" />
-              <div className="h-48 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
-              <div className="h-40 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
-              <div className="h-72 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
+              <div className="h-5 w-32 animate-pulse rounded bg-slate-200/70 dark:bg-surface-raised/70" />
+              <div className="h-48 animate-pulse rounded-xl bg-slate-200/70 dark:bg-surface-raised/70" />
+              <div className="h-40 animate-pulse rounded-xl bg-slate-200/70 dark:bg-surface-raised/70" />
+              <div className="h-72 animate-pulse rounded-xl bg-slate-200/70 dark:bg-surface-raised/70" />
             </div>
           }
         >

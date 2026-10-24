@@ -16,14 +16,14 @@ const DIM_ORDER: Dimension[] = ["OVERALL", "QUALITY", "VALUE", "DEMAND", "SENTIM
 const AVAILABILITY_STYLE: Record<string, string> = {
   IN_STOCK: "bg-emerald-50 text-emerald-800 ring-emerald-600/20 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-400/20",
   PREORDER: "bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-400/20",
-  OUT_OF_STOCK: "bg-zinc-100 text-zinc-700 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-400/20",
-  DISCONTINUED: "bg-zinc-100 text-zinc-700 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-400/20",
-  UNKNOWN: "bg-zinc-100 text-zinc-700 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-400/20",
+  OUT_OF_STOCK: "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20",
+  DISCONTINUED: "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20",
+  UNKNOWN: "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20",
 };
 
 const badge = "inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset";
 const link =
-  "rounded-sm font-medium text-purple-700 underline decoration-purple-300 underline-offset-2 hover:decoration-purple-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:text-purple-300 dark:decoration-purple-700 dark:hover:decoration-purple-300";
+  "rounded-sm font-medium text-accent-mint underline decoration-accent-mint/40 underline-offset-2 hover:decoration-accent-mint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 
 export function ProductDetail({ product }: { product: ProductDto }) {
   // Which scores each piece of evidence fed into — shown on every evidence row.
@@ -39,13 +39,13 @@ export function ProductDetail({ product }: { product: ProductDto }) {
     <div className="grid gap-6 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
       <div className="space-y-6">
         {product.description && (
-          <p className="line-clamp-5 text-sm text-zinc-700 dark:text-zinc-300" title={product.description}>
+          <p className="line-clamp-5 text-sm text-slate-700 dark:text-slate-300" title={product.description}>
             {product.description}
           </p>
         )}
 
         <section aria-labelledby={`scores-${product.id}`}>
-          <h3 id={`scores-${product.id}`} className="text-sm font-semibold text-zinc-950 dark:text-white">
+          <h3 id={`scores-${product.id}`} className="text-sm font-semibold text-slate-950 dark:text-white">
             Score breakdown
           </h3>
           <ul className="mt-3 space-y-3">
@@ -55,16 +55,16 @@ export function ProductDetail({ product }: { product: ProductDto }) {
               return (
                 <li key={d}>
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{DIMENSION_LABEL[d]}</span>
-                    <span className="text-sm font-semibold tabular-nums text-zinc-950 dark:text-white">
+                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{DIMENSION_LABEL[d]}</span>
+                    <span className="text-sm font-semibold tabular-nums text-slate-950 dark:text-white">
                       {s.value.toFixed(1)}
-                      <span className="font-normal text-zinc-500 dark:text-zinc-400"> / 100</span>
+                      <span className="font-normal text-slate-400 dark:text-slate-400"> / 100</span>
                     </span>
                   </div>
                   <div className="mt-1">
                     <ScoreBar value={s.value} />
                   </div>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
                     <ConfidenceBadge confidence={s.confidence} />
                     <span>
                       {DIMENSION_HELP[d]} · {s.evidenceIds.length} evidence item{s.evidenceIds.length === 1 ? "" : "s"}
@@ -75,20 +75,20 @@ export function ProductDetail({ product }: { product: ProductDto }) {
             })}
           </ul>
           {missing.length > 0 && (
-            <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-400">
+            <p className="mt-3 text-xs text-slate-600 dark:text-slate-400">
               Not scored (not enough evidence): {missing.map((d) => DIMENSION_LABEL[d]).join(", ")}.
             </p>
           )}
         </section>
 
         <section aria-labelledby={`offers-${product.id}`}>
-          <h3 id={`offers-${product.id}`} className="text-sm font-semibold text-zinc-950 dark:text-white">
+          <h3 id={`offers-${product.id}`} className="text-sm font-semibold text-slate-950 dark:text-white">
             Offers
           </h3>
           {product.offers.length === 0 ? (
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">No offers recorded.</p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">No offers recorded.</p>
           ) : (
-            <ul className="mt-3 divide-y divide-zinc-200 dark:divide-zinc-800">
+            <ul className="mt-3 divide-y divide-slate-200 dark:divide-line-dark">
               {product.offers.map((o) => (
                 <li key={o.id} className="flex items-start justify-between gap-3 py-2">
                   <div className="min-w-0">
@@ -96,13 +96,13 @@ export function ProductDetail({ product }: { product: ProductDto }) {
                       {o.merchant}
                       <span className="sr-only"> (opens in new tab)</span>
                     </a>
-                    <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
+                    <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
                       <RelativeTime iso={o.observedAt} prefix="Seen " />
                       {product.bestOffer?.id === o.id && " · Best current price"}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="text-sm font-semibold tabular-nums text-zinc-950 dark:text-white">
+                    <span className="text-sm font-semibold tabular-nums text-slate-950 dark:text-white">
                       {formatPrice(o.price.amount, o.price.currency)}
                     </span>
                     <span className={`${badge} ${AVAILABILITY_STYLE[o.availability]}`}>
@@ -117,9 +117,9 @@ export function ProductDetail({ product }: { product: ProductDto }) {
       </div>
 
       <section aria-labelledby={`evidence-${product.id}`} className="min-w-0">
-        <h3 id={`evidence-${product.id}`} className="text-sm font-semibold text-zinc-950 dark:text-white">
+        <h3 id={`evidence-${product.id}`} className="text-sm font-semibold text-slate-950 dark:text-white">
           Evidence{" "}
-          <span className="font-normal text-zinc-500 dark:text-zinc-400">
+          <span className="font-normal text-slate-400 dark:text-slate-400">
             ({product.evidenceCount > product.evidence.length
               ? `newest ${product.evidence.length} of ${product.evidenceCount}`
               : product.evidenceCount})
@@ -131,17 +131,17 @@ export function ProductDetail({ product }: { product: ProductDto }) {
             return (
               <li
                 key={e.id}
-                className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900"
+                className="rounded-lg border border-slate-200 bg-white p-3 dark:border-line-dark dark:bg-surface-dark"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <p className="min-w-0 flex-1 text-sm text-zinc-900 dark:text-zinc-100">{e.claim}</p>
+                  <p className="min-w-0 flex-1 text-sm text-slate-900 dark:text-slate-100">{e.claim}</p>
                   {e.metric && (
-                    <span className={`${badge} bg-purple-50 text-purple-800 ring-purple-600/20 dark:bg-purple-950/40 dark:text-purple-300 dark:ring-purple-400/20`}>
+                    <span className={`${badge} bg-accent-mint/10 text-accent-mint ring-accent-mint/20`}>
                       {formatMetric(e.metric)}
                     </span>
                   )}
                 </div>
-                <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+                <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
                   <div className="flex gap-1">
                     <dt className="sr-only">Source</dt>
                     <dd>

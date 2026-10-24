@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 
 function readParams(params: Record<string, string | string[] | undefined>) {
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 120) : "";
@@ -32,7 +32,7 @@ function readParams(params: Record<string, string | string[] | undefined>) {
 
 function SearchForm({ q, markets }: { q: string; markets: Market[] }) {
   return (
-    <form action="/search" method="get" className="flex flex-col gap-3 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-zinc-200 sm:flex-row sm:items-center dark:bg-zinc-900 dark:ring-white/10">
+    <form action="/search" method="get" className="flex flex-col gap-3 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200 sm:flex-row sm:items-center dark:bg-surface-dark dark:ring-white/10">
       <label htmlFor="live-q" className="sr-only">
         What to search for
       </label>
@@ -45,20 +45,20 @@ function SearchForm({ q, markets }: { q: string; markets: Market[] }) {
         maxLength={120}
         defaultValue={q}
         placeholder={`Search a product, e.g. ${SAMPLE_QUERY}`}
-        className={`h-11 min-w-0 flex-1 rounded-xl border-0 bg-transparent px-4 text-sm text-zinc-900 placeholder:text-zinc-500 dark:text-zinc-100 ${focusRing}`}
+        className={`h-11 min-w-0 flex-1 rounded-xl border-0 bg-transparent px-4 text-sm text-slate-900 placeholder:text-slate-400 dark:text-slate-100 ${focusRing}`}
       />
       <fieldset className="flex items-center gap-3 px-2 sm:px-0">
         <legend className="sr-only">Markets</legend>
         {(Object.keys(MARKETS) as Market[]).map((m) => (
-          <label key={m} className="flex items-center gap-1.5 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="checkbox" name="m" value={m} defaultChecked={markets.includes(m)} className="size-4 accent-purple-600" />
+          <label key={m} className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300">
+            <input type="checkbox" name="m" value={m} defaultChecked={markets.includes(m)} className="size-4 accent-accent-mint" />
             {m === "GB" ? "UK" : m}
           </label>
         ))}
       </fieldset>
       <button
         type="submit"
-        className={`h-11 shrink-0 rounded-xl bg-purple-600 px-5 text-sm font-semibold text-white shadow-sm shadow-purple-600/30 transition hover:bg-purple-700 active:scale-[0.98] motion-reduce:transition-none ${focusRing}`}
+        className={`h-11 shrink-0 rounded-xl bg-accent-mint px-5 text-sm font-semibold text-background-dark shadow-sm shadow-accent-mint/20 transition hover:bg-accent-mint-strong active:scale-[0.98] motion-reduce:transition-none ${focusRing}`}
       >
         Search live
       </button>
@@ -85,9 +85,9 @@ async function LiveSearch({ searchParams }: { searchParams: SearchParams }) {
 
   if (!canRun) {
     return (
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-white/10">
-        <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">Live search is coming</h2>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-surface-dark dark:ring-white/10">
+        <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Live search is coming</h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
           We&apos;re connecting live sources (Amazon US and UK, and AliExpress suppliers). Searches open here with credit packs; AI
           agents will be able to use the paid API at /api/agent/v2/search as soon as both sources are connected.
         </p>
@@ -98,7 +98,7 @@ async function LiveSearch({ searchParams }: { searchParams: SearchParams }) {
   return (
     <div className="space-y-6">
       {live.sample && (
-        <p className="rounded-xl bg-purple-50 px-4 py-3 text-sm text-purple-950 ring-1 ring-purple-600/20 ring-inset dark:bg-purple-500/10 dark:text-purple-100 dark:ring-purple-400/20">
+        <p className="rounded-xl bg-accent-mint/10 px-4 py-3 text-sm text-slate-100 ring-1 ring-accent-mint/20 ring-inset">
           <strong className="font-semibold">Sample data (development).</strong> Amazon results are a real recorded Amazon UK search
           from 15 October 2026; AliExpress offers are made-up samples. Try &ldquo;
           {SAMPLE_QUERY}&rdquo;.
@@ -110,8 +110,8 @@ async function LiveSearch({ searchParams }: { searchParams: SearchParams }) {
           key={`${q}|${markets.join(",")}`}
           fallback={
             <div aria-hidden="true" className="space-y-4">
-              <div className="h-5 w-64 animate-pulse rounded bg-zinc-200/70 dark:bg-white/5" />
-              <div className="h-80 animate-pulse rounded-2xl bg-zinc-200/70 dark:bg-white/5" />
+              <div className="h-5 w-64 animate-pulse rounded bg-slate-200/70 dark:bg-white/5" />
+              <div className="h-80 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-white/5" />
             </div>
           }
         >
@@ -124,17 +124,17 @@ async function LiveSearch({ searchParams }: { searchParams: SearchParams }) {
 
 export default function SearchPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <div className="min-h-full bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-full bg-slate-50 dark:bg-background-dark">
       <AppHeader />
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">Live search</h1>
-          <p className="mt-1 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-slate-50">Live search</h1>
+          <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
             Amazon US and UK against AliExpress suppliers, searched live. Only results with at least 0.7 confidence on both sides
             are shown, and every number links to its source.
           </p>
         </div>
-        <Suspense fallback={<div aria-hidden="true" className="h-14 animate-pulse rounded-2xl bg-zinc-200/70 dark:bg-white/5" />}>
+        <Suspense fallback={<div aria-hidden="true" className="h-14 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-white/5" />}>
           <LiveSearch searchParams={searchParams} />
         </Suspense>
       </main>

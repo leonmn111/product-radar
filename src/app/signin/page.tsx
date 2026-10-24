@@ -41,10 +41,10 @@ async function SignInForm({ searchParams }: { searchParams: Promise<Record<strin
 
   return (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
         {upgrading ? (registering ? "Create your account to start Pro" : "Sign in to upgrade to Pro") : "Welcome to ProductRadar"}
       </h1>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
         Sign in or create a free account with a password, or get a one-time link by email.
         {upgrading && " You'll go straight to secure checkout afterwards."}
       </p>
@@ -58,7 +58,7 @@ async function SignInForm({ searchParams }: { searchParams: Promise<Record<strin
 export default function SignInPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   return (
     <AuthCard>
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-800" />}>
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-slate-100 dark:bg-surface-raised" />}>
         <SignInForm searchParams={props.searchParams} />
       </Suspense>
     </AuthCard>

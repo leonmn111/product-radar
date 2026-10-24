@@ -12,7 +12,7 @@ import { getDossier } from "@/lib/apiClient";
 import type { Dossier } from "@/types/dossier";
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 
 type State =
   | { kind: "idle" }
@@ -80,9 +80,9 @@ export function DossierRunner({
   const running = state.kind === "running";
   return (
     <div className="space-y-5">
-      <form onSubmit={run} className="flex flex-col gap-3 rounded-lg bg-white p-3 ring-1 ring-zinc-300 sm:flex-row sm:items-end dark:bg-zinc-900 dark:ring-zinc-700">
+      <form onSubmit={run} className="flex flex-col gap-3 rounded-lg bg-white p-3 ring-1 ring-slate-300 sm:flex-row sm:items-end dark:bg-surface-dark dark:ring-line-dark">
         <div className="min-w-0 flex-1">
-          <label htmlFor={inputId} className="font-mono text-[11px] font-semibold tracking-widest text-zinc-600 uppercase dark:text-zinc-400">
+          <label htmlFor={inputId} className="font-mono text-[11px] font-semibold tracking-widest text-slate-600 uppercase dark:text-slate-400">
             Amazon UK ASIN
           </label>
           <input
@@ -94,14 +94,14 @@ export function DossierRunner({
             spellCheck={false}
             maxLength={10}
             disabled={running || Boolean(unavailable)}
-            className={`mt-1 h-11 w-full rounded-md bg-zinc-50 px-3 font-mono text-base tracking-wider text-zinc-950 uppercase ring-1 ring-zinc-300 placeholder:text-zinc-500 placeholder:normal-case disabled:opacity-60 dark:bg-zinc-950 dark:text-white dark:ring-zinc-700 ${focusRing}`}
+            className={`mt-1 h-11 w-full rounded-md bg-slate-50 px-3 font-mono text-base tracking-wider text-slate-950 uppercase ring-1 ring-slate-300 placeholder:text-slate-400 placeholder:normal-case disabled:opacity-60 dark:bg-background-dark dark:text-white dark:ring-line-dark ${focusRing}`}
           />
         </div>
         <button
           type="submit"
           disabled={running || Boolean(unavailable)}
           aria-busy={running}
-          className={`inline-flex h-11 items-center justify-center gap-2 rounded-md bg-purple-600 px-5 text-sm font-semibold whitespace-nowrap text-white shadow-sm hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-600/50 ${focusRing}`}
+          className={`inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent-mint px-5 text-sm font-semibold whitespace-nowrap text-background-dark shadow-sm hover:bg-accent-mint-strong disabled:cursor-not-allowed disabled:bg-accent-mint/50 ${focusRing}`}
         >
           {running && <span aria-hidden="true" className="size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />}
           {running ? "Building Dossier…" : `Run Dossier · ${cost} credit${cost === 1 ? "" : "s"}`}
@@ -115,14 +115,14 @@ export function DossierRunner({
             {state.message}
           </p>
         )}
-        {state.kind === "running" && <p className="text-zinc-600 dark:text-zinc-400">Reading Amazon UK and suppliers for {state.asin}. This can take up to a minute.</p>}
+        {state.kind === "running" && <p className="text-slate-600 dark:text-slate-400">Reading Amazon UK and suppliers for {state.asin}. This can take up to a minute.</p>}
         {state.kind === "done" && state.cache === "reopened" && (
-          <p className="text-zinc-600 dark:text-zinc-400">
+          <p className="text-slate-600 dark:text-slate-400">
             Reopened from your library: the copy you bought on {state.dossier.generatedAt.slice(0, 10)}. No credits used. Run it again for fresh data.
           </p>
         )}
         {state.kind === "done" && state.cache !== "reopened" && (
-          <p className="text-zinc-600 dark:text-zinc-400">
+          <p className="text-slate-600 dark:text-slate-400">
             {state.charged} credit{state.charged === 1 ? "" : "s"} used{state.cache === "hit" ? " (from a copy built in the last 48 hours)" : ""}. You have {balance} left.
           </p>
         )}

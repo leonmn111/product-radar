@@ -217,7 +217,7 @@ function ProductBento({ product: p, flip }: { product: ShowcaseProduct; flip: bo
   return (
     <article aria-label={shortName(p)} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <ul className={`sm:row-span-3 lg:row-span-2 ${flip ? "sm:col-start-2 sm:row-start-1 lg:col-start-3" : ""}`}>
-        <ProductCard product={{ ...p, margin: null }} href={dossierHref(p)} frame="bento" tone="mint" marginSummary={false} />
+        <ProductCard product={{ ...p, margin: null }} href={dossierHref(p)} frame="bento" marginSummary={false} />
       </ul>
       <div className={`${tile} flex flex-col gap-4 p-5 sm:p-6 lg:col-span-2 ${flip ? "sm:col-start-1 sm:row-start-1" : ""}`}>
         <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-accent-mint uppercase">

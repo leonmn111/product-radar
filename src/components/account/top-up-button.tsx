@@ -12,7 +12,7 @@ export function TopUpButton({ balance, onSale }: { balance: number; onSale: bool
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className="inline-flex items-center gap-2 rounded-md bg-purple-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400"
+        className="inline-flex items-center gap-2 rounded-md bg-accent-mint px-3 py-2 text-sm font-semibold text-background-dark shadow-sm hover:bg-accent-mint-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint"
       >
         Top up credits
       </button>

@@ -45,16 +45,16 @@ async function Terminal({ searchParams }: { searchParams: SearchParams }) {
 
 export default function TerminalPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <div className="min-h-full bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-full bg-slate-50 dark:bg-background-dark">
       <AppHeader />
       <main className="mx-auto max-w-7xl space-y-5 px-4 py-8 sm:px-6 lg:px-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">Dossier terminal</h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-slate-50">Dossier terminal</h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             One product, eight parts, every number cited. Parts without enough evidence are withheld, never guessed.
           </p>
         </div>
-        <Suspense fallback={<div aria-hidden="true" className="h-[4.5rem] animate-pulse rounded-lg bg-zinc-200/70 dark:bg-zinc-800/70" />}>
+        <Suspense fallback={<div aria-hidden="true" className="h-[4.5rem] animate-pulse rounded-lg bg-slate-200/70 dark:bg-surface-raised/70" />}>
           <Terminal searchParams={searchParams} />
         </Suspense>
       </main>

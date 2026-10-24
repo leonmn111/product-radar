@@ -3,10 +3,10 @@
 import { useEffect, useState, type FormEvent } from "react";
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 const STYLE = {
-  primary: `bg-purple-600 text-white hover:bg-purple-700 dark:hover:bg-purple-700 ${focusRing}`,
-  secondary: `bg-white text-zinc-900 ring-1 ring-zinc-300 ring-inset hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-zinc-700 dark:hover:bg-zinc-800 ${focusRing}`,
+  primary: `bg-accent-mint text-background-dark hover:bg-accent-mint-strong ${focusRing}`,
+  secondary: `bg-white text-slate-900 ring-1 ring-slate-300 ring-inset hover:bg-slate-50 dark:bg-surface-dark dark:text-slate-100 dark:ring-line-dark dark:hover:bg-surface-raised ${focusRing}`,
 };
 
 /**

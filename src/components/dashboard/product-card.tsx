@@ -16,50 +16,24 @@ const initials = (s: string) =>
     .map((w) => w[0].toUpperCase())
     .join("");
 
-/**
- * The card's accent: purple in the app, mint (the new design system, globals.css) on the landing page.
- * The app moves to mint in a later rollout, and then this goes.
- */
-export type CardTone = "purple" | "mint";
-const TONE: Record<CardTone, { accent: string; accentHover: string; surface: string; divider: string; placeholder: string; monogram: string }> = {
-  purple: {
-    accent: "text-purple-700 dark:text-purple-300",
-    accentHover: "group-hover/card:text-purple-900 dark:group-hover/card:text-purple-200",
-    surface: "bg-white dark:bg-zinc-900",
-    divider: "border-zinc-200 dark:border-zinc-800",
-    placeholder: "bg-gradient-to-br from-purple-50 to-zinc-100 dark:from-purple-950/60 dark:to-zinc-900",
-    monogram: "bg-white/80 text-purple-700 ring-purple-900/5 dark:bg-zinc-800/80 dark:text-purple-300 dark:ring-white/10",
-  },
-  mint: {
-    accent: "text-accent-mint",
-    accentHover: "group-hover/card:text-accent-mint-strong",
-    surface: "bg-surface-dark",
-    divider: "border-line-dark",
-    placeholder: "bg-gradient-to-br from-accent-mint/10 to-surface-dark",
-    monogram: "bg-surface-raised text-accent-mint ring-line-dark",
-  },
-};
-
 /** Square product photo on a soft tile; a monogram placeholder when there's no image or it fails to load. */
 export function ProductImage({
   src,
   alt,
   label,
   className = "",
-  tone = "purple",
 }: {
   src: string | null;
   alt: string;
   label: string;
   className?: string;
-  tone?: CardTone;
 }) {
   const [failed, setFailed] = useState(false);
   const showImage = src && !failed;
   return (
     <div
       className={`relative aspect-square overflow-hidden ${
-        showImage ? "bg-zinc-50 dark:bg-zinc-200" : TONE[tone].placeholder
+        showImage ? "bg-slate-200" : "bg-gradient-to-br from-accent-mint/10 to-surface-dark"
       } ${className}`}
     >
       {showImage ? (
@@ -78,10 +52,10 @@ export function ProductImage({
         />
       ) : (
         <div aria-hidden="true" className="flex size-full flex-col items-center justify-center gap-3">
-          <span className={`flex size-20 items-center justify-center rounded-2xl text-2xl font-semibold tracking-tight shadow-sm ring-1 ${TONE[tone].monogram}`}>
+          <span className="flex size-20 items-center justify-center rounded-2xl bg-surface-raised text-2xl font-semibold tracking-tight text-accent-mint shadow-sm ring-1 ring-line-dark">
             {initials(label) || "?"}
           </span>
-          <span className="flex items-center gap-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          <span className="flex items-center gap-1 text-xs font-medium text-slate-400 dark:text-slate-400">
             <svg viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
               <path
                 fillRule="evenodd"
@@ -101,22 +75,22 @@ function OverallScore({ score }: { score?: Score }) {
   return (
     <p className="flex items-baseline gap-1">
       <span className="sr-only">Overall score: </span>
-      <span className="text-2xl font-semibold tabular-nums tracking-tight text-zinc-950 dark:text-white">
+      <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-950 dark:text-white">
         {score ? Math.round(score.value) : "—"}
       </span>
-      <span className="text-xs text-zinc-500 dark:text-zinc-400">{score ? "/ 100" : "no score yet"}</span>
+      <span className="text-xs text-slate-400 dark:text-slate-400">{score ? "/ 100" : "no score yet"}</span>
     </p>
   );
 }
 
 function ValueBadge({ score }: { score?: Score }) {
   const style = !score
-    ? "bg-zinc-100 text-zinc-600 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-400/20"
+    ? "bg-slate-100 text-slate-600 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-400 dark:ring-slate-400/20"
     : score.value >= 65
       ? "bg-emerald-50 text-emerald-800 ring-emerald-600/20 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-400/20"
       : score.value < 40
         ? "bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-400/20"
-        : "bg-zinc-100 text-zinc-700 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-400/20";
+        : "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20";
   return (
     <span
       title="Value: quality against price, compared with the category"
@@ -128,17 +102,17 @@ function ValueBadge({ score }: { score?: Score }) {
   );
 }
 
-function SourcesBadge({ product: p, tone }: { product: ProductDto; tone: CardTone }) {
+function SourcesBadge({ product: p }: { product: ProductDto }) {
   return (
-    <p className="flex items-center gap-1.5 text-xs font-medium whitespace-nowrap text-zinc-600 dark:text-zinc-400">
-      <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-zinc-400 dark:text-zinc-500">
+    <p className="flex items-center gap-1.5 text-xs font-medium whitespace-nowrap text-slate-600 dark:text-slate-400">
+      <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-slate-400 dark:text-slate-400">
         <path d="M10.75 16.82A7.462 7.462 0 0 1 15 15.5c.71 0 1.396.098 2.046.282A.75.75 0 0 0 18 15.06v-11a.75.75 0 0 0-.546-.721A9.006 9.006 0 0 0 15 3a8.963 8.963 0 0 0-4.25 1.065V16.82ZM9.25 4.065A8.963 8.963 0 0 0 5 3c-.85 0-1.673.118-2.454.339A.75.75 0 0 0 2 4.06v11a.75.75 0 0 0 .954.721A7.506 7.506 0 0 1 5 15.5c1.579 0 3.042.487 4.25 1.32V4.065Z" />
       </svg>
       {p.sourceCount} source{p.sourceCount === 1 ? "" : "s"}
       {p.hasSearchTrend && (
         <>
           <span aria-hidden="true">·</span>
-          <span className={`inline-flex items-center gap-1 ${TONE[tone].accent}`}>
+          <span className="inline-flex items-center gap-1 text-accent-mint">
             <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-3.5">
               <path
                 fillRule="evenodd"
@@ -156,7 +130,7 @@ function SourcesBadge({ product: p, tone }: { product: ProductDto; tone: CardTon
 
 function StatusChip({ sample }: { sample: boolean }) {
   return sample ? (
-    <span className="rounded-md bg-white/95 px-1.5 py-0.5 text-xs font-medium text-zinc-700 ring-1 ring-zinc-500/20 ring-inset dark:bg-zinc-900/90 dark:text-zinc-300 dark:ring-white/15">
+    <span className="rounded-md bg-white/95 px-1.5 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-slate-500/20 ring-inset dark:bg-surface-dark/90 dark:text-slate-300 dark:ring-white/15">
       Sample
     </span>
   ) : (
@@ -171,7 +145,7 @@ function StatusChip({ sample }: { sample: boolean }) {
  * the title's link stretches over the card, so screen readers hear a single link
  * named after the product. Hovering lifts the card; pressing settles it back down.
  * The "bento" frame is a hairline ring that lights up in the accent on hover (the landing page and the
- * dashboard's catalog); `tone` picks the accent. `marginSummary={false}` leaves out the catalog's
+ * dashboard's catalog). `marginSummary={false}` leaves out the catalog's
  * estimated gross margin, which rests on v1's benchmark wholesale range (the public landing page
  * shows only figures from real captured prices).
  */
@@ -181,7 +155,6 @@ export function ProductCard({
   rank,
   highlighted = false,
   frame = "default",
-  tone = "purple",
   marginSummary = true,
 }: {
   product: ProductDto;
@@ -189,37 +162,27 @@ export function ProductCard({
   rank?: number;
   highlighted?: boolean;
   frame?: "default" | "bento";
-  tone?: CardTone;
   marginSummary?: boolean;
 }) {
   const overall = getScore(p, "OVERALL");
-  const t = TONE[tone];
   const frameClass =
-    frame === "bento" && tone === "mint"
+    frame === "bento"
       ? `h-full rounded-2xl duration-300 hover:shadow-black/40 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-accent-mint ${
           highlighted ? "ring-2 ring-accent-mint" : "ring-1 ring-line-dark hover:ring-accent-mint/50"
         }`
-      : frame === "bento"
-      ? `h-full rounded-2xl bg-white duration-300 hover:shadow-purple-900/10 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-purple-600 dark:hover:shadow-purple-950/50 dark:has-[a:focus-visible]:ring-purple-400 ${
-          highlighted
-            ? "ring-2 ring-purple-500 dark:ring-purple-400"
-            : "ring-1 ring-zinc-200 hover:ring-purple-500/50 dark:ring-white/10 dark:hover:ring-purple-500/50"
-        }`
-      : `rounded-xl border duration-200 hover:shadow-zinc-900/10 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-purple-600 has-[a:focus-visible]:ring-offset-2 dark:hover:shadow-black/40 dark:has-[a:focus-visible]:ring-purple-400 dark:has-[a:focus-visible]:ring-offset-zinc-950 ${
-          highlighted
-            ? "border-purple-500 ring-2 ring-purple-500 dark:border-purple-400 dark:ring-purple-400"
-            : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700"
+      : `rounded-xl border duration-200 hover:shadow-black/40 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-accent-mint has-[a:focus-visible]:ring-offset-2 has-[a:focus-visible]:ring-offset-background-dark ${
+          highlighted ? "border-accent-mint ring-2 ring-accent-mint" : "border-line-dark hover:border-accent-mint/40"
         }`;
   return (
     <li
       data-product-id={p.id}
-      className={`group/card relative flex flex-col overflow-hidden shadow-sm transition ease-out hover:-translate-y-1 hover:shadow-xl active:translate-y-0 active:shadow-md active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${t.surface} ${frameClass}`}
+      className={`group/card relative flex flex-col overflow-hidden shadow-sm transition ease-out hover:-translate-y-1 hover:shadow-xl active:translate-y-0 active:shadow-md active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 bg-surface-dark ${frameClass}`}
     >
       <article className="flex flex-1 flex-col">
         <div className="relative">
-          <ProductImage src={p.imageUrl} alt={p.name} label={p.brand ?? p.name} tone={tone} key={p.imageUrl ?? "none"} />
+          <ProductImage src={p.imageUrl} alt={p.name} label={p.brand ?? p.name} key={p.imageUrl ?? "none"} />
           {rank !== undefined && (
-            <span className="absolute top-2 left-2 rounded-md bg-white/95 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-zinc-700 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-900/90 dark:text-zinc-200">
+            <span className="absolute top-2 left-2 rounded-md bg-white/95 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-slate-700 shadow-sm ring-1 ring-line-dark/5 dark:bg-surface-dark/90 dark:text-slate-200">
               <span className="sr-only">Rank </span>#{rank}
             </span>
           )}
@@ -231,14 +194,14 @@ export function ProductCard({
         <div className="flex flex-1 flex-col gap-3 p-4">
           <div className="min-w-0">
             {p.brand && (
-              <p className={`truncate text-xs font-semibold tracking-wide uppercase ${t.accent}`}>{p.brand}</p>
+              <p className="truncate text-xs font-semibold tracking-wide text-accent-mint uppercase">{p.brand}</p>
             )}
-            <h3 className="mt-0.5 line-clamp-2 font-semibold text-zinc-950 dark:text-white" title={p.name}>
+            <h3 className="mt-0.5 line-clamp-2 font-semibold text-slate-950 dark:text-white" title={p.name}>
               <Link href={href} className="after:absolute after:inset-0 after:z-10 after:content-[''] focus:outline-none">
                 {p.name}
               </Link>
             </h3>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{humanizeSlug(p.category)}</p>
+            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-400">{humanizeSlug(p.category)}</p>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -246,16 +209,16 @@ export function ProductCard({
             {overall && <ConfidenceBadge confidence={overall.confidence} />}
           </div>
 
-          <div className={`mt-auto flex items-end justify-between gap-3 border-t pt-3 ${t.divider}`}>
+          <div className="mt-auto flex items-end justify-between gap-3 border-t border-line-dark pt-3">
             {p.bestOffer ? (
               <div className="min-w-0">
-                <p className="text-lg font-semibold tabular-nums text-zinc-950 dark:text-white">
+                <p className="text-lg font-semibold tabular-nums text-slate-950 dark:text-white">
                   {formatPrice(p.bestOffer.price.amount, p.bestOffer.price.currency)}
                 </p>
-                <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">at {p.bestOffer.merchant}</p>
+                <p className="truncate text-xs text-slate-600 dark:text-slate-400">at {p.bestOffer.merchant}</p>
               </div>
             ) : (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">No current offer</p>
+              <p className="text-sm text-slate-400 dark:text-slate-400">No current offer</p>
             )}
             <ValueBadge score={getScore(p, "VALUE")} />
           </div>
@@ -263,10 +226,10 @@ export function ProductCard({
           {marginSummary && p.margin && <MarginSummary margin={p.margin} />}
 
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-            <SourcesBadge product={p} tone={tone} />
+            <SourcesBadge product={p} />
             <span
               aria-hidden="true"
-              className={`inline-flex items-center gap-1 text-sm font-medium transition-colors ${t.accent} ${t.accentHover}`}
+              className="inline-flex items-center gap-1 text-sm font-medium text-accent-mint transition-colors group-hover/card:text-accent-mint-strong"
             >
               View dossier
               <svg
@@ -292,12 +255,12 @@ export function CardGridSkeleton() {
   return (
     <div aria-hidden="true" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }, (_, i) => (
-        <div key={i} className="overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-white/10">
-          <div className="aspect-square animate-pulse bg-zinc-200/70 dark:bg-white/5" />
+        <div key={i} className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200 dark:bg-surface-dark dark:ring-white/10">
+          <div className="aspect-square animate-pulse bg-slate-200/70 dark:bg-white/5" />
           <div className="space-y-2 p-4">
-            <div className="h-3 w-1/3 animate-pulse rounded bg-zinc-200/70 dark:bg-zinc-800/70" />
-            <div className="h-4 w-4/5 animate-pulse rounded bg-zinc-200/70 dark:bg-zinc-800/70" />
-            <div className="h-6 w-1/2 animate-pulse rounded bg-zinc-200/70 dark:bg-zinc-800/70" />
+            <div className="h-3 w-1/3 animate-pulse rounded bg-slate-200/70 dark:bg-surface-raised/70" />
+            <div className="h-4 w-4/5 animate-pulse rounded bg-slate-200/70 dark:bg-surface-raised/70" />
+            <div className="h-6 w-1/2 animate-pulse rounded bg-slate-200/70 dark:bg-surface-raised/70" />
           </div>
         </div>
       ))}

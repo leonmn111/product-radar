@@ -31,10 +31,10 @@ async function ProGate() {
       <UpgradeCard signedIn liveProducts={stats.products} />
       {products.length > 0 && (
         <section aria-labelledby="preview-heading">
-          <h2 id="preview-heading" className="text-base font-semibold text-zinc-950 dark:text-white">
+          <h2 id="preview-heading" className="text-base font-semibold text-slate-950 dark:text-white">
             Preview a real dossier
           </h2>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             {products.length === 1 ? "This live product is" : "These live products are"} open to everyone, so you can see
             exactly what Pro shows for every product in the catalog.
           </p>
@@ -63,7 +63,7 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
           className={`mb-4 rounded-lg px-4 py-3 text-sm ring-1 ring-inset ${
             notice.tone === "error"
               ? "bg-red-50 text-red-900 ring-red-600/20 dark:bg-red-950/30 dark:text-red-200 dark:ring-red-400/30"
-              : "bg-zinc-100 text-zinc-800 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-400/20"
+              : "bg-slate-100 text-slate-800 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-200 dark:ring-slate-400/20"
           }`}
         >
           {notice.text}
@@ -80,12 +80,12 @@ async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
 
 export default function DashboardPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <div className="min-h-full bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-full bg-slate-50 dark:bg-background-dark">
       <AppHeader />
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">Product intelligence</h1>
-          <p className="mt-1 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-slate-50">Product intelligence</h1>
+          <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
             Every score is calculated from sourced, timestamped evidence. Open a product to see exactly which evidence
             each score is based on.
           </p>
@@ -93,8 +93,8 @@ export default function DashboardPage({ searchParams }: { searchParams: SearchPa
         <Suspense
           fallback={
             <div aria-hidden="true" className="space-y-3">
-              <div className="h-14 animate-pulse rounded-2xl bg-zinc-200/70 dark:bg-white/5" />
-              <div className="h-96 animate-pulse rounded-2xl bg-zinc-200/70 dark:bg-white/5" />
+              <div className="h-14 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-white/5" />
+              <div className="h-96 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-white/5" />
             </div>
           }
         >

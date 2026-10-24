@@ -17,11 +17,11 @@ export const metadata: Metadata = {
 };
 
 const TIER_TONE = {
-  FREE: "text-zinc-700 ring-zinc-400/40 bg-zinc-100 dark:text-zinc-300 dark:ring-zinc-500/40 dark:bg-zinc-800",
-  PRO: "text-purple-800 ring-purple-600/30 bg-purple-50 dark:text-purple-200 dark:ring-purple-400/30 dark:bg-purple-500/15",
+  FREE: "text-slate-700 ring-slate-400/40 bg-slate-100 dark:text-slate-300 dark:ring-slate-500/40 dark:bg-surface-raised",
+  PRO: "text-slate-100 ring-accent-mint/30 bg-accent-mint/10",
   AGENCY: "text-emerald-800 ring-emerald-600/30 bg-emerald-50 dark:text-emerald-200 dark:ring-emerald-400/30 dark:bg-emerald-500/15",
 } as const;
-const stat = "font-mono text-[11px] tracking-widest text-zinc-600 uppercase dark:text-zinc-400";
+const stat = "font-mono text-[11px] tracking-widest text-slate-600 uppercase dark:text-slate-400";
 
 async function AccountStrip() {
   const viewer = await getViewer();
@@ -31,8 +31,8 @@ async function AccountStrip() {
   if (!user) redirect("/signin?callbackUrl=%2Flibrary");
   const free = await freeSearchesLeft(db, viewer.id);
   return (
-    <section aria-label="Your plan and credits" className="grid grid-cols-2 gap-px overflow-hidden rounded-md bg-zinc-300 ring-1 ring-zinc-300 sm:grid-cols-4 dark:bg-zinc-800 dark:ring-zinc-800">
-      <div className="bg-white p-3 dark:bg-zinc-950">
+    <section aria-label="Your plan and credits" className="grid grid-cols-2 gap-px overflow-hidden rounded-md bg-slate-300 ring-1 ring-slate-300 sm:grid-cols-4 dark:bg-surface-raised dark:ring-line-dark">
+      <div className="bg-white p-3 dark:bg-background-dark">
         <p className={stat}>Plan</p>
         <p className="mt-1">
           <span className={`inline-flex rounded-sm px-1.5 py-0.5 font-mono text-sm font-bold tracking-wider ring-1 ring-inset ${TIER_TONE[user.subscriptionTier]}`}>
@@ -40,19 +40,19 @@ async function AccountStrip() {
           </span>
         </p>
       </div>
-      <div className="bg-white p-3 dark:bg-zinc-950">
+      <div className="bg-white p-3 dark:bg-background-dark">
         <p className={stat}>Credits</p>
         <p className="mt-1 font-mono text-2xl font-bold tabular-nums">{user.platformCredits}</p>
       </div>
-      <div className="bg-white p-3 dark:bg-zinc-950">
+      <div className="bg-white p-3 dark:bg-background-dark">
         <p className={stat}>Free searches left</p>
         <p className="mt-1 font-mono text-2xl font-bold tabular-nums">{user.subscriptionTier === "PRO" ? free : "—"}</p>
-        {user.subscriptionTier !== "PRO" && <p className="text-xs text-zinc-600 dark:text-zinc-400">100 a month on Pro</p>}
+        {user.subscriptionTier !== "PRO" && <p className="text-xs text-slate-600 dark:text-slate-400">100 a month on Pro</p>}
       </div>
-      <div className="flex flex-col items-start justify-center gap-2 bg-white p-3 dark:bg-zinc-950">
+      <div className="flex flex-col items-start justify-center gap-2 bg-white p-3 dark:bg-background-dark">
         <TopUpButton balance={user.platformCredits} onSale={creditPacksOnSale()} />
         {user.subscriptionTier === "FREE" && (
-          <Link href="/upgrade" className="text-xs font-medium text-purple-700 underline underline-offset-2 dark:text-purple-300">
+          <Link href="/upgrade" className="text-xs font-medium text-accent-mint underline underline-offset-2">
             Or upgrade to Pro
           </Link>
         )}
@@ -63,19 +63,19 @@ async function AccountStrip() {
 
 export default function LibraryPage() {
   return (
-    <div className="min-h-full bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-full bg-slate-50 dark:bg-background-dark">
       <AppHeader />
       <main className="mx-auto max-w-7xl space-y-5 px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">Dossier library</h1>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Every Dossier you&apos;ve bought. Reopening one is free.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-slate-50">Dossier library</h1>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Every Dossier you&apos;ve bought. Reopening one is free.</p>
           </div>
-          <Link href="/terminal" className="font-mono text-xs font-semibold tracking-wider text-purple-700 uppercase hover:underline dark:text-purple-300">
+          <Link href="/terminal" className="font-mono text-xs font-semibold tracking-wider text-accent-mint uppercase hover:underline">
             Run a new Dossier →
           </Link>
         </div>
-        <Suspense fallback={<div aria-hidden="true" className="h-[5.5rem] animate-pulse rounded-md bg-zinc-200/70 dark:bg-zinc-800/70" />}>
+        <Suspense fallback={<div aria-hidden="true" className="h-[5.5rem] animate-pulse rounded-md bg-slate-200/70 dark:bg-surface-raised/70" />}>
           <AccountStrip />
         </Suspense>
         <DossierLibrary />

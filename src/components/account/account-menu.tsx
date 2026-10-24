@@ -8,7 +8,7 @@ import { AccountDropdown } from "./account-dropdown";
 import { CreditBalance } from "./credit-balance";
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 
 async function doSignOut() {
   "use server";
@@ -24,13 +24,13 @@ export async function AccountMenu() {
         <Link
           href="/signin"
           // On the narrowest phones "Get Pro" signs you in on the way, so this one can go.
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 max-[420px]:hidden dark:text-zinc-300 dark:hover:bg-white/10 ${focusRing}`}
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 max-[420px]:hidden dark:text-slate-300 dark:hover:bg-white/10 ${focusRing}`}
         >
           Sign in
         </Link>
         <a
           href="/upgrade"
-          className={`rounded-lg bg-purple-600 px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-white shadow-sm shadow-purple-600/25 transition hover:bg-purple-700 active:scale-[0.98] motion-reduce:transition-none dark:hover:bg-purple-600 dark:hover:shadow-purple-500/40 ${focusRing}`}
+          className={`rounded-lg bg-accent-mint px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-background-dark shadow-sm shadow-accent-mint/20 transition hover:bg-accent-mint-strong active:scale-[0.98] motion-reduce:transition-none hover:shadow-accent-mint/30 ${focusRing}`}
         >
           Get Pro
         </a>
@@ -47,7 +47,7 @@ export async function AccountMenu() {
         // The one action that earns: kept in plain sight for Free accounts, not tucked in the menu.
         <a
           href="/upgrade"
-          className={`rounded-lg bg-purple-600 px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-white shadow-sm shadow-purple-600/25 transition hover:bg-purple-700 active:scale-[0.98] motion-reduce:transition-none dark:hover:bg-purple-600 dark:hover:shadow-purple-500/40 ${focusRing}`}
+          className={`rounded-lg bg-accent-mint px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-background-dark shadow-sm shadow-accent-mint/20 transition hover:bg-accent-mint-strong active:scale-[0.98] motion-reduce:transition-none hover:shadow-accent-mint/30 ${focusRing}`}
         >
           Upgrade<span className="hidden sm:inline"> to Pro</span>
         </a>

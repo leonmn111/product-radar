@@ -19,14 +19,14 @@ export function ForgotForm() {
         </p>
         <form action={action}>
           <input type="hidden" name="email" value={state.sentTo} />
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">Didn&apos;t get it? Check your spam folder, or send another.</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Didn&apos;t get it? Check your spam folder, or send another.</p>
           <div className="mt-3">
             <SubmitButton variant="secondary" pendingLabel="Sending…">
               Send another link
             </SubmitButton>
           </div>
         </form>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           <Link href="/signin" className={linkClass}>
             Back to sign in
           </Link>
@@ -59,7 +59,7 @@ export function ForgotForm() {
         <FieldError id="forgot-email-error" message={state.fieldError} />
       </div>
       <SubmitButton pendingLabel="Sending link…">Email me a reset link</SubmitButton>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="text-sm text-slate-600 dark:text-slate-400">
         Remembered it?{" "}
         <Link href="/signin" className={linkClass}>
           Back to sign in

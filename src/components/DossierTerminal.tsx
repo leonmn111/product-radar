@@ -22,9 +22,9 @@ const conf = (c: number) => c.toFixed(2);
 const utc = (iso: string) => `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
-const link = `underline decoration-zinc-400 underline-offset-2 hover:decoration-purple-500 dark:decoration-zinc-600 ${focusRing}`;
-const muted = "text-zinc-600 dark:text-zinc-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
+const link = `underline decoration-slate-400 underline-offset-2 hover:decoration-accent-mint dark:decoration-slate-600 ${focusRing}`;
+const muted = "text-slate-600 dark:text-slate-400";
 const num = "font-mono tabular-nums";
 
 // ── Building blocks ──────────────────────────────────────────────────────────
@@ -34,7 +34,7 @@ const TONE: Record<Tone, string> = {
   ok: "text-emerald-700 ring-emerald-600/30 bg-emerald-50 dark:text-emerald-300 dark:ring-emerald-400/30 dark:bg-emerald-400/10",
   warn: "text-amber-800 ring-amber-600/30 bg-amber-50 dark:text-amber-300 dark:ring-amber-400/30 dark:bg-amber-400/10",
   bad: "text-red-700 ring-red-600/30 bg-red-50 dark:text-red-300 dark:ring-red-400/30 dark:bg-red-400/10",
-  off: "text-zinc-700 ring-zinc-400/40 bg-zinc-100 dark:text-zinc-300 dark:ring-zinc-500/40 dark:bg-zinc-800",
+  off: "text-slate-700 ring-slate-400/40 bg-slate-100 dark:text-slate-300 dark:ring-slate-500/40 dark:bg-surface-raised",
 };
 
 function Tag({ tone, children }: { tone: Tone; children: ReactNode }) {
@@ -44,10 +44,10 @@ function Tag({ tone, children }: { tone: Tone; children: ReactNode }) {
 function Panel({ n, title, status, className = "", children }: { n: number; title: string; status: ReactNode; className?: string; children: ReactNode }) {
   const id = `dossier-part-${n}`;
   return (
-    <section aria-labelledby={id} className={`flex min-w-0 flex-col bg-white dark:bg-zinc-950 ${className}`}>
-      <header className="flex items-center justify-between gap-2 border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
-        <h3 id={id} className="font-mono text-[11px] font-semibold tracking-widest text-zinc-900 uppercase dark:text-zinc-100">
-          <span className="text-purple-700 dark:text-purple-400">{String(n).padStart(2, "0")}</span> {title}
+    <section aria-labelledby={id} className={`flex min-w-0 flex-col bg-white dark:bg-background-dark ${className}`}>
+      <header className="flex items-center justify-between gap-2 border-b border-slate-200 px-3 py-2 dark:border-line-dark">
+        <h3 id={id} className="font-mono text-[11px] font-semibold tracking-widest text-slate-900 uppercase dark:text-slate-100">
+          <span className="text-accent-mint">{String(n).padStart(2, "0")}</span> {title}
         </h3>
         {status}
       </header>
@@ -92,8 +92,8 @@ function BlurredMargin() {
       <div className="space-y-2 py-1">
         {rows.map((w, i) => (
           <div key={i} className="flex items-center justify-between gap-4">
-            <div className={`h-2.5 ${w} rounded-sm bg-zinc-300 dark:bg-zinc-700`} />
-            <div className="h-2.5 w-14 rounded-sm bg-zinc-300 dark:bg-zinc-700" />
+            <div className={`h-2.5 ${w} rounded-sm bg-slate-300 dark:bg-slate-700`} />
+            <div className="h-2.5 w-14 rounded-sm bg-slate-300 dark:bg-slate-700" />
           </div>
         ))}
       </div>
@@ -153,7 +153,7 @@ const flagTag = (f: ComplianceFlag) =>
 
 function ResellabilityPanel({ flags }: { flags: ResellabilityFlags }) {
   return (
-    <dl className="divide-y divide-zinc-100 dark:divide-zinc-900">
+    <dl className="divide-y divide-slate-100 dark:divide-line-dark">
       {(Object.keys(FLAG_LABEL) as (keyof ResellabilityFlags)[]).map((k) => (
         <div key={k} className="py-1.5 first:pt-0 last:pb-0">
           <dt className="flex items-center justify-between gap-2 font-medium">
@@ -313,7 +313,7 @@ function SuppliersPanel({ matches }: { matches: Dossier["supplierMatches"] }) {
             <th scope="col" className="pb-1 pl-2 text-right font-medium">Match</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
+        <tbody className="divide-y divide-slate-100 dark:divide-line-dark">
           {matches.map((s) => (
             <tr key={s.listingUrl}>
               <td className="max-w-[16rem] py-1 pr-3">
@@ -338,7 +338,7 @@ function EvidencePanel({ evidence }: { evidence: Evidence[] }) {
   return (
     <div className="max-h-96 overflow-auto">
       <table className="w-full text-xs">
-        <thead className={`sticky top-0 bg-white font-mono text-[10px] tracking-wider uppercase dark:bg-zinc-950 ${muted}`}>
+        <thead className={`sticky top-0 bg-white font-mono text-[10px] tracking-wider uppercase dark:bg-background-dark ${muted}`}>
           <tr>
             <th scope="col" className="pb-1 text-left font-medium">Claim</th>
             <th scope="col" className="pb-1 text-left font-medium">Source</th>
@@ -348,7 +348,7 @@ function EvidencePanel({ evidence }: { evidence: Evidence[] }) {
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
+        <tbody className="divide-y divide-slate-100 dark:divide-line-dark">
           {evidence.map((e) => (
             <tr key={e.id} className="align-top">
               <td className="min-w-[14rem] py-1 pr-3">
@@ -410,9 +410,9 @@ export function DossierTerminal({ dossier }: { dossier: Dossier }) {
   return (
     <article
       aria-label={`Dossier: ${d.product.title}`}
-      className={`${inter.className} overflow-hidden rounded-md bg-zinc-200 text-zinc-900 ring-1 ring-zinc-300 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-800`}
+      className={`${inter.className} overflow-hidden rounded-md bg-slate-200 text-slate-900 ring-1 ring-slate-300 dark:bg-surface-raised dark:text-slate-100 dark:ring-line-dark`}
     >
-      <header className="space-y-1 bg-zinc-50 px-3 py-2.5 dark:bg-zinc-900">
+      <header className="space-y-1 bg-slate-50 px-3 py-2.5 dark:bg-surface-dark">
         <div className="flex flex-wrap items-center gap-2">
           {d.sample && <Tag tone="warn">Sample data: not real</Tag>}
           <span className={`font-mono text-[11px] tracking-wider uppercase ${muted}`}>
@@ -434,7 +434,7 @@ export function DossierTerminal({ dossier }: { dossier: Dossier }) {
         )}
       </header>
 
-      <div className="grid grid-cols-1 gap-px border-t border-zinc-300 md:grid-cols-2 xl:grid-cols-4 dark:border-zinc-800">
+      <div className="grid grid-cols-1 gap-px border-t border-slate-300 md:grid-cols-2 xl:grid-cols-4 dark:border-line-dark">
         <Panel n={1} title="Verdict" status={gateTag(d.verdict)}>
           <VerdictPanel verdict={d.verdict} />
         </Panel>

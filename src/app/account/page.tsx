@@ -20,10 +20,10 @@ export const metadata: Metadata = {
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:focus-visible:outline-purple-400";
-const card = "rounded-xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6 dark:border-zinc-800 dark:bg-zinc-900";
-const cardTitle = "text-base font-semibold text-zinc-950 dark:text-white";
-const muted = "text-sm text-zinc-600 dark:text-zinc-400";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
+const card = "rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-line-dark dark:bg-surface-dark";
+const cardTitle = "text-base font-semibold text-slate-950 dark:text-white";
+const muted = "text-sm text-slate-600 dark:text-slate-400";
 
 const TIER_LABEL: Record<SubscriptionTier, string> = { FREE: "Free", PRO: "Pro", AGENCY: "Agency" };
 const longDate = (d: Date) => new Intl.DateTimeFormat("en-GB", { dateStyle: "long" }).format(d);
@@ -35,8 +35,8 @@ function TierBadge({ tier }: { tier: SubscriptionTier }) {
     <span
       className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${
         paid
-          ? "bg-purple-50 text-purple-800 ring-purple-600/20 dark:bg-purple-950/40 dark:text-purple-300 dark:ring-purple-400/30"
-          : "bg-zinc-100 text-zinc-700 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-400/20"
+          ? "bg-accent-mint/10 text-accent-mint ring-accent-mint/30"
+          : "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-surface-raised dark:text-slate-300 dark:ring-slate-400/20"
       }`}
     >
       {TIER_LABEL[tier]}
@@ -47,8 +47,8 @@ function TierBadge({ tier }: { tier: SubscriptionTier }) {
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-      <dt className="text-sm font-medium text-zinc-600 dark:text-zinc-400">{label}</dt>
-      <dd className="text-sm text-zinc-950 sm:col-span-2 dark:text-zinc-100">{children}</dd>
+      <dt className="text-sm font-medium text-slate-600 dark:text-slate-400">{label}</dt>
+      <dd className="text-sm text-slate-950 sm:col-span-2 dark:text-slate-100">{children}</dd>
     </div>
   );
 }
@@ -59,7 +59,7 @@ function ProfileCard({ profile, tier }: { profile: AccountProfile; tier: Subscri
       <h2 id="profile-heading" className={cardTitle}>
         Profile
       </h2>
-      <dl className="mt-2 divide-y divide-zinc-200 dark:divide-zinc-800">
+      <dl className="mt-2 divide-y divide-slate-200 dark:divide-line-dark">
         <Row label="Email">
           <span className="break-all">{profile.email}</span>
           {profile.emailVerified && <span className="ml-2 text-xs text-emerald-700 dark:text-emerald-300">Verified</span>}
@@ -90,9 +90,9 @@ function planStatus(tier: SubscriptionTier, b: BillingSummary): { text: string; 
 }
 
 const TONE = {
-  ok: "text-zinc-800 dark:text-zinc-200",
+  ok: "text-slate-800 dark:text-slate-200",
   warn: "rounded-md bg-amber-50 px-3 py-2 text-amber-900 ring-1 ring-amber-600/20 ring-inset dark:bg-amber-950/30 dark:text-amber-200 dark:ring-amber-400/30",
-  plain: "text-zinc-800 dark:text-zinc-200",
+  plain: "text-slate-800 dark:text-slate-200",
 };
 
 function PlanCard({ tier, billing }: { tier: SubscriptionTier; billing: BillingSummary }) {
@@ -109,16 +109,16 @@ function PlanCard({ tier, billing }: { tier: SubscriptionTier; billing: BillingS
       <p className={`mt-3 text-sm ${TONE[status.tone]}`}>{status.text}</p>
 
       {!paid && (
-        <div className="mt-4 rounded-lg bg-purple-50 p-4 ring-1 ring-purple-200 ring-inset dark:bg-purple-950/40 dark:ring-purple-500/30">
-          <p className="text-sm font-semibold text-zinc-950 dark:text-white">Pro unlocks everything ProductRadar tracks</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-700 dark:text-zinc-300">
+        <div className="mt-4 rounded-lg bg-accent-mint/10 p-4 ring-1 ring-accent-mint/30 ring-inset">
+          <p className="text-sm font-semibold text-slate-950 dark:text-white">Pro unlocks everything ProductRadar tracks</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700 dark:text-slate-300">
             <li>Every live product, not just the samples</li>
             <li>Analyze any product link yourself</li>
             <li>Supplier search and one-click Shopify export</li>
           </ul>
           <a
             href="/upgrade"
-            className={`mt-4 inline-flex w-full items-center justify-center rounded-md bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 sm:w-auto dark:hover:bg-purple-700 ${focusRing}`}
+            className={`mt-4 inline-flex w-full items-center justify-center rounded-md bg-accent-mint px-4 py-2.5 text-sm font-semibold text-background-dark shadow-sm hover:bg-accent-mint-strong sm:w-auto ${focusRing}`}
           >
             Upgrade to Pro · {proPrice}
           </a>
@@ -176,7 +176,7 @@ async function AccountContent({ searchParams }: { searchParams: SearchParams }) 
         </p>
       )}
       {params.checkout === "cancelled" && (
-        <p role="status" className="rounded-lg bg-zinc-100 px-4 py-3 text-sm text-zinc-700 ring-1 ring-zinc-300 ring-inset dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10">
+        <p role="status" className="rounded-lg bg-slate-100 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-300 ring-inset dark:bg-white/5 dark:text-slate-300 dark:ring-white/10">
           Checkout cancelled. Nothing was charged.
         </p>
       )}
@@ -189,16 +189,16 @@ async function AccountContent({ searchParams }: { searchParams: SearchParams }) 
 
 export default function AccountPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <div className="min-h-full bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-full bg-slate-50 dark:bg-background-dark">
       <AppHeader />
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-        <h1 className="mb-6 text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">Account</h1>
+        <h1 className="mb-6 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-slate-50">Account</h1>
         <Suspense
           fallback={
             <div aria-hidden="true" className="space-y-6">
-              <div className="h-56 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
-              <div className="h-40 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
-              <div className="h-64 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70" />
+              <div className="h-56 animate-pulse rounded-xl bg-slate-200/70 dark:bg-surface-raised/70" />
+              <div className="h-40 animate-pulse rounded-xl bg-slate-200/70 dark:bg-surface-raised/70" />
+              <div className="h-64 animate-pulse rounded-xl bg-slate-200/70 dark:bg-surface-raised/70" />
             </div>
           }
         >

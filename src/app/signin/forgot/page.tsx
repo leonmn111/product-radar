@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 export default function ForgotPasswordPage() {
   return (
     <AuthCard>
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Forgot your password?</h1>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Forgot your password?</h1>
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
         Enter your email and we&apos;ll send a link to choose a new one. It also works if you&apos;ve only signed in with
         email links so far.
       </p>

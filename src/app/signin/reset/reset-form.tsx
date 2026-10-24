@@ -30,7 +30,7 @@ export function ResetForm({ token, email }: { token: string; email: string }) {
         {passwordError ? (
           <FieldError id="reset-password-hint" message={passwordError} />
         ) : (
-          <p id="reset-password-hint" className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+          <p id="reset-password-hint" className="mt-1 text-xs text-slate-600 dark:text-slate-400">
             At least 8 characters.
           </p>
         )}

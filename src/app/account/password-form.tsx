@@ -40,7 +40,7 @@ export function PasswordForm({ email, hasPassword }: { email: string; hasPasswor
           {currentError ? (
             <FieldError id="account-current-password-hint" message={currentError} />
           ) : (
-            <p id="account-current-password-hint" className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+            <p id="account-current-password-hint" className="mt-1 text-xs text-slate-600 dark:text-slate-400">
               Forgot it?{" "}
               <Link href="/signin/forgot" className={linkClass}>
                 Reset it by email
@@ -58,7 +58,7 @@ export function PasswordForm({ email, hasPassword }: { email: string; hasPasswor
         {newError ? (
           <FieldError id="account-new-password-hint" message={newError} />
         ) : (
-          <p id="account-new-password-hint" className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+          <p id="account-new-password-hint" className="mt-1 text-xs text-slate-600 dark:text-slate-400">
             At least 8 characters.
           </p>
         )}
@@ -71,13 +71,13 @@ export function PasswordForm({ email, hasPassword }: { email: string; hasPasswor
             name="signOutOthers"
             type="checkbox"
             aria-describedby="account-sign-out-others-hint"
-            className="mt-0.5 size-4 rounded border-zinc-300 text-purple-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 dark:border-zinc-600 dark:bg-zinc-950"
+            className="mt-0.5 size-4 rounded border-slate-300 text-accent-mint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint dark:border-slate-600 dark:bg-background-dark"
           />
           <div>
-            <label htmlFor="account-sign-out-others" className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            <label htmlFor="account-sign-out-others" className="text-sm font-medium text-slate-900 dark:text-slate-100">
               Also sign out my other devices
             </label>
-            <p id="account-sign-out-others-hint" className="text-xs text-zinc-600 dark:text-zinc-400">
+            <p id="account-sign-out-others-hint" className="text-xs text-slate-600 dark:text-slate-400">
               Tick this if you think someone else knows your old password. You&apos;ll stay signed in here.
             </p>
           </div>

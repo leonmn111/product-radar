@@ -40,12 +40,12 @@ const NAV = [
   ["guarantees", "What you can rely on"],
 ] as const;
 
-const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400";
-const link = `font-medium text-purple-300 underline decoration-purple-300/40 underline-offset-2 hover:decoration-purple-300 ${focusRing}`;
+const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
+const link = `font-medium text-accent-mint underline decoration-accent-mint/40 underline-offset-2 hover:decoration-accent-mint ${focusRing}`;
 
 function C({ children }: { children: ReactNode }) {
   return (
-    <code className="rounded bg-zinc-800/80 px-1.5 py-0.5 font-mono text-[0.85em] text-zinc-100 [overflow-wrap:anywhere]">
+    <code className="rounded bg-surface-raised/80 px-1.5 py-0.5 font-mono text-[0.85em] text-slate-100 [overflow-wrap:anywhere]">
       {children}
     </code>
   );
@@ -54,13 +54,13 @@ function C({ children }: { children: ReactNode }) {
 /** A field name that never breaks across lines, for narrow table columns. */
 function Part({ children }: { children: ReactNode }) {
   return (
-    <code className="rounded bg-zinc-800/80 px-1.5 py-0.5 font-mono text-[0.85em] whitespace-nowrap text-zinc-100">{children}</code>
+    <code className="rounded bg-surface-raised/80 px-1.5 py-0.5 font-mono text-[0.85em] whitespace-nowrap text-slate-100">{children}</code>
   );
 }
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-6 space-y-5 border-t border-zinc-800 pt-10">
+    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-6 space-y-5 border-t border-line-dark pt-10">
       <h2 id={`${id}-title`} className="text-2xl font-semibold tracking-tight text-white">
         {title}
       </h2>
@@ -75,7 +75,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
       <h3 className="flex items-center gap-3 text-base font-semibold text-white">
         <span
           aria-hidden
-          className="grid size-7 shrink-0 place-items-center rounded-full bg-purple-500/15 text-sm text-purple-300 ring-1 ring-purple-400/30"
+          className="grid size-7 shrink-0 place-items-center rounded-full bg-accent-mint/10 text-sm text-accent-mint ring-1 ring-accent-mint/30"
         >
           {n}
         </span>
@@ -92,12 +92,12 @@ function Table({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
     <>
       <div className="space-y-3 sm:hidden">
         {rows.map(([first, ...rest], i) => (
-          <dl key={i} className="space-y-2 rounded-xl border border-zinc-800 p-4 text-sm">
+          <dl key={i} className="space-y-2 rounded-xl border border-line-dark p-4 text-sm">
             <div className="font-medium text-white">{first}</div>
             {rest.map((cell, j) => (
               <div key={j}>
-                <dt className="text-xs uppercase tracking-wide text-zinc-400">{head[j + 1]}</dt>
-                <dd className="mt-0.5 text-zinc-300">{cell}</dd>
+                <dt className="text-xs uppercase tracking-wide text-slate-400">{head[j + 1]}</dt>
+                <dd className="mt-0.5 text-slate-300">{cell}</dd>
               </div>
             ))}
           </dl>
@@ -110,9 +110,9 @@ function Table({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
 
 function WideTable({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
   return (
-    <div className="hidden overflow-x-auto rounded-xl border border-zinc-800 sm:block">
+    <div className="hidden overflow-x-auto rounded-xl border border-line-dark sm:block">
       <table className="w-full text-left text-sm">
-        <thead className="bg-zinc-900 text-xs uppercase tracking-wide text-zinc-400">
+        <thead className="bg-surface-dark text-xs uppercase tracking-wide text-slate-400">
           <tr>
             {head.map((h) => (
               <th key={h} scope="col" className="px-4 py-2.5 font-medium">
@@ -121,11 +121,11 @@ function WideTable({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-800">
+        <tbody className="divide-y divide-line-dark">
           {rows.map((cells, i) => (
             <tr key={i} className="align-top">
               {cells.map((cell, j) => (
-                <td key={j} className="px-4 py-3 text-zinc-300">
+                <td key={j} className="px-4 py-3 text-slate-300">
                   {cell}
                 </td>
               ))}
@@ -177,32 +177,32 @@ const DOSSIER_SHAPE = json({
 
 export default function DocsPage() {
   return (
-    <div className="flex-1 bg-zinc-950 text-zinc-300 [color-scheme:dark]">
+    <div className="flex-1 bg-background-dark text-slate-300 [color-scheme:dark]">
       {/* Keeps overscroll and the area below short pages dark too. */}
-      <style>{"body{background:#09090b}"}</style>
+      <style>{"body{background:#0a1020}"}</style>
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded-md focus:bg-purple-600 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded-md focus:bg-accent-mint focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-background-dark"
       >
         Skip to content
       </a>
 
-      <header className="border-b border-zinc-800">
+      <header className="border-b border-line-dark">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 text-sm whitespace-nowrap">
-            <Link href="/" className={`rounded font-semibold tracking-tight text-purple-300 ${focusRing}`}>
+            <Link href="/" className={`rounded font-semibold tracking-tight text-accent-mint ${focusRing}`}>
               ProductRadar
             </Link>
-            <span aria-hidden className="text-zinc-600">
+            <span aria-hidden className="text-slate-600">
               /
             </span>
-            <span className="text-zinc-300">
+            <span className="text-slate-300">
               <span className="hidden sm:inline">Agent API </span>Docs
             </span>
           </div>
           <Link
             href="/dashboard"
-            className={`rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap text-zinc-200 ring-1 ring-zinc-700 hover:bg-zinc-800 ${focusRing}`}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap text-slate-200 ring-1 ring-line-dark hover:bg-surface-raised ${focusRing}`}
           >
             Dashboard
           </Link>
@@ -211,13 +211,13 @@ export default function DocsPage() {
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-12 lg:px-8">
         <nav aria-label="On this page" className="pt-8 lg:sticky lg:top-0 lg:max-h-screen lg:self-start lg:pt-12">
-          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-400">On this page</p>
+          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-400">On this page</p>
           <ul className="flex flex-wrap gap-2 lg:flex-col lg:gap-1">
             {NAV.map(([id, label]) => (
               <li key={id}>
                 <a
                   href={`#${id}`}
-                  className={`block rounded-md px-3 py-1.5 text-sm text-zinc-300 ring-1 ring-zinc-800 hover:bg-zinc-900 hover:text-white lg:ring-0 ${focusRing}`}
+                  className={`block rounded-md px-3 py-1.5 text-sm text-slate-300 ring-1 ring-line-dark hover:bg-surface-dark hover:text-white lg:ring-0 ${focusRing}`}
                 >
                   {label}
                 </a>
@@ -237,10 +237,10 @@ export default function DocsPage() {
 function DocsMainFallback() {
   return (
     <main id="main" aria-busy="true" className="min-w-0 max-w-3xl space-y-6 pb-24 pt-10 lg:pt-12">
-      <div className="h-4 w-48 animate-pulse rounded bg-zinc-900" />
-      <div className="h-20 animate-pulse rounded-lg bg-zinc-900" />
-      <div className="h-24 animate-pulse rounded-lg bg-zinc-900" />
-      <div className="h-16 animate-pulse rounded-xl bg-zinc-900" />
+      <div className="h-4 w-48 animate-pulse rounded bg-surface-dark" />
+      <div className="h-20 animate-pulse rounded-lg bg-surface-dark" />
+      <div className="h-24 animate-pulse rounded-lg bg-surface-dark" />
+      <div className="h-16 animate-pulse rounded-xl bg-surface-dark" />
     </main>
   );
 }
@@ -293,11 +293,11 @@ async function DocsMain() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
       <div className="space-y-6">
-        <p className="text-sm font-medium text-purple-300">For developers and AI agents</p>
+        <p className="text-sm font-medium text-accent-mint">For developers and AI agents</p>
         <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           Product research your agent can buy by the request
         </h1>
-        <p className="text-lg leading-relaxed text-zinc-300">
+        <p className="text-lg leading-relaxed text-slate-300">
           An 8-part Dossier for any Amazon UK product: verdict, resellability, UK/EU landed margin after VAT, duty,
           fees and advertising, momentum, saturation, supplier matches, evidence and exports. Every number is
           calculated from sourced, timestamped evidence, and a part without enough of it is withheld, never estimated.
@@ -310,35 +310,35 @@ async function DocsMain() {
         <div className="flex flex-wrap gap-3">
           <a
             href="#quickstart"
-            className={`rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 ${focusRing}`}
+            className={`rounded-lg bg-accent-mint px-4 py-2.5 text-sm font-semibold text-background-dark hover:bg-accent-mint-strong ${focusRing}`}
           >
             Make your first request
           </a>
           <a
             href="#mcp"
-            className={`rounded-lg px-4 py-2.5 text-sm font-semibold text-zinc-100 ring-1 ring-zinc-700 hover:bg-zinc-900 ${focusRing}`}
+            className={`rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-100 ring-1 ring-line-dark hover:bg-surface-dark ${focusRing}`}
           >
             Add to Claude or Cursor
           </a>
         </div>
 
-        <dl className="grid gap-px overflow-hidden rounded-xl border border-zinc-800 bg-zinc-800 sm:grid-cols-3">
-          <div className="bg-zinc-950 p-4">
-            <dt className="text-xs uppercase tracking-wide text-zinc-400">Price</dt>
+        <dl className="grid gap-px overflow-hidden rounded-xl border border-line-dark bg-surface-raised sm:grid-cols-3">
+          <div className="bg-background-dark p-4">
+            <dt className="text-xs uppercase tracking-wide text-slate-400">Price</dt>
             <dd className="mt-1 font-semibold text-white">
               {SEARCH_PRICE_USDC} USDC per search
-              <span className="block text-sm font-normal text-zinc-400">{DOSSIER_PRICE_USDC} USDC per Standard Dossier</span>
+              <span className="block text-sm font-normal text-slate-400">{DOSSIER_PRICE_USDC} USDC per Standard Dossier</span>
             </dd>
           </div>
-          <div className="bg-zinc-950 p-4">
-            <dt className="text-xs uppercase tracking-wide text-zinc-400">Network</dt>
+          <div className="bg-background-dark p-4">
+            <dt className="text-xs uppercase tracking-wide text-slate-400">Network</dt>
             <dd className="mt-1 font-semibold text-white">
               {status.networkLabel}
-              {status.testnet && <span className="font-normal text-zinc-400"> (testnet)</span>}
+              {status.testnet && <span className="font-normal text-slate-400"> (testnet)</span>}
             </dd>
           </div>
-          <div className="bg-zinc-950 p-4">
-            <dt className="text-xs uppercase tracking-wide text-zinc-400">Status</dt>
+          <div className="bg-background-dark p-4">
+            <dt className="text-xs uppercase tracking-wide text-slate-400">Status</dt>
             <dd className="mt-1 flex items-center gap-2 font-semibold text-white">
               <span
                 aria-hidden
@@ -355,7 +355,7 @@ async function DocsMain() {
           </p>
         )}
         {status.enabled && status.testnet && (
-          <p className="rounded-lg bg-zinc-900 px-4 py-3 text-sm text-zinc-300 ring-1 ring-zinc-800">
+          <p className="rounded-lg bg-surface-dark px-4 py-3 text-sm text-slate-300 ring-1 ring-line-dark">
             Payments currently run on the Base Sepolia test network, using test USDC that has no cash value. Get some
             free from{" "}
             <a href="https://faucet.circle.com" className={link}>
@@ -572,7 +572,7 @@ console.log(margin.status === "shown" ? margin.value.uk.netProfit : margin.missi
           <CodeBlock title="Response shape (placeholders, not data)" copy={false} code={DOSSIER_SHAPE} />
         </div>
 
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-slate-400">
           The v1 catalog endpoints (<C>/api/agent/v1/opportunity</C>, <C>/api/agent/v1/dossier</C>) still answer for
           MCP installs from before 0.2.0, but are retired: build on v2.
         </p>
@@ -649,7 +649,7 @@ console.log(margin.status === "shown" ? margin.value.uk.netProfit : margin.missi
             [<C key="u">PRODUCTRADAR_API_URL</C>, SITE, "The API to call."],
           ]}
         />
-        <p className="rounded-lg bg-zinc-900 px-4 py-3 text-sm ring-1 ring-zinc-800">
+        <p className="rounded-lg bg-surface-dark px-4 py-3 text-sm ring-1 ring-line-dark">
           Use a dedicated wallet holding only a few dollars of USDC, never your main wallet. The spending caps are
           enforced before anything is signed.
         </p>
@@ -751,7 +751,7 @@ console.log(margin.status === "shown" ? margin.value.uk.netProfit : margin.missi
       </Section>
 
       <Section id="guarantees" title="What you can rely on">
-        <ul className="list-disc space-y-3 pl-5 marker:text-zinc-600">
+        <ul className="list-disc space-y-3 pl-5 marker:text-slate-600">
           <li>
             <strong className="text-white">Evidence first.</strong> Every number cites the evidence it was calculated
             from, and every piece of evidence has a source URL, an observed-at timestamp and a quality score. Nothing is
