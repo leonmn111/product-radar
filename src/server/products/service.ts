@@ -5,7 +5,7 @@ import { resaleRisk } from "@/components/dashboard/resellability";
 import { isSellable } from "@/engine/compliance";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { marginInsight } from "@/server/margins/engine";
-import { bestCurrentOffer } from "@/server/scoring/engine";
+import { bestCurrentOffer, METHODOLOGY_VERSION } from "@/server/scoring/engine";
 import { LATEST_FX } from "@/server/scoring/fx-latest";
 import { catalogResellability } from "@/services/catalogMargin";
 import { highestRrp } from "./rrp";
@@ -22,7 +22,10 @@ const PRODUCT_INCLUDE = {
   // Newest evidence only — re-ingests add rows, so an unbounded list would grow forever.
   evidence: { orderBy: [{ observedAt: "desc" }, { id: "asc" }], take: MAX_EVIDENCE_PER_PRODUCT },
   _count: { select: { evidence: true } },
+  // Only scores from the current methodology: an older one is history, not shown. (v2.0.0 moved TREND to
+  // Ad Momentum, so a product without ad data must not keep its old Google Trends score.)
   scores: {
+    where: { methodologyVersion: METHODOLOGY_VERSION },
     orderBy: [{ dimension: "asc" }, { calculatedAt: "desc" }, { id: "desc" }],
     distinct: ["dimension"],
     include: { evidence: { select: { evidenceId: true, evidence: { select: { sourceUrl: true } } } } },
@@ -41,7 +44,7 @@ export async function listProducts(
     FROM "Product" p
     LEFT JOIN LATERAL (
       SELECT s.value FROM "ProductScore" s
-      WHERE s."productId" = p.id AND s.dimension = 'OVERALL'
+      WHERE s."productId" = p.id AND s.dimension = 'OVERALL' AND s."methodologyVersion" = ${METHODOLOGY_VERSION}
       ORDER BY s."calculatedAt" DESC, s.id DESC
       LIMIT 1
     ) overall ON true
@@ -95,7 +98,7 @@ export async function searchProducts(
     FROM hit
     LEFT JOIN LATERAL (
       SELECT s.value FROM "ProductScore" s
-      WHERE s."productId" = hit.id AND s.dimension = 'OVERALL'
+      WHERE s."productId" = hit.id AND s.dimension = 'OVERALL' AND s."methodologyVersion" = ${METHODOLOGY_VERSION}
       ORDER BY s."calculatedAt" DESC, s.id DESC
       LIMIT 1
     ) overall ON true

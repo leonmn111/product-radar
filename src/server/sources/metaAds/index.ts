@@ -1,12 +1,14 @@
-// Meta Ad Library (ads_archive) adapter: how long the longest-running active ad for a product has run,
-// a Momentum signal. Phase 2. SCAFFOLD: fetchLongestRunningAd() is SIMULATED, a random 0–120 days
-// that looks at nothing, so it may only ever touch development sample data (CLAUDE.md Rule 3); the
-// Dossier service refuses it for anything else, and real Dossiers show "no ad data" until it's real.
+// Meta Ad Library: the real connector is library.ts (createMetaAdLibrarySource), used by the Viral
+// Demand Engine (src/services/metaAds.ts). What stays here is the SIMULATED longest-running-ad source:
+// fetchLongestRunningAd() is a random 0–120 days that looks at nothing, so it may only ever touch
+// development sample data (CLAUDE.md Rule 3); the Dossier service refuses it for anything else.
 //
-// For the real connector: the Ad Library API is free but needs an access token from an
-// identity-confirmed Meta account. It covers commercial ads delivered to EU and UK users (kept for a
-// year); ad_delivery_start_time is when the advertiser scheduled the ad to start. White-label
-// products often have no brand, so the search will be by keyword as well as by page.
+// The Ad Library API is free but needs an access token from an identity-confirmed Meta account. It
+// returns commercial ads only when they reached an EU country (a UK-only ad isn't in it);
+// ad_delivery_start_time is when the advertiser scheduled the ad to start.
+
+export { AdLibraryRateLimitedError, createMetaAdLibrarySource } from "./library";
+export { AD_DATA_PENDING, adLibraryTokenPending } from "./token";
 
 export const SIMULATED_AD_DAYS = { min: 0, max: 120 } as const;
 

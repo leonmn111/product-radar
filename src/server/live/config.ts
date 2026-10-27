@@ -7,10 +7,10 @@ import { env } from "@/lib/env";
 import { createAliexpressSource } from "@/server/sources/aliexpress";
 import { createTokenKeeper, type TokenKeeper } from "@/server/sources/aliexpress/tokens";
 import { createKeepaSource } from "@/server/sources/keepa";
-import { simulatedAdSource, type AdDurationSource } from "@/server/sources/metaAds";
+import { adLibraryTokenPending, createMetaAdLibrarySource, simulatedAdSource, type AdDurationSource } from "@/server/sources/metaAds";
 import { createRainforestSource } from "@/server/sources/rainforest";
 import { sampleHistorySource, sampleRetailSource, sampleSupplierSource } from "@/server/sources/sample";
-import type { HistorySource, RetailSource, SupplierSource } from "@/server/sources/types";
+import type { AdLibrarySource, HistorySource, RetailSource, SupplierSource } from "@/server/sources/types";
 import { dbTokenStore } from "@/services/providerTokenStore";
 
 /**
@@ -67,7 +67,21 @@ export function liveSupplierSource(): SupplierSource | null {
   return aliexpressSource();
 }
 
-export type RetailSourceStatus ={ ready: true; sample: boolean; retail: RetailSource } | { ready: false; missing: string[] };
+// One Ad Library source per process, so a Meta rate-limit pause holds for every request.
+let adLibrary: AdLibrarySource | null = null;
+
+/**
+ * The live Meta Ad Library (Viral Demand Engine), or null while META_AD_LIBRARY_ACCESS_TOKEN is missing or
+ * a placeholder such as TEMP_WAITING_ON_META: the engine then reports "Ad data pending Meta approval".
+ */
+export function liveAdLibrarySource(): AdLibrarySource | null {
+  const accessToken = env.META_AD_LIBRARY_ACCESS_TOKEN;
+  if (!accessToken || adLibraryTokenPending(accessToken)) return null;
+  adLibrary ??= createMetaAdLibrarySource({ accessToken });
+  return adLibrary;
+}
+
+export type RetailSourceStatus = { ready: true; sample: boolean; retail: RetailSource } | { ready: false; missing: string[] };
 
 /** Just the retail source (Amazon UK listings), for searches that don't need suppliers. */
 export function liveRetailSource({ allowSample = false }: { allowSample?: boolean } = {}): RetailSourceStatus {

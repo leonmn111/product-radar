@@ -97,15 +97,46 @@ describe("scoring engine", () => {
     expect(resubmitted.evidenceIds).toEqual([again[2].id]); // only the latest capture is cited
   });
 
-  it("TREND is above 50 when search interest rises and below when it falls", () => {
-    const series = (vals: number[]) =>
-      vals.map((v, i) =>
-        ev({ metric: "SEARCH_INTEREST", metricValue: v, sourceUrl: "https://trends.test/x", observedAt: daysAgo(60 - i * 30) }),
-      );
-    const up = byDim({ asOf, evidence: series([40, 50, 60]), offers: [], categoryBestPrices: [], fx }).TREND;
-    const down = byDim({ asOf, evidence: series([60, 50, 40]), offers: [], categoryBestPrices: [], fx }).TREND;
-    expect(up.value).toBeGreaterThan(50);
-    expect(down.value).toBeLessThan(50);
+  // Ad Momentum (v2.0.0): snapshots of the active Meta ads that match the product.
+  const ads = (vals: number[], stepDays = 30) =>
+    vals.map((v, i) =>
+      ev({
+        metric: "AD_ACTIVE_ADS",
+        metricValue: v,
+        sourceType: "AD_LIBRARY",
+        sourceUrl: "https://www.facebook.com/ads/library/?q=silicone%20utensil",
+        observedAt: daysAgo((vals.length - 1 - i) * stepDays),
+      }),
+    );
+
+  it("TREND is high when active ads are rising (RISING) and low when they're falling (FALLING)", () => {
+    const up = byDim({ asOf, evidence: ads([10, 12, 14]), offers: [], categoryBestPrices: [], fx }).TREND;
+    const down = byDim({ asOf, evidence: ads([14, 12, 10]), offers: [], categoryBestPrices: [], fx }).TREND;
+    const flat = byDim({ asOf, evidence: ads([12, 12, 12]), offers: [], categoryBestPrices: [], fx }).TREND;
+    expect(up.value).toBeGreaterThanOrEqual(75); // about +17% a month
+    expect(down.value).toBeLessThanOrEqual(25);
+    expect(flat.value).toBe(50);
+    expect(up.evidenceIds).toHaveLength(3); // every snapshot is cited
+  });
+
+  it("TREND reads the change as a share of the ad count: +10% a month scores 75", () => {
+    // Two snapshots 30 days apart, 20 → 22 ads: +2 on a mean of about 21 ≈ +9.5% a month.
+    const t = byDim({ asOf, evidence: ads([20, 22]), offers: [], categoryBestPrices: [], fx }).TREND;
+    expect(t.value).toBeGreaterThan(72);
+    expect(t.value).toBeLessThan(76);
+  });
+
+  it("TREND is blank, not a neutral 50, with no ads seen or too little history", () => {
+    expect(byDim({ asOf, evidence: ads([0, 0, 0]), offers: [], categoryBestPrices: [], fx }).TREND).toBeUndefined();
+    expect(byDim({ asOf, evidence: ads([5]), offers: [], categoryBestPrices: [], fx }).TREND).toBeUndefined();
+    expect(byDim({ asOf, evidence: ads([5, 9], 3), offers: [], categoryBestPrices: [], fx }).TREND).toBeUndefined(); // 3 days apart
+  });
+
+  it("TREND no longer comes from Google Trends search interest", () => {
+    const interest = [40, 50, 60].map((v, i) =>
+      ev({ metric: "SEARCH_INTEREST", metricValue: v, sourceUrl: "https://trends.test/x", observedAt: daysAgo(60 - i * 30) }),
+    );
+    expect(byDim({ asOf, evidence: interest, offers: [], categoryBestPrices: [], fx }).TREND).toBeUndefined();
   });
 
   it("DEMAND ignores search interest, which is relative to each keyword's own peak", () => {
@@ -116,17 +147,10 @@ describe("scoring engine", () => {
     const without = byDim({ asOf, evidence: [reviews], offers: [], categoryBestPrices: [], fx });
     const withInterest = byDim({ asOf, evidence: [reviews, ...interest], offers: [], categoryBestPrices: [], fx });
     expect(withInterest.DEMAND).toEqual(without.DEMAND);
-    expect(withInterest.TREND).toBeDefined(); // it still drives TREND
+    expect(withInterest.TREND).toBeUndefined(); // nor TREND, since v2.0.0
     expect(byDim({ asOf, evidence: interest, offers: [], categoryBestPrices: [], fx }).DEMAND).toBeUndefined();
   });
 
-  it("TREND needs at least two points spanning a week", () => {
-    const evidence = [
-      ev({ metric: "SEARCH_INTEREST", metricValue: 40, observedAt: daysAgo(3) }),
-      ev({ metric: "SEARCH_INTEREST", metricValue: 60, observedAt: daysAgo(1) }),
-    ];
-    expect(byDim({ asOf, evidence, offers: [], categoryBestPrices: [], fx }).TREND).toBeUndefined();
-  });
 
   it("VALUE rewards a cheaper price at equal quality and needs category peers", () => {
     const rating = ev({ metric: "RATING", metricValue: 4.5 });

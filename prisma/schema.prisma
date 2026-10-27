@@ -238,6 +238,7 @@ enum SourceType {
   SOCIAL
   MARKETPLACE
   OTHER
+  AD_LIBRARY // an ad transparency library (the Meta Ad Library)
 }
 
 // The measurable quantity a piece of evidence reports, if any. The scoring
@@ -246,12 +247,14 @@ enum SourceType {
 //   RATING           0–5      average star rating
 //   REVIEW_COUNT     ≥ 0      whole number of reviews/ratings
 //   SENTIMENT        -1–1     net sentiment (-1 all negative, 1 all positive)
-//   SEARCH_INTEREST  0–100    relative search-interest index
+//   SEARCH_INTEREST  0–100    relative search-interest index (kept as a fact; no longer scored, v2.0.0)
+//   AD_ACTIVE_ADS    ≥ 0      whole number of active ads matching the product in one Ad Library snapshot
 enum EvidenceMetric {
   RATING
   REVIEW_COUNT
   SENTIMENT
   SEARCH_INTEREST
+  AD_ACTIVE_ADS
 }
 
 // One sourced, timestamped, quality-scored fact about a product.
@@ -523,4 +526,67 @@ model BulkJobItem {
 
   @@unique([jobId, asin])
   @@index([jobId, status])
+}
+
+// ─── Ad Momentum (Phase 3: the Viral Demand Engine, src/services/metaAds.ts) ──
+// Which products are watched on the Meta Ad Library, a dated snapshot of each check (appended, never
+// overwritten: momentum is the change between them), and every ad behind a snapshot's counts, cited by
+// its public Ad Library page. Catalog watches also write an AD_ACTIVE_ADS Evidence row per snapshot, which
+// is what the TREND score is calculated from (scoring v2.0.0).
+
+enum AdSearchKind {
+  KEYWORD // the product's key words, any order (Meta: KEYWORD_UNORDERED)
+  BRAND // a brand name as an exact phrase (Meta: KEYWORD_EXACT_PHRASE)
+}
+
+model AdWatch {
+  id            String               @id @default(uuid(7)) @db.Uuid
+  productKey    String // "catalog:<Product.id>" or "amazon.co.uk:<ASIN>"
+  searchTerms   String // CHECK: 1–100 characters (Meta's limit)
+  kind          AdSearchKind         @default(KEYWORD)
+  countries     String[] // ad_reached_countries, e.g. {GB,IE,DE,FR,ES,IT,NL}; CHECK: at least one
+  active        Boolean              @default(true)
+  lastCheckedAt DateTime?            @db.Timestamptz(3)
+  createdAt     DateTime             @default(now()) @db.Timestamptz(3)
+  snapshots     AdMomentumSnapshot[]
+
+  @@unique([productKey, searchTerms, kind])
+  @@index([active, lastCheckedAt])
+}
+
+model AdMomentumSnapshot {
+  id                 String          @id @default(uuid(7)) @db.Uuid
+  watchId            String          @db.Uuid
+  snapshotDate       DateTime        @db.Date // the UTC day it describes
+  observedAt         DateTime        @db.Timestamptz(3)
+  activeAds          Int // CHECK: counts ≥ 0, scaling and new ads ≤ active
+  scalingAds         Int
+  advertisers        Int
+  newAds7d           Int
+  longestRunningDays Int?
+  medianAgeDays      Int?
+  euReach            BigInt? // sum of Meta's EU reach estimates, where reported
+  truncated          Boolean // the search stopped early: the counts are lower bounds
+  confidence         Decimal         @db.Decimal(4, 3) // CHECK: 0–1
+  methodologyVersion String
+  watch              AdWatch         @relation(fields: [watchId], references: [id], onDelete: Cascade)
+  ads                AdObservation[]
+
+  @@unique([watchId, snapshotDate])
+  @@index([watchId, snapshotDate(sort: Desc)])
+}
+
+model AdObservation {
+  snapshotId String             @db.Uuid
+  libraryId  String // Meta's ad id; its public page is facebook.com/ads/library/?id=<libraryId>
+  pageId     String
+  pageName   String
+  startedAt  DateTime?          @db.Timestamptz(3)
+  platforms  String[]
+  euReach    Int?
+  scaling    Boolean
+  snapshot   AdMomentumSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@id([snapshotId, libraryId])
+  @@index([libraryId])
 }

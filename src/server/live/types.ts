@@ -59,6 +59,19 @@ export type ProductHistory = {
   evidence: Evidence;
 };
 
+/** An active ad seen in an ad library (the Meta Ad Library), as the engine sees it: never the provider's shape. */
+export type ObservedAd = {
+  id: string; // the library's own id
+  pageId: string; // the advertiser's page
+  pageName: string;
+  startedAt: string | null; // ISO, when the advertiser scheduled delivery to start (not proof it ran from then)
+  stoppedAt: string | null; // ISO, the scheduled end; null = runs until stopped or out of budget
+  platforms: string[]; // e.g. FACEBOOK, INSTAGRAM
+  text: string; // the ad's own words (bodies and link titles): what relevance is judged on
+  euReach: number | null; // Meta's estimated reach across the EU; null = not reported
+  evidence: Evidence; // cites the ad's public Ad Library page, never the token-bearing snapshot URL
+};
+
 /** A supplier's offer, as delivered to a market. */
 export type SupplierOffer = {
   id: string;

@@ -5,7 +5,7 @@
 // (0–1) and the ids of the evidence it was computed from (Rule 3). If there is
 // no usable evidence for a dimension, NO score is produced — never a default.
 //
-// ── Formulas (methodology v1.5.0) ───────────────────────────────────────────
+// ── Formulas (methodology v2.0.0) ───────────────────────────────────────────
 //
 // Evidence weight     w = (quality / 100) × 0.5^(ageDays / 90) × sourceWeight[sourceType]
 //                     (90-day half-life; future-dated evidence is ignored). Age counts from
@@ -14,8 +14,8 @@
 //
 // Re-captures         RATING, REVIEW_COUNT and SENTIMENT are snapshots: repeated captures
 //                     from the same source URL count once (latest wins), so re-submitting a
-//                     page can't inflate a score. SEARCH_INTEREST is a time series — every
-//                     capture is kept, because TREND needs the history.
+//                     page can't inflate a score. AD_ACTIVE_ADS (and SEARCH_INTEREST) are time
+//                     series — every capture is kept, because TREND needs the history.
 //
 // Shrunk mean         S = (Σ wᵢ·xᵢ + K·50) / (Σ wᵢ + K),  K = 1
 //                     Pulls thinly-evidenced products toward a neutral 50.
@@ -27,9 +27,15 @@
 // DEMAND              x = min(100, 100 × log10(1+n) / log10(1+50 000))  for REVIEW_COUNT n
 //                     (Not search interest: Google Trends scales every keyword to its own
 //                     busiest week = 100, so the index shows direction, not size. v1.3.0)
-// TREND               weighted least-squares slope of SEARCH_INTEREST vs time,
-//                     S = clamp(50 + 2.5 × slopePer30Days)         (+20 pts/month ⇒ 100)
-//                     Needs ≥ 2 points spanning ≥ 7 days.
+// TREND (v2.0.0)      Ad Momentum, not Google Trends: the AD_ACTIVE_ADS snapshots of the Meta Ad
+//                     Library (active ads that match the product, src/services/metaAds.ts).
+//                     Weighted least-squares slope of the count vs time, as a share of the mean:
+//                     changePct = 100 × slopePer30Days / meanCount
+//                     S = clamp(50 + 2.5 × changePct)   (+20%/month ⇒ 100, −20%/month ⇒ 0:
+//                     RISING, +10% or more, scores 75+; FALLING, −10% or less, 25 or under)
+//                     Needs ≥ 2 snapshots spanning ≥ 7 days and at least one ad seen; otherwise
+//                     there is no TREND score at all (blank, never a made-up neutral 50).
+//                     SEARCH_INTEREST is kept as a fact but no longer scored.
 // VALUE               priceScore = clamp(50 + 50 × log2(categoryMedian / bestPrice))
 //                     S = 0.5 × QUALITY + 0.5 × priceScore
 //                     bestPrice = lowest CURRENT offer: each store's newest capture from the
@@ -47,14 +53,14 @@
 import type { Availability, EvidenceMetric, ScoreDimension, SourceType } from "@/generated/prisma/enums";
 import { toEur, type FxRates } from "./fx";
 
-export const METHODOLOGY_VERSION = "1.5.0";
+export const METHODOLOGY_VERSION = "2.0.0";
 
 const HALF_LIFE_DAYS = 90;
 const PRIOR = 50;
 const PRIOR_WEIGHT = 1;
 const CONFIDENCE_SCALE = 2;
 const REVIEW_COUNT_REFERENCE = 50_000;
-const TREND_POINTS_PER_MONTH_TO_MAX = 20;
+const TREND_CHANGE_PCT_PER_MONTH_TO_MAX = 20;
 const TREND_MIN_SPAN_DAYS = 7;
 export const OFFER_MAX_AGE_DAYS = 30;
 const DAY_MS = 86_400_000;
@@ -68,6 +74,7 @@ export const SOURCE_WEIGHT: Record<SourceType, number> = {
   MANUFACTURER: 0.6, // self-reported, discounted for bias
   SOCIAL: 0.5,
   OTHER: 0.5,
+  AD_LIBRARY: 0.9, // an official transparency library: real, dated ads (as v2's ads_library)
 };
 
 export const OVERALL_WEIGHTS: Record<Exclude<ScoreDimension, "OVERALL">, number> = {
@@ -134,7 +141,7 @@ export function evidenceWeight(e: EvidenceFact, asOf: Date): number {
 
 type Point = { id: string; x: number; w: number; t: number };
 
-const TIME_SERIES_METRICS: EvidenceMetric[] = ["SEARCH_INTEREST"];
+const TIME_SERIES_METRICS: EvidenceMetric[] = ["SEARCH_INTEREST", "AD_ACTIVE_ADS"];
 
 /** For snapshot metrics keep only the latest capture per source URL (ties → highest id). */
 function latestPerSource(evidence: EvidenceFact[]): EvidenceFact[] {
@@ -202,22 +209,23 @@ export function scoreDemand(input: ScoringInput) {
 }
 
 export function scoreTrend(input: ScoringInput): DimensionScore | null {
-  const pts = points(input, "SEARCH_INTEREST", (v) => v);
+  const pts = points(input, "AD_ACTIVE_ADS", (v) => v);
   if (pts.length < 2) return null;
   const span = (Math.max(...pts.map((p) => p.t)) - Math.min(...pts.map((p) => p.t))) / DAY_MS;
   if (span < TREND_MIN_SPAN_DAYS) return null;
 
-  // Weighted least squares: x = search index, t = days.
+  // Weighted least squares: x = active matching ads, t = days.
   const wSum = pts.reduce((s, p) => s + p.w, 0);
   const tMean = pts.reduce((s, p) => s + p.w * (p.t / DAY_MS), 0) / wSum;
   const xMean = pts.reduce((s, p) => s + p.w * p.x, 0) / wSum;
+  if (xMean <= 0) return null; // no ads seen at all: nothing to measure momentum on
   const cov = pts.reduce((s, p) => s + p.w * (p.t / DAY_MS - tMean) * (p.x - xMean), 0);
   const varT = pts.reduce((s, p) => s + p.w * (p.t / DAY_MS - tMean) ** 2, 0);
-  const slopePer30Days = (cov / varT) * 30;
+  const changePctPer30Days = ((cov / varT) * 30 * 100) / xMean;
 
   return {
     dimension: "TREND",
-    value: round(clamp(50 + (50 / TREND_POINTS_PER_MONTH_TO_MAX) * slopePer30Days), 2),
+    value: round(clamp(50 + (50 / TREND_CHANGE_PCT_PER_MONTH_TO_MAX) * changePctPer30Days), 2),
     confidence: round(confidenceFrom(wSum), 3),
     evidenceIds: pts.map((p) => p.id),
   };

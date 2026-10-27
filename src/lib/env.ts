@@ -74,6 +74,10 @@ const EnvSchema = z
     // Keepa API key (keepa.com, a paid plan): Amazon UK price and sales-rank history for Momentum.
     // Without it, Momentum is withheld and says the history is missing.
     KEEPA_API_KEY: optional,
+    // Meta Ad Library API (free): a user access token from an identity-confirmed Meta developer account,
+    // for the Viral Demand Engine (src/services/metaAds.ts). Long-lived user tokens last about 60 days.
+    // Missing or a placeholder (e.g. TEMP_WAITING_ON_META): ad data reads "Ad data pending Meta approval".
+    META_AD_LIBRARY_ACCESS_TOKEN: optional,
     // Development only: "on" runs the live-search page on recorded/sample responses (no provider
     // calls, no cost). Refused in production; locally the paid API uses it too, flagged as sample.
     LIVE_SAMPLE_DATA: optional,

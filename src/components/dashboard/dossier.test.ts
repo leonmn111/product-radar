@@ -66,7 +66,7 @@ describe("opportunity verdict", () => {
   it("rates strong quality, value and demand as High Potential", () => {
     const v = opportunityVerdict(product({ OVERALL: score(64.9), QUALITY: score(68.7), VALUE: score(84), DEMAND: score(48), TREND: score(49) }))!;
     expect(v.kind).toBe("HIGH_POTENTIAL");
-    expect(v.sentences[0]).toBe("Buyers rate it 4.5/5 (1 source) and it has about 12,400 reviews.");
+    expect(v.sentences[0]).toBe("Buyers rate it 4.5/5 (1 source), it has about 12,400 reviews and its ad momentum (active Meta ads) is steady.");
   });
 
   it("flags proven demand at an uncompetitive price as Crowded Market", () => {
@@ -81,10 +81,11 @@ describe("opportunity verdict", () => {
   });
 
   it("names the specific risks", () => {
-    const v = opportunityVerdict(product({ OVERALL: score(52), QUALITY: score(59), DEMAND: score(45), TREND: score(36) }, [metric("SEARCH_INTEREST", 40)]))!;
+    const v = opportunityVerdict(product({ OVERALL: score(52), QUALITY: score(59), DEMAND: score(45), TREND: score(20) }, [metric("SEARCH_INTEREST", 40)]))!;
     expect(v.kind).toBe("MODERATE_RISK");
-    expect(v.sentences[0]).toBe("Search interest is 40/100 and falling.");
-    expect(v.sentences[1]).toBe("The main risks: search interest is falling, ratings are only middling and demand signals are weak.");
+    // Search interest is a plain fact now; the direction is Ad Momentum (TREND, scoring v2.0.0).
+    expect(v.sentences[0]).toBe("Search interest is 40/100 and its ad momentum (active Meta ads) is falling.");
+    expect(v.sentences[1]).toBe("The main risks: ad momentum is falling, ratings are only middling and demand signals are weak.");
   });
 
   it("uses only the latest capture per source for ratings", () => {

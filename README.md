@@ -34,7 +34,8 @@ Check it works: open http://localhost:3000/api/health
 | `npm run db:rescore` | Recalculate scores for every category (e.g. after a formula change). History is kept. |
 | `npm run products:import -- <list.json>` | Import real products from a list of store pages, each with optional extra sources (other stores, expert reviews). See "Bulk import" below. |
 | `npm run fx:update` | Refresh the ECB euro reference rates in `src/server/scoring/fx-rates.json` (used only to compare prices across currencies). Commit, deploy, then rescore. |
-| `npm run trends:enrich -- <keywords.json> [--dry-run] [--limit N] [--only text]` | Add Google search-interest evidence (Google Trends via SerpApi) to real products and rescore them. See "Search interest" below. |
+| `npm run trends:enrich -- <keywords.json> [--dry-run] [--limit N] [--only text]` | Add Google search-interest evidence (Google Trends via SerpApi) to real products. A fact on the dossier only: it no longer scores (v2.0.0). See "Search interest" below. |
+| `npm run ads:momentum [-- --max 50]` | Record today's Meta Ad Library snapshot for watched products and rescore their categories (TREND). Says "Ad data pending Meta approval" until the token is set. See "Ad Momentum" below. |
 | `npm run agent:test` | Mock AI agent: full x402 402 → pay → 200 flow plus abuse checks against a running server. |
 | `npm run mcp:build` | Bundle the MCP server (`mcp/`) and pack it into `public/mcp/` for download. |
 | `npm test` | Unit tests for scoring, ingestion, billing, x402 verification/facilitator and the agent dossier. |
@@ -318,11 +319,28 @@ the same chart on Google Trends. Demo products are never enriched.
 - Start with `--dry-run`: it shows the searches left and what would be fetched, and uses none.
 - Monthly points, not weekly: one lookup can't count as 52 pieces of evidence. Google scales each lookup to
   its own busiest week, so a month added by a later run can sit on a slightly different scale.
-- Effect: SEARCH_INTEREST feeds TREND only (methodology v1.3.0). Google Trends scales every keyword to its
-  own busiest week, so the index says which way interest is moving, not how big it is, and DEMAND would be
-  misleading. A full TREND adds up to +0.10 OVERALL confidence; 11 monthly points add about +0.05 (e.g.
-  0.17 → 0.22 for a one-store product). Keywords with too little search volume get no data, and use a search
-  anyway.
+- Effect: since scoring v2.0.0 (2026-10-27) SEARCH_INTEREST is kept as a fact on the dossier but feeds no
+  score: TREND comes from Ad Momentum instead (below). Keywords with too little search volume get no data, and
+  use a search anyway.
+
+### Ad Momentum (the Viral Demand Engine, Meta Ad Library)
+
+`npm run ads:momentum` (`scripts/ad-momentum.ts`) watches every live catalog product on the Meta Ad Library
+(`AdWatch`) and records a daily snapshot (`AdMomentumSnapshot`, with every matching ad in `AdObservation`):
+
+- Counts:
+  - active ads whose own words carry 80% of the product's key words;
+  - scaling ads (running 30+ days, or the advertiser runs 3+ matching ads);
+  - new ads this week, advertisers, ad age and Meta's EU reach.
+- Calls and limits: Meta allows about 200 calls an hour and a check spends up to 3, so a run checks at most 50
+  due watches. A rate limit pauses all calls, and a failed check stores nothing.
+- Each catalog snapshot also writes an `AD_ACTIVE_ADS` evidence row (citing the Ad Library's public search),
+  which is what TREND is calculated from: the change in active ads per month, +10% or more scores 75+ (rising),
+  −10% or less 25 or under (falling). No ad data means no TREND score at all.
+- Coverage: Meta lists product ads only when they reached the EU, and publishes no spend for them.
+- `META_AD_LIBRARY_ACCESS_TOKEN` (a Meta user token from an identity-confirmed account, about 60 days) switches it
+  on. Missing or a placeholder such as `TEMP_WAITING_ON_META`, everything says "Ad data pending Meta approval".
+- Once the token is real, schedule the script as a daily Railway cron (like `refresh`).
 
 On production (`SERPAPI_API_KEY` set on the `web` service), after a methodology change run
 `npx -y tsx scripts/rescore.ts` once so every category, including the demo ones, uses the new rules:
@@ -348,7 +366,7 @@ scores. Full formulas are in the file header. In short:
 - Each piece of evidence is weighted by its quality score, its age (halves every 90 days) and its source type.
   Age counts from the source's publication date when it has one (an expert review from 2024 is old even if we
   read it today), otherwise from when we captured it.
-- QUALITY (star ratings), SENTIMENT, DEMAND (review counts), TREND (search-interest slope),
+- QUALITY (star ratings), SENTIMENT, DEMAND (review counts), TREND (Ad Momentum: the change in active Meta ads, v2.0.0),
   VALUE (quality vs. price relative to the category median), OVERALL (weighted blend).
 - Prices in different currencies are compared in euros at the European Central Bank's reference rates
   (`src/server/scoring/fx-rates.json`, dated; refresh with `npm run fx:update`). This affects only which
@@ -356,7 +374,9 @@ scores. Full formulas are in the file header. In short:
   doesn't publish is compared only with prices in that currency.
 - Thin evidence is pulled toward a neutral 50 and gets low confidence. No usable evidence → no score at all.
 - Re-captures of the same rating/review count/sentiment from the same source count once (latest wins), so
-  resubmitting a page can't inflate its score. Search-interest captures are all kept for TREND.
+  resubmitting a page can't inflate its score. Ad Momentum snapshots are all kept for TREND.
+- Only scores from the current methodology are shown (older rows stay as history), so after a methodology change
+  run `npm run db:rescore`.
 - `src/server/scoring/service.ts` loads data, runs the engine per category, and stores scores with links to
   their evidence (history is kept).
 

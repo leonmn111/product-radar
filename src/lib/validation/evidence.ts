@@ -58,6 +58,8 @@ function metricInRange(metric: EvidenceMetric, v: number): boolean {
       return v >= -1 && v <= 1;
     case "SEARCH_INTEREST":
       return v >= 0 && v <= 100;
+    case "AD_ACTIVE_ADS":
+      return v >= 0 && Number.isInteger(v);
   }
 }
 

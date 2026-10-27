@@ -22,7 +22,7 @@ export const DIMENSION_HELP: Record<Dimension, string> = {
   VALUE: "Quality vs. price compared with the category",
   DEMAND: "From review counts",
   SENTIMENT: "From discussion tone",
-  TREND: "Direction of search interest over time",
+  TREND: "Ad momentum: active Meta ads for it, rising or falling",
 };
 
 export const getScore = (p: ProductDto, d: Dimension): Score | undefined => p.scores[d];
@@ -88,6 +88,8 @@ export function formatMetric(m: NonNullable<Evidence["metric"]>) {
       return `Sentiment ${m.value > 0 ? "+" : ""}${m.value.toFixed(2)}`;
     case "SEARCH_INTEREST":
       return `Search interest ${Math.round(m.value)} / 100`;
+    case "AD_ACTIVE_ADS":
+      return `${Math.round(m.value).toLocaleString("en-US")} active ad${Math.round(m.value) === 1 ? "" : "s"}`;
   }
 }
 
@@ -100,6 +102,7 @@ export const SOURCE_TYPE_LABEL: Record<Evidence["source"]["type"], string> = {
   SOCIAL: "Social",
   MARKETPLACE: "Marketplace",
   OTHER: "Other",
+  AD_LIBRARY: "Ad library",
 };
 
 export const AVAILABILITY_LABEL: Record<Offer["availability"], string> = {

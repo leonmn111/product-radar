@@ -24,8 +24,9 @@ export const VERDICT_RULES = {
   minConfidence: 0.3, // below this, never more than "Moderate Risk"
   high: { overall: 62, quality: 65, minTrend: 45, minDemand: 45 },
   crowded: { demand: 60, maxValue: 55 },
-  weak: { quality: 60, demand: 50, trend: 42 },
-  rising: 58,
+  // TREND is Ad Momentum since scoring v2.0.0: 75+ is RISING (+10% active ads a month), 25 or under FALLING.
+  weak: { quality: 60, demand: 50, trend: 25 },
+  rising: 75,
 } as const;
 
 export type Verdict = {
@@ -75,16 +76,10 @@ function factsSentence(f: Facts, trend: number | undefined): string {
     );
   }
   if (f.reviews !== undefined) parts.push(`it has ${roundReviews(f.reviews)} reviews`);
-  if (f.searchInterest !== undefined) {
-    const dir =
-      trend === undefined
-        ? ""
-        : trend >= VERDICT_RULES.rising
-          ? " and rising"
-          : trend <= VERDICT_RULES.weak.trend
-            ? " and falling"
-            : " and steady";
-    parts.push(`search interest is ${Math.round(f.searchInterest)}/100${dir}`);
+  if (f.searchInterest !== undefined) parts.push(`search interest is ${Math.round(f.searchInterest)}/100`);
+  if (trend !== undefined) {
+    const dir = trend >= VERDICT_RULES.rising ? "rising" : trend <= VERDICT_RULES.weak.trend ? "falling" : "steady";
+    parts.push(`its ad momentum (active Meta ads) is ${dir}`);
   }
   if (parts.length === 0) return "We don't have rating, review or search data for this product yet.";
   const joined = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
@@ -124,7 +119,7 @@ export function opportunityVerdict(p: ProductDto): Verdict | null {
   } else {
     kind = "MODERATE_RISK";
     const risks: string[] = [];
-    if (trend !== undefined && trend <= R.weak.trend) risks.push("search interest is falling");
+    if (trend !== undefined && trend <= R.weak.trend) risks.push("ad momentum is falling");
     if (quality !== undefined && quality < R.weak.quality) risks.push("ratings are only middling");
     if (demand !== undefined && demand < R.weak.demand) risks.push("demand signals are weak");
     why = risks.length
