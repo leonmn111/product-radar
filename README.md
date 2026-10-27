@@ -78,7 +78,7 @@ Everything except `/` and `/docs` is `noindex`.
 
 ## Deploying (Railway)
 
-Live at https://theproductradar.io (also https://web-production-4e971.up.railway.app; project `product-radar`: services `web` + `Postgres`).
+Live at https://theproductradar.io (also https://web-production-4e971.up.railway.app; project `product-radar`: services `web`, `Postgres` and the `refresh` cron job).
 
 Deploy settings are stored on the Railway `web` service (not in a repo file — Railway retired
 `railway.json` on 2026-12-01 and ignored it for CLI uploads):
@@ -97,6 +97,19 @@ Deploy from this folder with `railway up --service web --detach` (needs a projec
 Service variables on `web`: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `AUTH_SECRET`, `AUTH_TRUST_HOST=true`,
 `AUTH_RESEND_KEY`, `EMAIL_FROM`, `APP_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`. For agent payments add
 `X402_MODE=facilitator` and `X402_PAY_TO` (your wallet); never `mock` in production.
+
+The weekly data refresh is the `refresh` service, a Railway cron job (restored 2026-10-27, about £0.20 a month):
+
+| Setting | Value |
+| --- | --- |
+| Schedule | `0 6 * * 1` (Mondays 06:00 UTC) |
+| Build command | `npx prisma generate` |
+| Start command | `npx tsx scripts/refresh-data.ts` (re-reads every live product's store pages, then exits) |
+| Restart policy | never (a cron run that fails waits for the next Monday) |
+| Variables | `DATABASE_URL=${{Postgres.DATABASE_URL}}` |
+
+Deploy code changes to it with `railway up --service refresh --detach`. The Google Trends update stays manual
+(`npm run data:refresh` runs both).
 
 ## Accounts & plans
 

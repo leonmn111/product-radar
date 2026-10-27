@@ -8,8 +8,9 @@
 // same ingest code, as new evidence with its own source, time and quality (CLAUDE.md
 // Rule 3); nothing is carried forward. Scores are recalculated as pages are saved.
 //
-// Runs on Railway as the "refresh" cron service (every Monday), followed by the Google
-// Trends update, which only spends searches when a new month is available.
+// Runs on Railway as the "refresh" cron service, Mondays 06:00 UTC (`npx tsx scripts/refresh-data.ts`,
+// restored 2026-10-27). The Google Trends update stays manual: `npm run data:refresh` runs both, and
+// Trends only spends searches when a new month is available.
 //
 // Usage: npm run data:refresh                        (refresh, then the Trends update)
 //        npx tsx scripts/refresh-data.ts --dry-run   (list the pages that would be read; reads nothing)

@@ -83,6 +83,17 @@ net margin per unit   = net revenue − landed cost        (also % of the price,
 
 An unknown flag stays `null` with the reason. It is never assumed safe.
 
+What a failure means for the seller (CLAUDE.md Rule 7, `resaleRisk()` in
+`src/components/dashboard/resellability.ts`):
+
+- A `brandDirect` or `trademarkRisk` failure is **High IP Risk**. Only `requiresUKCA`, `cosmetics` or
+  `batteries` failures are **Compliance Gated**.
+- Either way the product is never hidden or excluded. No supplier cost is sourced for it, so the sourced
+  landed margin is withheld.
+- The profit calculator, supplier search and Shopify export stay open under warning banners. The calculator
+  takes the seller's own authorised wholesale cost, and the export asks for confirmation (the server
+  checks `acknowledgeRisk`).
+
 ## Momentum, saturation, suppliers
 
 - **Momentum:**

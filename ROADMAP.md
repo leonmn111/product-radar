@@ -191,8 +191,8 @@ Week 1 starts on 2026-10-16. Phases overlap by design.
   (for example what Shortlist and Pre-order include).
 - **EU marketplaces:** which countries and channels first (e.g. Amazon.de / .fr, TikTok Shop in which EU
   countries).
-- **v1 data:** the live site's prices expire around **14 November**. Re-run `npm run data:refresh` on
-  Railway before then, unless the daily snapshot job has taken over.
+- **v1 data:** refreshed every Monday by the Railway `refresh` cron job (restored 2026-10-27), so store
+  prices stay inside their 30-day window.
 - **Rainforest trial:** 98 credits left (one spent on 2026-10-16 recording a product page for tests);
   continuing needs the Hobbyist plan (about $23/month). A $2 Dossier uses 2–4 credits (product page,
   a search, up to two synonym searches), about $0.09–$0.18 on Hobbyist.
