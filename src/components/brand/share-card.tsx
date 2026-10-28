@@ -16,11 +16,11 @@ const font = (file: string) => readFile(join(process.cwd(), "src/assets/fonts", 
 const [regular, bold, logo] = await Promise.all([
   font("GeistMono-Regular.ttf"),
   font("GeistMono-Bold.ttf"),
-  // The official logo, reversed for the midnight card (scripts/brand-assets.mjs), 620 × 128.
+  // The official logo, reversed for the midnight card (scripts/brand-assets.mjs), 503 × 256, stacked.
   readFile(join(process.cwd(), "public/brand/logo-wordmark-light.png")),
 ]);
 const LOGO_SRC = `data:image/png;base64,${logo.toString("base64")}`;
-const LOGO_HEIGHT = 96;
+const LOGO_HEIGHT = 104;
 
 const C = {
   page: "#0a0f1d", // background-dark
@@ -76,9 +76,9 @@ export function shareCard() {
               <div style={{ width: 14, height: 30, marginLeft: 8, backgroundColor: C.accent }} />
             </div>
 
-            <div style={{ display: "flex", marginTop: 30 }}>
+            <div style={{ display: "flex", marginTop: 24 }}>
               {/* eslint-disable-next-line @next/next/no-img-element -- next/og draws plain <img> */}
-              <img src={LOGO_SRC} alt="ProductRadar" width={Math.round((620 * LOGO_HEIGHT) / 128)} height={LOGO_HEIGHT} />
+              <img src={LOGO_SRC} alt="ProductRadar" width={Math.round((503 * LOGO_HEIGHT) / 256)} height={LOGO_HEIGHT} />
             </div>
 
             <div style={{ marginTop: 22, fontSize: 30, lineHeight: 1.35, color: C.body, maxWidth: 1000 }}>
