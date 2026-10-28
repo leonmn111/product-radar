@@ -49,9 +49,14 @@ export const RISK_SHORT_NOTE: Record<NonNullable<ResaleRisk>, string> = {
 
 // ── Warnings on premium features for a product that fails a resale check (owner's wording) ──────────
 
+/** High IP Risk: the supplier side is similar, unbranded alternatives, never the brand itself (owner's wording). */
+export const ALTERNATIVES_WARNING =
+  "⚠️ High IP Risk: Dropshipping this exact brand risks a store ban. Data below is based on sourcing similar, unbranded alternatives.";
+export const ALTERNATIVES_LABEL = "Similar / White-Label Alternatives";
+
 /** Above the calculator. */
 export const CALCULATOR_WARNING: Record<NonNullable<ResaleRisk>, string> = {
-  ip: "⚠️ HIGH IP RISK: Dropshipping this brand risks a store ban. Margins shown are for authorized wholesale only.",
+  ip: ALTERNATIVES_WARNING,
   compliance: "⚠️ REGULATED GOODS: Selling without the right UK safety marking and paperwork can get listings removed. Margins shown assume a compliant supply.",
 };
 

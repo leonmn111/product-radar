@@ -1,26 +1,33 @@
 // The UK landed margin for a v1 catalog product (the "View dossier" page), built with the same engine
 // and rules as the v2 Dossier (services/dossierService.ts), from the catalog's own captured prices:
 //
-//   1. Resellability first (engine/compliance.ts): a product that can't be resold gets no margin.
+//   1. Resellability first (engine/compliance.ts), recorded with every result. A High IP Risk product (a
+//      brand or trademark) isn't held back: its suppliers are similar, unbranded alternatives (step 3).
 //   2. Retail price: the median of the stores' current UK (GBP) prices, each citing its capture.
-//   3. Supplier cost: the median of the live AliExpress offers that match the product exactly (80% of
-//      its key words, live/match.ts). One budgeted, timed-out call, cached for a day per search term.
-//      A failed search is never cached and never read as "no supplier": the margin is withheld and says so.
+//   3. Supplier cost: the median of the live AliExpress offers that match. One budgeted, timed-out call,
+//      cached for a day per search term. A failed search is never cached and never read as "no supplier".
+//        - Most products: an exact match, 80% of the product's key words (live/match.ts).
+//        - High IP Risk: alternatives (basis "alternatives"). The search uses the product's brand-free words
+//          (a brand search on AliExpress mostly finds counterfeits), and a listing needs only half of them
+//          (ALTERNATIVE_MATCH_MIN), compared as word stems so British and American spellings agree. Two guards
+//          keep "similar" from meaning "unrelated": spare parts and accessories don't count (unless the
+//          product is one), and nor does anything dearer than the brand's own price before VAT, which is a
+//          different class of product (e.g. a commercial machine) rather than an alternative to resell.
 //   4. The 0.7 confidence gate over all of that evidence (engine/confidence.ts).
 //   5. calculateUKMargin: UK VAT, the £135 low-value import rule and the TikTok Shop UK fee stack, each
 //      line citing its source. Whatever can't be sourced (shipping, returns, ad cost) is named, not guessed.
 //
 // It replaces v1's US Census wholesale estimate (CLAUDE.md Rule 6). Nothing withheld is estimated.
 
-import { cleanTitle } from "@/components/dashboard/dossier";
-import { trippedChecks } from "@/components/dashboard/resellability";
-import { checkResellability, isSellable } from "@/engine/compliance";
+import { cleanTitle, sourcingKeywords } from "@/components/dashboard/dossier";
+import { resaleRisk } from "@/components/dashboard/resellability";
+import { checkResellability } from "@/engine/compliance";
 import { calculateConfidence, FINANCIAL_THRESHOLD } from "@/engine/confidence";
 import { calculateUKMargin } from "@/engine/margin";
-import { POLICY_EVIDENCE } from "@/engine/policy";
+import { POLICY_EVIDENCE, UK_VAT_STANDARD } from "@/engine/policy";
 import { QueryBudget } from "@/server/live/budget";
 import { median } from "@/server/live/margin";
-import { searchTermFor, SUPPLIER_MATCH_MIN, supplierMatchScore } from "@/server/live/match";
+import { searchTermFor, similarityScore, SUPPLIER_MATCH_MIN, supplierMatchScore } from "@/server/live/match";
 import type { SupplierOffer } from "@/server/live/types";
 import type { ProductDto } from "@/server/products/service";
 import { currentOffers } from "@/server/scoring/engine";
@@ -28,6 +35,10 @@ import type { SupplierSource } from "@/server/sources/types";
 import type { Evidence, EvidenceSourceType, Gated, ResellabilityFlags } from "@/types/dossier";
 import type { CostInput, LandedMargin } from "@/types/financials";
 
+/** High IP Risk only: a similar, unbranded alternative needs at least half of the product's brand-free key words. */
+export const ALTERNATIVE_MATCH_MIN = 0.5;
+/** Spare parts and accessories of a product aren't alternatives to it. */
+const PART_WORDS = /\b(replacement|spares?|parts?|accessor(y|ies)|attachments?|compatible|refills?)\b/i;
 const CORROBORATED = 4; // UK store prices that clear the numbers gate on their own (engine/confidence.ts)
 export const SUPPLIER_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -40,6 +51,11 @@ export type CatalogMargin = {
   checkedAt: string;
   resellability: ResellabilityFlags;
   margin: Gated<LandedMargin>;
+  /**
+   * What the supplier side is: "exact" matches of the product, or (High IP Risk) "alternatives", similar
+   * unbranded products, which the dossier labels as such under a warning.
+   */
+  basis: "exact" | "alternatives";
   /**
    * The UK selling price on its own, for the dossier's calculator: the median of the stores' current GBP
    * prices and how strongly they agree. The calculator fills it in only from FINANCIAL_THRESHOLD (0.7).
@@ -107,7 +123,7 @@ const medianInput = (items: { price: number; evidenceId: string }[]): CostInput 
   evidenceIds: items.map((i) => i.evidenceId),
 });
 
-const withheld = (reason: "Insufficient Data" | "Not Sellable", confidence: number, missing: string[]): Gated<LandedMargin> => ({
+const withheld = (reason: "Insufficient Data", confidence: number, missing: string[]): Gated<LandedMargin> => ({
   status: "withheld",
   reason,
   confidence,
@@ -126,27 +142,38 @@ export function catalogResellability(product: ResaleText): ResellabilityFlags {
   });
 }
 
-/** The product's title without store tags: what suppliers are searched for and matched against. */
-const supplierTitle = (product: CatalogProduct) => cleanTitle(product.name, product.offers[0]?.merchant ?? null);
-
-/** What the supplier source is searched for: the product's key words. */
-export function supplierSearchTerm(product: CatalogProduct): string {
-  return searchTermFor(supplierTitle(product));
+/**
+ * What suppliers are searched for and matched against: the product's title without store tags or, for a
+ * High IP Risk product, its generic, brand-free words, to find similar, unbranded alternatives.
+ */
+export function supplierQuery(product: CatalogProduct): { title: string; alternatives: boolean } {
+  const merchant = product.offers[0]?.merchant ?? null;
+  if (resaleRisk(catalogResellability(product)) === "ip") {
+    return { title: sourcingKeywords({ name: product.name, brand: product.brand, category: product.category, merchant }), alternatives: true };
+  }
+  return { title: cleanTitle(product.name, merchant), alternatives: false };
 }
 
-/** Only a sellable product with a current UK price is worth a supplier call. */
+/** What the supplier source is searched for: the query's key words. */
+export function supplierSearchTerm(product: CatalogProduct): string {
+  return searchTermFor(supplierQuery(product).title);
+}
+
+/** Any product with a current UK price is worth a supplier call, branded ones included (as alternatives). */
 export function needsSupplier(product: CatalogProduct, now: Date): boolean {
-  return isSellable(catalogResellability(product)) && currentUkOffers(product.offers, now).length > 0;
+  return currentUkOffers(product.offers, now).length > 0;
 }
 
 /** Builds the margin from the product and what the supplier source answered (null: not asked). Pure. */
 export function buildCatalogMargin(product: CatalogProduct, supplier: SupplierResult | null, now: Date): CatalogMargin {
   const flags = catalogResellability(product);
+  const query = supplierQuery(product);
   const uk = currentUkOffers(product.offers, now);
   const retail = uk.map(retailEvidence);
   const base = {
     checkedAt: now.toISOString(),
     resellability: flags,
+    basis: query.alternatives ? ("alternatives" as const) : ("exact" as const),
     retail: {
       price: uk.length ? Math.round(median(uk.map((o) => Number(o.price.amount))) * 100) / 100 : null,
       confidence: calculateConfidence(retail, now),
@@ -165,11 +192,7 @@ export function buildCatalogMargin(product: CatalogProduct, supplier: SupplierRe
     };
   };
 
-  // 1. Compliance first: a product that can't be resold gets no financial calculation.
-  if (!isSellable(flags)) {
-    return result(withheld("Not Sellable", calculateConfidence(retail, now), trippedChecks(flags)));
-  }
-
+  // 1. The resale checks travel with the result (`resellability`, `basis`); they don't hold the margin back.
   // 2. A UK retail price, from the stores' own current prices.
   if (uk.length === 0) {
     const elsewhere = [...new Set(product.offers.map((o) => o.price.currency).filter((c) => c !== "GBP"))].sort();
@@ -192,12 +215,22 @@ export function buildCatalogMargin(product: CatalogProduct, supplier: SupplierRe
       withheld("Insufficient Data", retailConfidence, ["live AliExpress supplier prices: the supplier search failed just now, so nothing is estimated. Reload the page to try again."]),
     );
   }
-  // Exact matches only: the supplier's title must carry 80% of the product's key words (live/match.ts).
-  const title = supplierTitle(product);
-  const matched = supplier.offers
-    .filter((o) => o.unitPrice.currency === "GBP")
-    .map((offer) => ({ offer, score: Math.round(supplierMatchScore(title, offer.title) * 1000) / 1000 }))
-    .filter((m) => m.score >= SUPPLIER_MATCH_MIN)
+  // Exact matches (80% of the key words), or for High IP Risk similar alternatives (half the brand-free words,
+  // as stems), without spare parts and without anything dearer than the brand's own price before VAT.
+  const round3 = (x: number) => Math.round(x * 1000) / 1000;
+  const gbp = supplier.offers.filter((o) => o.unitPrice.currency === "GBP");
+  const similar = query.alternatives
+    ? gbp.map((offer) => ({ offer, score: round3(similarityScore(query.title, offer.title)) })).filter((m) => m.score >= ALTERNATIVE_MATCH_MIN)
+    : gbp.map((offer) => ({ offer, score: round3(supplierMatchScore(query.title, offer.title)) })).filter((m) => m.score >= SUPPLIER_MATCH_MIN);
+  const ceiling = base.retail.price! / (1 + UK_VAT_STANDARD.rate);
+  const productIsPart = PART_WORDS.test(product.name);
+  type Match = (typeof similar)[number];
+  const isPart = (m: Match) => query.alternatives && !productIsPart && PART_WORDS.test(m.offer.title);
+  const tooDear = (m: Match) => query.alternatives && m.offer.unitPrice.amount > ceiling;
+  const parts = similar.filter(isPart).length;
+  const dearer = similar.filter((m) => !isPart(m) && tooDear(m)).length;
+  const matched = similar
+    .filter((m) => !isPart(m) && !tooDear(m))
     .sort((a, b) => b.score - a.score || a.offer.unitPrice.amount - b.offer.unitPrice.amount);
 
   // 4. The numbers gate, over every source.
@@ -205,7 +238,11 @@ export function buildCatalogMargin(product: CatalogProduct, supplier: SupplierRe
   if (matched.length === 0) {
     return result(
       withheld("Insufficient Data", confidence, [
-        `No exact supplier match found: none of the ${supplier.offers.length} AliExpress listings carries at least 80% of this product's key words, so no margin is calculated.`,
+        !query.alternatives
+          ? `No exact supplier match found: none of the ${supplier.offers.length} AliExpress listings carries at least 80% of this product's key words, so no margin is calculated.`
+          : similar.length === 0
+            ? `No similar, unbranded alternative found: none of the ${supplier.offers.length} AliExpress listings carries at least half of this product's brand-free key words, so no margin is calculated.`
+            : `No comparable alternative found: of ${similar.length} similar AliExpress listings, ${dearer} cost more than this product sells for before VAT (a different class of product, not one to resell at its price)${parts ? ` and ${parts} ${parts === 1 ? "is a spare part or accessory" : "are spare parts or accessories"}` : ""}, so no margin is calculated.`,
       ]),
     );
   }

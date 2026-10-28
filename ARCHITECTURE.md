@@ -88,11 +88,20 @@ What a failure means for the seller (CLAUDE.md Rule 7, `resaleRisk()` in
 
 - A `brandDirect` or `trademarkRisk` failure is **High IP Risk**. Only `requiresUKCA`, `cosmetics` or
   `batteries` failures are **Compliance Gated**.
-- Either way the product is never hidden or excluded. No supplier cost is sourced for it, so the sourced
-  landed margin is withheld.
-- The profit calculator, supplier search and Shopify export stay open under warning banners. The calculator
-  takes the seller's own authorised wholesale cost, and the export asks for confirmation (the server
-  checks `acknowledgeRisk`).
+- Either way the product is never hidden, blurred or excluded (v1 dossier, `src/services/catalogMargin.ts`).
+- High IP Risk: the supplier search and landed margin run on similar, unbranded alternatives
+  (`CatalogMargin.basis = "alternatives"`).
+  - AliExpress is searched with the brand-free words, and a listing needs half of them
+    (`ALTERNATIVE_MATCH_MIN`, 0.5, as word stems).
+  - Spare parts and accessories don't count, and nor does anything dearer than the brand's own price before
+    VAT. When nothing qualifies, the margin says so ("No comparable alternative found: …") rather than
+    pricing an unrelated product.
+  - The UI labels it "Similar / White-Label Alternatives" under the High IP Risk warning.
+  - The retail price is the brand's own, and is labelled as such.
+- Every other product keeps the strict 80% exact match.
+- The profit calculator, supplier search and Shopify export stay open under warning banners. The export
+  asks for confirmation (the server checks `acknowledgeRisk`).
+- The paid v2 Dossier is unchanged: a branded product's margin there is still withheld as Not Sellable.
 
 ## Momentum, saturation, suppliers
 

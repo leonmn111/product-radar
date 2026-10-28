@@ -38,9 +38,10 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 da
 const cardTitle = "text-sm font-semibold text-slate-900 dark:text-white";
 
 /**
- * The v1 dossier. A product that fails a resale check (product.resellable) gets no sourced landed margin
- * and no price gaps, but its calculator, supplier search and Shopify export stay open, each under a
- * clear warning of the risk (High IP Risk or Compliance Gated), and the export asks for confirmation.
+ * The v1 dossier. A product that fails a resale check (product.resellable) gets no price gaps, but its
+ * landed margin, calculator, supplier search and Shopify export all stay open, each under a clear warning
+ * of the risk (High IP Risk or Compliance Gated); for High IP Risk the suppliers are similar, unbranded
+ * alternatives (CatalogMargin.basis), and the export asks for confirmation.
  * The calculator starts from the sourced waterfall when it's shown; otherwise from the UK store price
  * when that clears the 0.7 gate, and the seller adds their own cost.
  */
@@ -74,12 +75,14 @@ export function OpportunityDossier({ product, landed, viewer }: { product: Produ
           {...calculator}
           cost={supplierCost}
           onCost={setSupplierCost}
-          costLabel={risk === "ip" ? "Authorised wholesale cost" : "Supplier cost per unit"}
+          costLabel={risk === "ip" && !shown ? "Supplier or wholesale cost" : "Supplier cost per unit"}
           costHint={
             shown
-              ? "Starts at the sourced AliExpress price"
+              ? landed.basis === "alternatives"
+                ? "Starts at the AliExpress price of similar, unbranded alternatives"
+                : "Starts at the sourced AliExpress price"
               : risk === "ip"
-                ? "From the brand's invoice or an authorised distributor"
+                ? "An unbranded alternative's quote, or the brand's wholesale price if you're authorised"
                 : risk === "compliance"
                   ? "From a supplier with the right UK safety paperwork"
                   : "Enter a supplier's quote"
@@ -190,8 +193,10 @@ function RiskVerdictCard({ product, landed }: { product: ProductDto; landed: Cat
       <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{risk === "ip" ? IP_RISK_NOTE : complianceNote(flags)}</p>
       <p className="mt-3 max-w-3xl text-base/7 text-slate-800 dark:text-slate-200">
         {facts ? `${facts} ` : ""}
-        Flagged because {reasons.length === 1 ? reasons[0] : `${reasons.slice(0, -1).join(", ")} and ${reasons.at(-1)}`}, so ProductRadar
-        sources no supplier price for it. The calculator below works from your own {risk === "ip" ? "authorised wholesale" : "supplier"} cost.
+        Flagged because {reasons.length === 1 ? reasons[0] : `${reasons.slice(0, -1).join(", ")} and ${reasons.at(-1)}`}.{" "}
+        {risk === "ip"
+          ? "The supplier prices and margin below are for similar, unbranded alternatives, not this brand."
+          : "The margin below assumes a supplier with the right UK safety paperwork."}
       </p>
       <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">Rule-based, from the product&apos;s own listing text. See the resale checks below.</p>
     </section>

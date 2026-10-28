@@ -388,10 +388,15 @@ computed when a product is read, so nothing needs rescoring. Methodology 2.0.0 r
 range: a category average is not a supplier cost (CLAUDE.md Rule 6).
 
 - **UK landed margin (the dossier page):** `src/services/catalogMargin.ts` runs the v2 engine on the catalog's
-  own prices. The resale checks come first (`src/engine/compliance.ts`; a product that fails one gets no money
-  figures anywhere in the dossier, and `product.resellable` is false). Then: retail = median of the stores'
-  current GBP prices; supplier = median of the live AliExpress offers whose titles match (one budgeted call,
-  cached for a day per search term; a failed search is never cached); the 0.7 confidence gate; and
+  own prices.
+  - The resale checks come first (`src/engine/compliance.ts`). A product that fails one has
+    `product.resellable` false and no price gaps, but its margin still runs.
+  - For High IP Risk, the suppliers are similar, unbranded alternatives: a brand-free search, half the words
+    must match, labelled as such.
+  - Retail = median of the stores' current GBP prices.
+  - Supplier = median of the live AliExpress offers whose titles match (one budgeted call, cached for a day
+    per search term; a failed search is never cached).
+  - Then the 0.7 confidence gate, and
   `calculateUKMargin` (20% UK VAT, the £135 low-value rule, TikTok Shop UK fees). Shipping, returns and ad cost
   are named as not counted. Amazon UK fees need the product's category and size tier, so no Amazon figure is shown.
 - **Which prices count (scoring v1.5.0, margin v1.2.0):** each store's newest capture from the last 30 days,
