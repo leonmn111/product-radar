@@ -23,8 +23,9 @@ const nextConfig: NextConfig = {
         destination: "https://:domain/:path*",
         permanent: true,
       },
-      // The icon is app/icon.svg; older tools still ask for /favicon.ico by name.
-      { source: "/favicon.ico", destination: "/icon.svg", permanent: true },
+      // The icon was app/icon.svg until 2026-10-28, and /favicon.ico was permanently redirected to it, so some
+      // browsers remember that hop: send them on to the official icon (app/favicon.ico is served directly now).
+      { source: "/icon.svg", destination: "/icon.png", permanent: false },
     ];
   },
   /* config options here */

@@ -28,8 +28,11 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   // Private by default: public pages (the landing page, /docs) opt in to search engines themselves.
   robots: { index: false, follow: false },
-  // Defaults for shared links on every page; the card images come from app/opengraph-image.tsx and
-  // app/twitter-image.tsx (src/components/brand/share-card.tsx).
+  // Defaults for shared links on every page. og:image and twitter:image are the share card from
+  // app/opengraph-image.tsx and app/twitter-image.tsx (src/components/brand/share-card.tsx), which carries the
+  // official logo (public/Logowithwriting.png). It is drawn on the midnight card rather than shared as the
+  // bare transparent PNG, which some apps show on black, where its navy lettering would vanish. The tab icons
+  // are app/favicon.ico, app/icon.png and app/apple-icon.png, from public/mainlogo.png (scripts/brand-assets.mjs).
   openGraph: { type: "website", siteName: "ProductRadar", locale: "en_GB", title: TITLE, description: DESCRIPTION },
   twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
 };

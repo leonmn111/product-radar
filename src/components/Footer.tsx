@@ -16,9 +16,10 @@ export function Footer() {
   return (
     <footer className="border-t border-line-dark bg-background-dark text-slate-400 after-app:border-gray-200 after-app:bg-white after-app:text-slate-600">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-        <p className="flex items-center gap-2 text-sm font-medium text-white after-app:text-slate-900">
-          <Logo />
-          ProductRadar
+        {/* The reversed logo on the midnight footer; the original colours on the app's white one. */}
+        <p className="flex items-center">
+          <Logo height={24} className="after-app:hidden" />
+          <Logo tone="dark" height={24} className="hidden after-app:block" />
         </p>
         <nav aria-label="Legal and help" className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs tracking-wide uppercase">
           {LINKS.map(([href, label]) => (

@@ -14,10 +14,9 @@ export function AppHeader() {
   return (
     <header className="on-dark sticky top-0 z-40 border-b border-white/10 bg-background-dark text-slate-100">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className={`flex items-center gap-2.5 rounded-md font-semibold tracking-tight text-slate-950 dark:text-slate-50 ${focusRing}`}>
-          <Logo />
-          {/* The narrowest phones show just the mark, so the account controls fit beside it. */}
-          <span className="max-[400px]:sr-only">ProductRadar</span>
+        <Link href="/" className={`flex items-center rounded-md ${focusRing}`}>
+          {/* The full logo fits beside the account controls down to a 320 px phone. */}
+          <Logo priority />
         </Link>
         <div className="flex items-center gap-1 sm:gap-2">
           <Link

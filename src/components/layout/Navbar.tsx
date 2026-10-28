@@ -15,9 +15,8 @@ export function Navbar({ links = [], ctaHref = "/get-started" }: { links?: NavLi
   return (
     <header className="sticky top-0 z-40 border-b border-line-dark/80 bg-background-dark/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className={`flex items-center gap-2.5 rounded-md font-semibold tracking-tight text-white ${focusRing}`}>
-          <Logo />
-          ProductRadar
+        <Link href="/" className={`flex items-center rounded-md ${focusRing}`}>
+          <Logo priority />
         </Link>
         {links.length > 0 && (
           <nav aria-label="On this page" className="hidden items-center gap-1 lg:flex">

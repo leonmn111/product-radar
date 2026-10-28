@@ -13,7 +13,14 @@ export const SHARE_CARD_ALT =
 const font = (file: string) => readFile(join(process.cwd(), "src/assets/fonts", file));
 // Read once, when the module loads (as the Next.js docs do): reading inside the image function
 // counts as uncached data, which would make the cards render on every request instead of at build.
-const [regular, bold] = await Promise.all([font("GeistMono-Regular.ttf"), font("GeistMono-Bold.ttf")]);
+const [regular, bold, logo] = await Promise.all([
+  font("GeistMono-Regular.ttf"),
+  font("GeistMono-Bold.ttf"),
+  // The official logo, reversed for the midnight card (scripts/brand-assets.mjs), 620 × 128.
+  readFile(join(process.cwd(), "public/brand/logo-wordmark-light.png")),
+]);
+const LOGO_SRC = `data:image/png;base64,${logo.toString("base64")}`;
+const LOGO_HEIGHT = 96;
 
 const C = {
   page: "#0a0f1d", // background-dark
@@ -24,8 +31,6 @@ const C = {
   body: "#cbd5e1", // slate-300
   muted: "#94a3b8", // slate-400
   accent: "#00bfa5", // accent-mint
-  brand: "#00bfa5", // the logo tile
-  onBrand: "#0a0f1d", // the radar mark on the mint tile
 };
 
 const OUTPUT = [
@@ -71,15 +76,9 @@ export function shareCard() {
               <div style={{ width: 14, height: 30, marginLeft: 8, backgroundColor: C.accent }} />
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 26, marginTop: 30 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 84, height: 84, borderRadius: 18, backgroundColor: C.brand }}>
-                <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke={C.onBrand} strokeWidth="2" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="8.5" />
-                  <circle cx="12" cy="12" r="4.5" />
-                  <path d="M12 12 18 6" />
-                </svg>
-              </div>
-              <div style={{ fontSize: 88, fontWeight: 700, letterSpacing: -4, lineHeight: 1 }}>ProductRadar</div>
+            <div style={{ display: "flex", marginTop: 30 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- next/og draws plain <img> */}
+              <img src={LOGO_SRC} alt="ProductRadar" width={Math.round((620 * LOGO_HEIGHT) / 128)} height={LOGO_HEIGHT} />
             </div>
 
             <div style={{ marginTop: 22, fontSize: 30, lineHeight: 1.35, color: C.body, maxWidth: 1000 }}>

@@ -1,12 +1,25 @@
-/** The ProductRadar mark: a midnight radar sweep on a mint tile. Decorative; the name always sits beside it. */
-export function Logo() {
+// The official ProductRadar logo (public/Logowithwriting.png and public/mainlogo.png), as built into
+// public/brand by scripts/brand-assets.mjs. The image carries the name, so no text sits beside it: its alt
+// text names the link it's in.
+//   tone "light": the reversed logo (white and teal), for the dark bars, where the navy original would vanish
+//   tone "dark":  the original colours, for light backgrounds
+// Served as-is (4× its display height), so it stays sharp on every screen.
+
+import Image from "next/image";
+
+const WORDMARK = { width: 620, height: 128 }; // public/brand/logo-wordmark*.png
+
+/** The logo with the name, `height` px tall. */
+export function Logo({ tone = "light", height = 32, className = "", priority = false }: { tone?: "light" | "dark"; height?: number; className?: string; priority?: boolean }) {
   return (
-    <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-mint text-on-accent shadow-sm shadow-accent-mint/30">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-5">
-        <circle cx="12" cy="12" r="8.5" />
-        <circle cx="12" cy="12" r="4.5" />
-        <path d="M12 12 18 6" />
-      </svg>
-    </span>
+    <Image
+      src={tone === "light" ? "/brand/logo-wordmark-light.png" : "/brand/logo-wordmark.png"}
+      alt="ProductRadar"
+      width={Math.round((WORDMARK.width * height) / WORDMARK.height)}
+      height={height}
+      unoptimized
+      priority={priority}
+      className={`h-auto max-w-none shrink-0 ${className}`}
+    />
   );
 }
