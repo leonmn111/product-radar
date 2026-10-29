@@ -1,12 +1,11 @@
 // Builds the site's logo, favicon and home-screen icon from the two official files in public/:
-//   public/productradarwordlogo.png  the logo with the name: the mark stacked over "ProductRadar", navy and
-//                                    teal on a solid white background (the file has no real transparency)
-//   public/mainlogo.png              the icon (white and teal mark on a navy rounded square)
+//   public/logomain.png  the logo with the name: the radar mark as the "P" of "ProductRadar", navy and teal
+//                        on a transparent background
+//   public/mainlogo.png  the icon (white and teal mark on a navy rounded square)
 // Re-run after either file changes: node scripts/brand-assets.mjs
 //
 // Outputs (committed):
-//   public/brand/logo-wordmark.png        the logo, background removed and trimmed, in its own colours: for
-//                                         light backgrounds
+//   public/brand/logo-wordmark.png        the logo, trimmed, in its own colours: for light backgrounds
 //   public/brand/logo-wordmark-light.png  the same with the navy turned white (teal kept): for the dark bars,
 //                                         where navy text would vanish; the icon itself uses white on navy
 //   src/app/favicon.ico                   16, 32 and 48 px, transparent corners (browser tabs)
@@ -16,9 +15,9 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import sharp from "sharp";
 
-const WORDMARK = "public/productradarwordlogo.png";
+const WORDMARK = "public/logomain.png";
 const ICON = "public/mainlogo.png";
-const WORDMARK_HEIGHT = 256; // 4× the 48 px it's shown at in the bars, and enough for the share card
+const WORDMARK_HEIGHT = 128; // 4× the 32 px it's shown at in the bars
 await mkdir("public/brand", { recursive: true });
 
 const raw = async (input) => {
@@ -28,11 +27,15 @@ const raw = async (input) => {
 const fromRaw = (data, info) => sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } });
 
 // ── The wordmark ─────────────────────────────────────────────────────────────
-// The file is opaque: navy and teal ink on white. Each pixel is un-mixed into one of the two inks (by hue) and
-// how much of it covers the white, so the white (letter holes included) becomes transparent, edges stay
-// smooth, and the ink keeps its exact brand colour. The reversed copy then turns the navy white.
+// Every visible pixel is set to one of the logo's two inks (by hue: navy or teal) at its own opacity, so edges
+// stay smooth with no light halo on a dark bar, and the reversed copy turns the navy white, teal kept.
+// A file with real transparency (corners see-through) keeps its alpha; an opaque one (ink on white) is
+// un-mixed instead: each pixel's opacity is how much ink covers the white, so the white, letter holes
+// included, becomes transparent.
 {
   const { data, info } = await raw(WORDMARK);
+  const transparentSource = data[3] === 0 && data[data.length - 1] === 0;
+  const solid = (i) => !transparentSource || data[i + 3] === 255;
   const isTeal = (i) => data[i + 1] - data[i] > 40;
   const average = (pick) => {
     const sum = [0, 0, 0];
@@ -45,8 +48,8 @@ const fromRaw = (data, info) => sharp(data, { raw: { width: info.width, height: 
     return sum.map((v) => v / n);
   };
   const lum = (i) => (data[i] + data[i + 1] + data[i + 2]) / 3;
-  const navy = average((i) => lum(i) < 60 && !isTeal(i)); // solid navy ink
-  const teal = average((i) => isTeal(i) && data[i + 1] > 150 && lum(i) < 170); // solid teal ink
+  const navy = average((i) => solid(i) && lum(i) < 60 && !isTeal(i)); // solid navy ink
+  const teal = average((i) => solid(i) && isTeal(i) && data[i + 1] > 150 && lum(i) < 170); // solid teal ink
   const white = [255, 255, 255];
   const own = Buffer.alloc(data.length);
   const reversed = Buffer.alloc(data.length);
@@ -60,7 +63,7 @@ const fromRaw = (data, info) => sharp(data, { raw: { width: info.width, height: 
       norm += (white[c] - ink[c]) ** 2;
     }
     const a = Math.max(0, Math.min(1, dot / norm));
-    const alpha = a < 0.04 ? 0 : Math.round(a * 255); // paper grain off the white
+    const alpha = transparentSource ? data[i + 3] : a < 0.04 ? 0 : Math.round(a * 255); // paper grain off the white
     for (let c = 0; c < 3; c++) {
       own[i + c] = Math.round(ink[c]);
       reversed[i + c] = ink === navy ? 255 : Math.round(ink[c]);

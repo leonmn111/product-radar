@@ -30,8 +30,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   // Defaults for shared links on every page. og:image and twitter:image are the share card from
   // app/opengraph-image.tsx and app/twitter-image.tsx (src/components/brand/share-card.tsx), which carries the
-  // official logo (public/productradarwordlogo.png, reversed). It is drawn on the midnight card rather than
-  // shared as the bare logo file, whose navy lettering on white doesn't suit every app's preview. The tab icons
+  // official logo (public/logomain.png, reversed). It is drawn on the midnight card rather than shared as the
+  // bare transparent file, which some apps show on black, where its navy lettering would vanish. The tab icons
   // are app/favicon.ico, app/icon.png and app/apple-icon.png, from public/mainlogo.png (scripts/brand-assets.mjs).
   openGraph: { type: "website", siteName: "ProductRadar", locale: "en_GB", title: TITLE, description: DESCRIPTION },
   twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },

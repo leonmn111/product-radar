@@ -18,8 +18,8 @@ export function Footer() {
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         {/* The reversed logo on the midnight footer; the original colours on the app's white one. */}
         <p className="flex items-center">
-          <Logo height={40} className="after-app:hidden" />
-          <Logo tone="dark" height={40} className="hidden after-app:block" />
+          <Logo height={28} className="after-app:hidden" />
+          <Logo tone="dark" height={28} className="hidden after-app:block" />
         </p>
         <nav aria-label="Legal and help" className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs tracking-wide uppercase">
           {LINKS.map(([href, label]) => (
