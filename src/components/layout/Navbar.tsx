@@ -3,7 +3,7 @@
 // Below lg the section links fold away; the brand, Docs and the call to action always stay.
 
 import Link from "next/link";
-import { Logo } from "@/components/brand/logo";
+import { Logo, LogoMark } from "@/components/brand/logo";
 
 export type NavLink = { href: string; label: string };
 
@@ -16,7 +16,9 @@ export function Navbar({ links = [], ctaHref = "/get-started" }: { links?: NavLi
     <header className="sticky top-0 z-40 border-b border-line-dark/80 bg-background-dark/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Link href="/" className={`flex items-center rounded-md ${focusRing}`}>
-          <Logo priority />
+          {/* Below 370 px the full logo doesn't fit beside Docs and Run Dossier: the mark does. */}
+          <Logo priority className="max-[370px]:hidden" />
+          <LogoMark className="min-[370px]:hidden" />
         </Link>
         {links.length > 0 && (
           <nav aria-label="On this page" className="hidden items-center gap-1 lg:flex">
