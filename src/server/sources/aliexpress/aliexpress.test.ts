@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { QueryBudget } from "@/server/live/budget";
 import { SourceError } from "../types";
 import { createAliexpressSource, signParams } from "./index";
-import { ALIEXPRESS_QUALITY, aliexpressError, parseTextSearch, tokenRejected } from "./parse";
+import { ALIEXPRESS_QUALITY, aliexpressError, parseProductGet, parseTextSearch, productGetError, tokenRejected } from "./parse";
 
 const fixture = (name: string) => JSON.parse(readFileSync(join(__dirname, "fixtures", name), "utf8"));
 const sample = fixture("sample-text-search-GB.json");
@@ -148,5 +148,53 @@ describe("createAliexpressSource", () => {
     const budget = new QueryBudget({ maxCalls: 0, deadlineMs: 1000 });
     await expect(createAliexpressSource({ appKey: "k", appSecret: "s", tokens: tokens(), fetchImpl: fetchImpl as never }).search("x", "GB", budget)).rejects.toThrow();
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
+
+describe("one product (aliexpress.ds.product.get)", () => {
+  const product = fixture("recorded-product-get-GB.json");
+
+  it("reads a real recorded product: its title, cheapest in-stock variant in GBP, and no brand when it states NONE", () => {
+    const p = parseProductGet(product, "GB", at)!;
+    expect(p).toMatchObject({
+      id: "1005010414755062",
+      title: "Desktop Phone Stand, Adjustable Height, Foldable Stand for Lazy People, Portable Phone Live Streaming Stand",
+      url: "https://www.aliexpress.com/item/1005010414755062.html",
+      unitPrice: { amount: 3.08, currency: "GBP" }, // the cheapest of 3.79, 3.08 and 3.70
+      brand: null, // "Brand Name: NONE"
+      evidence: { id: "aliexpress:1005010414755062:GB", provider: "aliexpress", quality: ALIEXPRESS_QUALITY },
+    });
+    expect(p.evidence.claim).toMatch(/from 3\.08 GBP on AliExpress \(cheapest variant in stock\)/);
+  });
+
+  it("skips variants out of stock, reads a stated brand, and gives nothing for a listing off sale", () => {
+    const result = product.aliexpress_ds_product_get_response.result;
+    const skus = result.ae_item_sku_info_dtos.ae_item_sku_info_d_t_o;
+    const edited = structuredClone(product);
+    const r = edited.aliexpress_ds_product_get_response.result;
+    r.ae_item_sku_info_dtos.ae_item_sku_info_d_t_o = skus.map((s: { offer_sale_price: string }) => (s.offer_sale_price === "3.08" ? { ...s, sku_available_stock: 0 } : s));
+    r.ae_item_properties.ae_item_property[0].attr_value = "Lamicall";
+    expect(parseProductGet(edited, "GB", at)).toMatchObject({ unitPrice: { amount: 3.7 }, brand: "Lamicall" });
+    r.ae_item_base_info_dto.product_status_type = "offline";
+    expect(parseProductGet(edited, "GB", at)).toBeNull();
+    expect(result.ae_item_base_info_dto.product_status_type).toBe("onSelling"); // the fixture itself is unchanged
+  });
+
+  it("asks for the product's GBP price for delivery to the UK, in one call, and reports platform errors", async () => {
+    const fetchImpl = vi.fn(async () => Response.json(product));
+    const budget = new QueryBudget({ maxCalls: 3, deadlineMs: 30_000 });
+    const source = createAliexpressSource({ appKey: "k", appSecret: "s", tokens: tokens(), fetchImpl: fetchImpl as typeof fetch, now: () => at });
+    expect(await source.product!("1005010414755062", "GB", budget)).toMatchObject({ unitPrice: { amount: 3.08, currency: "GBP" } });
+    const body = new URLSearchParams(String((fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1].body));
+    expect(Object.fromEntries(["method", "product_id", "ship_to_country", "target_currency"].map((k) => [k, body.get(k)]))).toEqual({
+      method: "aliexpress.ds.product.get",
+      product_id: "1005010414755062",
+      ship_to_country: "GB",
+      target_currency: "GBP",
+    });
+    expect(budget.callsUsed).toBe(1);
+    expect(productGetError({ aliexpress_ds_product_get_response: { rsp_code: 401, rsp_msg: "product not found" } })).toBe("product not found");
+    const failing = createAliexpressSource({ appKey: "k", appSecret: "s", tokens: tokens(), fetchImpl: (async () => Response.json({ aliexpress_ds_product_get_response: { rsp_code: 401, rsp_msg: "product not found" } })) as typeof fetch, now: () => at });
+    await expect(failing.product!("1", "GB", new QueryBudget({ maxCalls: 1, deadlineMs: 30_000 }))).rejects.toBeInstanceOf(SourceError);
   });
 });

@@ -12,7 +12,7 @@ const FAIL = {
   empty: "Paste an Amazon UK product link or its ASIN.",
   short_link: "That's a short link. Open it, then paste the full amazon.co.uk address from your browser.",
   other_amazon: "We check Amazon UK listings today. Paste the amazon.co.uk link for this product.",
-  not_amazon: "We check Amazon UK products today. Paste the amazon.co.uk link for this product (TikTok Shop and AliExpress links are coming).",
+  not_amazon: "That isn't an Amazon UK link. Paste the amazon.co.uk link for this product.",
   no_asin: "That Amazon UK link doesn't point at one product. Open the product page and paste its link.",
 } as const;
 const fail = (reason: keyof typeof FAIL): AmazonLink => ({ ok: false, reason, message: FAIL[reason] });

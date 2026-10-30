@@ -425,6 +425,30 @@ model WelcomeGrant {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 }
 
+// A visitor who gave their email to unlock a free breakdown on the homepage check (lead capture). One row
+// per address (stored lower-case). Marketing email needs its own, unticked-by-default consent (PECR): the
+// time it was given is kept with it. Nothing here is a user account.
+model Lead {
+  id               String       @id @default(uuid(7)) @db.Uuid
+  email            String       @unique
+  marketingConsent Boolean      @default(false)
+  consentAt        DateTime?    @db.Timestamptz(3)
+  createdAt        DateTime     @default(now()) @db.Timestamptz(3)
+  unlocks          LeadUnlock[]
+}
+
+// Each product a lead unlocked the breakdown for: the first 3 are free (FREE_BREAKDOWNS_PER_LEAD), and
+// unlocking the same product again doesn't count twice.
+model LeadUnlock {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  leadId     String   @db.Uuid
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  productKey String // "amazon.co.uk:<ASIN>"
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([leadId, productKey])
+}
+
 // Welcome grants per UTC day: the site-wide cap (WELCOME_DOSSIERS_PER_DAY) that bounds what fake sign-ups
 // could spend, whatever addresses they come from.
 model WelcomeGrantDay {

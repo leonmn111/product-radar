@@ -67,7 +67,7 @@ const EnvSchema = z
     // so they're capped site-wide per UTC day and per visitor (IP, per server process) per 24 hours.
     // Cached products don't count against the site-wide cap. 0 switches free checks off.
     FREE_VERDICTS_PER_DAY: count(20),
-    FREE_VERDICTS_PER_VISITOR: count(1),
+    FREE_VERDICTS_PER_VISITOR: count(3), // the homepage promises a full breakdown free for the first 3
     // A new account's free first Dossier (its WELCOME credits): at most this many accounts a UTC day get one,
     // site-wide, so fake sign-ups can't run up provider costs. 0 switches the welcome off.
     WELCOME_DOSSIERS_PER_DAY: count(50),

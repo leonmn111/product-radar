@@ -17,7 +17,7 @@ import { CREDIT_PACKS, CREDIT_VALUE_PENCE, creditsGbp, gbp, PLANS, STANDARD_DOSS
 
 const TITLE = "ProductRadar — Know if it'll make money in the UK before you buy the stock";
 const DESCRIPTION =
-  "Paste an Amazon UK link and get Launch, Test small or Avoid free. The full Dossier shows every UK fee, creator cut, VAT and duty line, each with its source.";
+  "Paste a TikTok Shop, Amazon UK or AliExpress link and your supplier price. Get Launch, Test small or Avoid, with every UK fee, creator cut and ad cost shown, and the most you could lose.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -101,8 +101,8 @@ const SECTIONS: NavLink[] = [
 
 const STEPS = [
   {
-    title: "Paste an Amazon UK link",
-    body: "Get Launch, Test small or Avoid free, with no account. A branded product is flagged Avoid (brand-restricted) at once, and a product that loses money before ads is Avoid too.",
+    title: "Paste a link and your supplier price",
+    body: "A TikTok Shop, Amazon UK or AliExpress link. Get Launch, Test small or Avoid and what you'd keep per sale, free with no account. A branded product is Avoid (brand-restricted) at once, and one that loses money before ads is Avoid too.",
     icon: "M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244",
   },
   {
@@ -219,8 +219,8 @@ export default function Home() {
                   Know if it&apos;ll make money in the UK <span className="text-accent-mint">— before you buy the stock.</span>
                 </h1>
                 <p className="mt-6 max-w-2xl text-lg/8 text-slate-300 sm:text-xl/8">
-                  Paste an Amazon UK link. Get Launch, Test small or Avoid free, then open the full Dossier: every UK fee,
-                  creator cut, VAT and duty line, each with its source.
+                  Paste a TikTok Shop, Amazon UK or AliExpress link and your supplier price. Get Launch, Test small or Avoid,
+                  with every UK fee, creator cut and ad cost shown, and the most you could lose.
                 </p>
                 {/* The one action: paste a product, get its verdict free. Its small print sits right under the button. */}
                 <PasteBox />

@@ -40,6 +40,10 @@ const SECTIONS: LegalSection[] = [
           top-up, spend and refund, the Dossiers you&apos;ve bought and any bulk uploads (the product IDs in them).
         </li>
         <li>
+          <strong>Free checks on the homepage:</strong> if you unlock a check&apos;s full breakdown, your email address, the products you unlocked
+          and whether you asked for our tips and offers (and when). The check itself needs no account and stores nothing about you.
+        </li>
+        <li>
           <strong>Searches:</strong> we count how many searches you run, to apply Pro&apos;s free allowance. We don&apos;t store what you searched for.
         </li>
         <li>
@@ -66,6 +70,11 @@ const SECTIONS: LegalSection[] = [
       <ul>
         <li>
           <strong>To provide the service you signed up for</strong> (your account, plan, balance, Dossiers, receipts): <em>contract</em>.
+        </li>
+        <li>
+          <strong>To give you the breakdowns you unlock with your email</strong>, and to count your free ones: <em>legitimate interests</em>. We only
+          send you tips and offers if you tick the box for them: <em>consent</em>, which you can withdraw any time by replying to any email or
+          writing to us.
         </li>
         <li>
           <strong>To keep ProductRadar secure</strong> and prevent fraud and abuse: <em>legitimate interests</em>.
@@ -137,6 +146,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <ul>
         <li>Your account, its Dossiers and balance history: until you ask us to close your account.</li>
+        <li>An email you gave to unlock a free breakdown: until you ask us to delete it.</li>
         <li>Purchase and payment records: six years, as UK tax law requires, even after an account closes.</li>
         <li>Server logs: kept briefly by our host for security, then deleted.</li>
       </ul>

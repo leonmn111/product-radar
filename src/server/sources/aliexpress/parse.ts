@@ -3,7 +3,7 @@
 // fixtures/recorded-text-search-GB.json (itemId, title, targetSalePrice, targetOriginalPriceCurrency,
 // itemMainPic, orders, evaluateRate, score).
 
-import type { Market, SupplierOffer } from "@/server/live/types";
+import type { Market, SupplierOffer, SupplierProduct } from "@/server/live/types";
 
 // Prices from AliExpress's own official API.
 export const ALIEXPRESS_QUALITY = 85;
@@ -91,4 +91,68 @@ export function parseTextSearch(json: TextSearchResponse, shipTo: Market, observ
     });
   }
   return offers;
+}
+
+// ── One product: aliexpress.ds.product.get ───────────────────────────────────
+// Field names follow the live response, recorded in fixtures/recorded-product-get-GB.json.
+
+type Sku = { offer_sale_price?: unknown; sku_price?: unknown; currency_code?: unknown; sku_available_stock?: unknown };
+export type ProductGetResponse = {
+  aliexpress_ds_product_get_response?: {
+    rsp_code?: number | string;
+    rsp_msg?: string;
+    result?: {
+      ae_item_base_info_dto?: { subject?: unknown; product_id?: unknown; product_status_type?: unknown };
+      ae_item_sku_info_dtos?: { ae_item_sku_info_d_t_o?: Sku[] };
+      ae_item_properties?: { ae_item_property?: { attr_name?: unknown; attr_value?: unknown }[] };
+    };
+  };
+  error_response?: { code?: string; msg?: string };
+};
+
+/** The AliExpress error message for a product request, or null when it succeeded. */
+export function productGetError(json: ProductGetResponse): string | null {
+  if (json.error_response) return json.error_response.msg ?? json.error_response.code ?? "error";
+  const r = json.aliexpress_ds_product_get_response;
+  if (!r) return "unexpected response";
+  return String(r.rsp_code) === "200" ? null : (r.rsp_msg ?? `code ${r.rsp_code ?? "missing"}`);
+}
+
+/**
+ * The listing a product page shows: its title, its cheapest variant that's in stock (the sale price, in
+ * the currency asked for) and the brand it states. Null when it isn't on sale or has no priced variant.
+ */
+export function parseProductGet(json: ProductGetResponse, shipTo: Market, observedAt: Date): SupplierProduct | null {
+  const r = json.aliexpress_ds_product_get_response?.result;
+  const base = r?.ae_item_base_info_dto;
+  const id = str(base?.product_id);
+  const title = str(base?.subject);
+  if (!id || !/^\d+$/.test(id) || !title || (str(base?.product_status_type) ?? "onSelling") !== "onSelling") return null;
+  const prices = (r?.ae_item_sku_info_dtos?.ae_item_sku_info_d_t_o ?? [])
+    .filter((s) => Number(str(s.sku_available_stock) ?? "1") > 0)
+    .map((s) => ({ amount: Number(str(s.offer_sale_price) ?? str(s.sku_price)), currency: str(s.currency_code)?.toUpperCase() ?? null }))
+    .filter((p): p is { amount: number; currency: string } => Number.isFinite(p.amount) && p.amount > 0 && p.currency !== null);
+  if (prices.length === 0) return null;
+  const cheapest = prices.reduce((a, b) => (b.amount < a.amount ? b : a));
+  const brandValue = str(r?.ae_item_properties?.ae_item_property?.find((p) => str(p.attr_name)?.toLowerCase() === "brand name")?.attr_value);
+  const brand = brandValue && !/^(none|no brand|unbranded|generic|oem)$/i.test(brandValue) ? brandValue : null;
+  const url = `https://www.aliexpress.com/item/${id}.html`;
+  return {
+    id,
+    title,
+    url,
+    image: null,
+    unitPrice: { amount: cheapest.amount, currency: cheapest.currency },
+    shipping: null,
+    shipsTo: shipTo,
+    brand,
+    evidence: {
+      id: `aliexpress:${id}:${shipTo}`,
+      provider: "aliexpress",
+      sourceUrl: url,
+      observedAt: observedAt.toISOString(),
+      quality: ALIEXPRESS_QUALITY,
+      claim: `"${title}": from ${cheapest.amount.toFixed(2)} ${cheapest.currency} on AliExpress (cheapest variant in stock), ships to ${shipTo}`,
+    },
+  };
 }

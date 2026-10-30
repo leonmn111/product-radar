@@ -4,7 +4,7 @@ import { LEGAL } from "@/lib/legal";
 import { SITE_URL } from "@/lib/site";
 
 // The B2B sales page for TikTok Shop UK agencies (the agency pivot), with a small section for
-// e-commerce accountants. Static: no account, no database. The one action is booking a 15-minute
+// e-commerce accountants. Static: no account, no database. The one action is booking a 30-minute
 // walkthrough on Calendly, in a new tab; the accountants' partner button is an email. Nothing is sold online here:
 // the pilot is set up after the call, and its price is shown in pounds up front (CMA).
 // Design: the landing page's midnight-blue and mint tokens (globals.css), dark only.
@@ -66,7 +66,7 @@ function Check() {
 function BookButton({ className = "" }: { className?: string }) {
   return (
     <a href={BOOK_HREF} target="_blank" rel="noopener noreferrer" className={`${primaryButton} ${className}`}>
-      Book a 15-minute walkthrough
+      Book a 30-minute walkthrough
       <span className="sr-only"> (opens Calendly in a new tab)</span>
       <Arrow />
     </a>

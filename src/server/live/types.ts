@@ -83,3 +83,6 @@ export type SupplierOffer = {
   shipsTo: Market;
   evidence: Evidence;
 };
+
+/** One supplier listing opened from its own link, with the brand it states (null: none, or "no brand"). */
+export type SupplierProduct = SupplierOffer & { brand: string | null };

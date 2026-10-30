@@ -2,7 +2,7 @@
 // The engine never sees a provider's SDK or response shapes: only listings with evidence.
 
 import type { QueryBudget } from "@/server/live/budget";
-import type { Market, ObservedAd, ProductHistory, RetailListing, RetailProductDetail, SupplierOffer } from "@/server/live/types";
+import type { Market, ObservedAd, ProductHistory, RetailListing, RetailProductDetail, SupplierOffer, SupplierProduct } from "@/server/live/types";
 
 export interface RetailSource {
   readonly name: string;
@@ -16,6 +16,8 @@ export interface SupplierSource {
   readonly name: string;
   /** Supplier offers for the search term, priced for delivery to the market. Spends from the budget. */
   search(term: string, shipTo: Market, budget: QueryBudget): Promise<SupplierOffer[]>;
+  /** One listing by its id (an AliExpress product link), with the brand it states; null when it isn't on sale. */
+  product?(id: string, shipTo: Market, budget: QueryBudget): Promise<SupplierProduct | null>;
 }
 
 export interface HistorySource {

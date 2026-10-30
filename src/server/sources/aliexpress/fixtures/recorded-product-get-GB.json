@@ -1,0 +1,160 @@
+{
+  "_fixture": "RECORDED live response, 30 October 2026: aliexpress.ds.product.get for product 1005010414755062 (ship_to_country GB, target_currency GBP, target_language EN). Real data; the long HTML description and media list were removed to keep it small. It holds no credentials.",
+  "aliexpress_ds_product_get_response": {
+    "result": {
+      "ae_item_sku_info_dtos": {
+        "ae_item_sku_info_d_t_o": [
+          {
+            "sku_attr": "14:193",
+            "offer_sale_price": "3.79",
+            "sku_id": "12000052331166041",
+            "price_include_tax": true,
+            "currency_code": "GBP",
+            "sku_price": "7.90",
+            "offer_bulk_sale_price": "3.79",
+            "sku_available_stock": 7,
+            "id": "14:193",
+            "ae_sku_property_dtos": {
+              "ae_sku_property_d_t_o": [
+                {
+                  "sku_property_value": "black",
+                  "sku_property_name": "Color",
+                  "property_value_id": 193,
+                  "sku_property_id": 14
+                }
+              ]
+            }
+          },
+          {
+            "sku_attr": "14:175",
+            "offer_sale_price": "3.08",
+            "sku_id": "12000052331166043",
+            "price_include_tax": true,
+            "currency_code": "GBP",
+            "sku_price": "6.42",
+            "offer_bulk_sale_price": "3.08",
+            "sku_available_stock": 19,
+            "id": "14:175",
+            "ae_sku_property_dtos": {
+              "ae_sku_property_d_t_o": [
+                {
+                  "sku_property_value": "green",
+                  "sku_property_name": "Color",
+                  "property_value_id": 175,
+                  "sku_property_id": 14
+                }
+              ]
+            }
+          },
+          {
+            "sku_attr": "14:29",
+            "offer_sale_price": "3.70",
+            "sku_id": "12000052331166042",
+            "price_include_tax": true,
+            "currency_code": "GBP",
+            "sku_price": "7.71",
+            "offer_bulk_sale_price": "3.70",
+            "sku_available_stock": 23,
+            "id": "14:29",
+            "ae_sku_property_dtos": {
+              "ae_sku_property_d_t_o": [
+                {
+                  "sku_property_value": "WHITE",
+                  "sku_property_name": "Color",
+                  "property_value_id": 29,
+                  "sku_property_id": 14
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "package_info_dto": {
+        "package_width": 15,
+        "package_height": 8,
+        "package_length": 17,
+        "gross_weight": "0.195",
+        "package_type": false,
+        "product_unit": 100000015
+      },
+      "logistics_info_dto": {
+        "delivery_time": 7,
+        "ship_to_country": "GB"
+      },
+      "product_id_converter_result": {
+        "main_product_id": 1005010414755062,
+        "sub_product_id": "{\"US\":3256810228440310}"
+      },
+      "ae_item_base_info_dto": {
+        "subject": "Desktop Phone Stand, Adjustable Height, Foldable Stand for Lazy People, Portable Phone Live Streaming Stand",
+        "evaluation_count": "37",
+        "sales_count": "80",
+        "product_status_type": "onSelling",
+        "avg_evaluation_rating": "4.1",
+        "separated_listing": false,
+        "currency_code": "CNY",
+        "sl_product": false,
+        "category_id": 5093004,
+        "product_id": 1005010414755062
+      },
+      "has_whole_sale": false,
+      "ae_item_properties": {
+        "ae_item_property": [
+          {
+            "attr_name_id": 2,
+            "attr_value_id": 201512802,
+            "attr_name": "Brand Name",
+            "attr_value": "NONE"
+          },
+          {
+            "attr_name_id": 219,
+            "attr_value_id": 9441741844,
+            "attr_name": "Origin",
+            "attr_value": "Mainland China"
+          },
+          {
+            "attr_name_id": 400000603,
+            "attr_value_id": 23399591357,
+            "attr_name": "High-concerned chemical",
+            "attr_value": "none"
+          },
+          {
+            "attr_name_id": 10,
+            "attr_value_id": 365210,
+            "attr_name": "Material",
+            "attr_value": "others"
+          },
+          {
+            "attr_name_id": 100002145,
+            "attr_value_id": 14948926729,
+            "attr_name": "Features",
+            "attr_value": "Replicate"
+          },
+          {
+            "attr_name_id": 1248,
+            "attr_value_id": 349906,
+            "attr_name": "Charger",
+            "attr_value": "No"
+          },
+          {
+            "attr_name_id": -1,
+            "attr_name": "Choice",
+            "attr_value": "yes"
+          }
+        ]
+      },
+      "ae_store_info": {
+        "store_id": 1105216648,
+        "shipping_speed_rating": "4.7",
+        "communication_rating": "4.6",
+        "store_name": "YUTOOL 3C Store",
+        "store_country_code": "CN",
+        "item_as_described_rating": "4.4"
+      }
+    },
+    "rsp_code": 200,
+    "rsp_msg": "Call succeeds",
+    "request_id": "210137bd17934034223256362",
+    "_trace_id_": "2140d36117934034223244999e0e1c"
+  }
+}
