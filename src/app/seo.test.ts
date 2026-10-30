@@ -8,6 +8,7 @@ describe("search engine files", () => {
   it("lists only the public pages in the sitemap", () => {
     expect(sitemap().map((e) => e.url)).toEqual([
       "https://theproductradar.io",
+      "https://theproductradar.io/agencies",
       "https://theproductradar.io/docs",
       "https://theproductradar.io/terms",
       "https://theproductradar.io/privacy",

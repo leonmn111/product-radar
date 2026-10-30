@@ -14,7 +14,8 @@ describe("Footer", () => {
     const html = renderToStaticMarkup(createElement(Footer));
     expect(html).toContain('href="/terms"');
     expect(html).toContain('href="/privacy"');
-    expect(html).toMatch(/<nav aria-label="Legal and help"/);
+    expect(html).toMatch(/<nav aria-label="More from ProductRadar"/);
+    expect(html).toContain('href="/agencies"');
     expect(html).toContain("calculated estimates from cited evidence, not guarantees");
   });
 });
