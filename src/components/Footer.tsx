@@ -7,6 +7,7 @@ import { Logo } from "@/components/brand/logo";
 
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 const LINKS = [
+  ["/agencies", "For agencies"],
   ["/terms", "Terms"],
   ["/privacy", "Privacy"],
   ["/docs", "API docs"],
@@ -21,7 +22,7 @@ export function Footer() {
           <Logo height={28} className="after-app:hidden" />
           <Logo tone="dark" height={28} className="hidden after-app:block" />
         </p>
-        <nav aria-label="Legal and help" className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs tracking-wide uppercase">
+        <nav aria-label="More from ProductRadar" className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs tracking-wide uppercase">
           {LINKS.map(([href, label]) => (
             <Link key={href} href={href} className={`rounded-sm hover:text-white hover:underline after-app:hover:text-slate-900 ${focusRing}`}>
               {label}

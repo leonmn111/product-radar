@@ -1,5 +1,5 @@
 // The application shell's top bar: the brand, optional in-page section links, Docs, Sign in and the
-// one call to action, "Run Dossier". A Server Component: no client JavaScript.
+// one call to action ("Run Dossier" unless a page names its own, e.g. /agencies: "Book a call"). A Server Component: no client JavaScript.
 // Below lg the section links fold away; the brand, Docs and the call to action always stay.
 
 import Link from "next/link";
@@ -11,7 +11,7 @@ const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-
 const navLink = `rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white ${focusRing}`;
 const cta = `inline-flex items-center rounded-lg bg-accent-mint px-3.5 py-2 text-sm font-semibold whitespace-nowrap text-on-accent shadow-md shadow-accent-mint/20 transition duration-200 hover:scale-[1.03] hover:bg-accent-mint-strong active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 ${focusRing}`;
 
-export function Navbar({ links = [], ctaHref = "/get-started" }: { links?: NavLink[]; ctaHref?: string }) {
+export function Navbar({ links = [], ctaHref = "/get-started", ctaLabel = "Run Dossier" }: { links?: NavLink[]; ctaHref?: string; ctaLabel?: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line-dark/80 bg-background-dark/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
@@ -37,9 +37,16 @@ export function Navbar({ links = [], ctaHref = "/get-started" }: { links?: NavLi
           <Link href="/signin" className={`max-[420px]:hidden ${navLink}`}>
             Sign in
           </Link>
-          <Link href={ctaHref} className={cta}>
-            Run Dossier
-          </Link>
+          {/* A mailto or other external link is a plain anchor; a page of the site goes through Link. */}
+          {/^(mailto:|https?:)/.test(ctaHref) ? (
+            <a href={ctaHref} className={cta}>
+              {ctaLabel}
+            </a>
+          ) : (
+            <Link href={ctaHref} className={cta}>
+              {ctaLabel}
+            </Link>
+          )}
         </div>
       </div>
     </header>
