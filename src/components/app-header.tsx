@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { AccountMenu } from "@/components/account/account-menu";
-import { Logo } from "@/components/brand/logo";
+import { Logo, LogoMark } from "@/components/brand/logo";
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
@@ -15,8 +15,9 @@ export function AppHeader() {
     <header className="on-dark sticky top-0 z-40 border-b border-white/10 bg-background-dark text-slate-100">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Link href="/" className={`flex items-center rounded-md ${focusRing}`}>
-          {/* The full logo fits beside the account controls down to a 320 px phone. */}
-          <Logo priority />
+          {/* Below 420 px the full logo doesn't fit beside the credits, Upgrade and account buttons: the mark does. */}
+          <Logo priority className="max-[419px]:hidden" />
+          <LogoMark className="min-[420px]:hidden" />
         </Link>
         <div className="flex items-center gap-1 sm:gap-2">
           <Link

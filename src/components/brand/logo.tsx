@@ -23,3 +23,11 @@ export function Logo({ tone = "light", height = 32, className = "", priority = f
     />
   );
 }
+
+/**
+ * The radar mark alone (the app icon, src/app/icon.png), `size` px square: where the full logo can't fit
+ * beside a phone's account controls.
+ */
+export function LogoMark({ size = 32, className = "", priority = false }: { size?: number; className?: string; priority?: boolean }) {
+  return <Image src="/icon.png" alt="ProductRadar" width={size} height={size} unoptimized priority={priority} className={`shrink-0 rounded-md ${className}`} />;
+}
