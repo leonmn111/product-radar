@@ -10,7 +10,6 @@ import { LATEST_FX } from "@/server/scoring/fx-latest";
 import { catalogResellability } from "@/services/catalogMargin";
 import { highestRrp } from "./rrp";
 import { minimumMatch, type SearchTerm } from "./search";
-import { hasPriceGap, pickShowcase } from "./showcase";
 
 const MAX_EVIDENCE_PER_PRODUCT = 50;
 
@@ -151,54 +150,6 @@ export async function getProductBySlug(db: PrismaClient, slug: string, asOf = ne
   if (!row) return null;
   const sources = await sourceSummaries(db, [row.id]);
   return toDto(row, asOf, sources.get(row.id));
-}
-
-export type CatalogStats = {
-  products: number;
-  stores: number; // distinct merchants with a captured price
-  prices: number; // captured offers
-  evidence: number; // distinct source pages the live catalog's evidence comes from
-  priceGaps: number; // resellable products two or more stores sell right now, in one currency, at different prices
-  lastObservedAt: string | null; // newest evidence capture
-};
-
-export type ShowcaseSnapshot = { products: ProductDto[]; stats: CatalogStats };
-
-/**
- * The public landing page's view of the live (non-sample) catalog: headline counts
- * taken straight from the database, and up to two products that best show the
- * margin engine at work (see pickShowcase). Only products sold by two or more
- * stores can have a price gap, so only those are loaded in full.
- */
-export async function showcaseSnapshot(db: PrismaClient, asOf = new Date()): Promise<ShowcaseSnapshot> {
-  const live = { product: { isSample: false } } satisfies Prisma.OfferWhereInput;
-  const [products, merchants, prices, evidence, newest, multiStore] = await Promise.all([
-    db.product.count({ where: { isSample: false } }),
-    db.offer.groupBy({ by: ["merchant"], where: live }),
-    db.offer.count({ where: live }),
-    // Distinct source pages, not captures: a page read four times counts once.
-    db.evidence.groupBy({ by: ["sourceUrl"], where: live }).then((pages) => pages.length),
-    db.evidence.aggregate({ where: live, _max: { observedAt: true } }),
-    db.$queryRaw<{ id: string }[]>`
-      SELECT o."productId" AS id
-      FROM "Offer" o
-      JOIN "Product" p ON p.id = o."productId"
-      WHERE NOT p."isSample"
-      GROUP BY o."productId"
-      HAVING count(DISTINCT lower(o.merchant)) >= 2`,
-  ]);
-  const candidates = (await loadInOrder(db, multiStore, asOf)).map(({ dto }) => dto);
-  return {
-    products: pickShowcase(candidates),
-    stats: {
-      products,
-      stores: new Set(merchants.map((m) => m.merchant.toLowerCase())).size,
-      prices,
-      evidence,
-      priceGaps: candidates.filter((p) => p.resellable && hasPriceGap(p)).length,
-      lastObservedAt: newest._max.observedAt?.toISOString() ?? null,
-    },
-  };
 }
 
 type SourceSummary = { sourceCount: number; hasSearchTrend: boolean };

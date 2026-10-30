@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { getViewer } from "@/server/auth/entitlements";
 import { InsufficientCreditsError, spendCreditsInTransaction } from "@/server/billing/credits";
-import { PLANS, planPriceLabel } from "@/server/billing/plans";
+import { balanceGbp, creditsGbp, PLANS, planPriceLabel } from "@/server/billing/plans";
 import { liveSources } from "@/server/live/config";
 import { BULK_CREDITS_PER_ASIN, createBulkJob, ensureProcessing, MAX_BULK_ASINS, parseAsinCsv } from "@/services/bulkJobs";
 import { bulkDeps } from "./run";
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     return json(
       {
         error: "agency_required",
-        message: `Bulk uploads are part of the Agency plan (${planPriceLabel(PLANS.agency)}): score up to ${MAX_BULK_ASINS} products at once, with 500 credits a month and Standard Dossiers at 1 credit each.`,
+        message: `Bulk uploads are part of the Agency plan (${planPriceLabel(PLANS.agency)}): score up to ${MAX_BULK_ASINS} products at once, with ${balanceGbp(PLANS.agency.monthly.credits ?? 0)} of balance a month and Standard Dossiers at ${creditsGbp(BULK_CREDITS_PER_ASIN)} each.`,
       },
       403,
     );
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
   const live = liveSources({ allowSample: true });
   if (!live.ready) {
-    return json({ error: "live_search_unavailable", message: "Live Dossiers aren't switched on yet. No credits were used.", missing: live.missing }, 503);
+    return json({ error: "live_search_unavailable", message: "Live Dossiers aren't switched on yet. Nothing was charged.", missing: live.missing }, 503);
   }
 
   if (Number(request.headers.get("content-length") ?? 0) > MAX_BYTES) return json({ error: "too_large", message: "The file is over 64 KB." }, 413);
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       return json({ error: "internal_error", message: "The upload couldn't be saved. Nothing was charged; please try again." }, 500);
     }
     return json(
-      { error: "insufficient_credits", message: `${parsed.asins.length} ASINs need ${e.needed} credits; you have ${e.balance}. Nothing was charged or queued.`, needed: e.needed, balance: e.balance },
+      { error: "insufficient_credits", message: `${parsed.asins.length} ASINs cost ${creditsGbp(e.needed)}; your balance is ${balanceGbp(e.balance)}. Nothing was charged or queued.`, needed: e.needed, balance: e.balance },
       402,
     );
   }

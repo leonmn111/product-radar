@@ -7,6 +7,7 @@ import { createRateLimiter } from "@/lib/rate-limit";
 import { getViewer } from "@/server/auth/entitlements";
 import { freeSearchesLeft, PRO_FREE_SEARCHES, recordSearch } from "@/server/billing/allowances";
 import { createDbCreditStore, InsufficientCreditsError } from "@/server/billing/credits";
+import { balanceGbp, creditsGbp } from "@/server/billing/plans";
 import { BudgetExceededError } from "@/server/live/budget";
 import { liveRetailSource } from "@/server/live/config";
 import { SourceError } from "@/server/sources/types";
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
   if (limiter.limited(viewer.id)) return json({ error: "rate_limited", message: "Too many searches. Please wait a minute and try again." }, 429);
 
   const live = liveRetailSource({ allowSample: true });
-  if (!live.ready) return json({ error: "search_unavailable", message: "Search isn't switched on yet. No credits were used.", missing: live.missing }, 503);
+  if (!live.ready) return json({ error: "search_unavailable", message: "Search isn't switched on yet. Nothing was charged.", missing: live.missing }, 503);
 
   // Pro's free searches first; otherwise one credit.
   const freeLeft = await freeSearchesLeft(db, viewer.id);
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     } catch (e) {
       if (!(e instanceof InsufficientCreditsError)) throw e;
       const why = viewer.tier === "PRO" ? `You've used this month's ${PRO_FREE_SEARCHES} free searches, and a` : "A";
-      return json({ error: "insufficient_credits", message: `${why} search costs ${SEARCH_CREDITS} credit; you have ${e.balance}.`, needed: SEARCH_CREDITS, balance: e.balance }, 402);
+      return json({ error: "insufficient_credits", message: `${why} search costs ${creditsGbp(SEARCH_CREDITS)}; your balance is ${balanceGbp(e.balance)}.`, needed: SEARCH_CREDITS, balance: e.balance }, 402);
     }
   }
   const giveBack = async () => {
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     await giveBack();
     if (e instanceof SourceError || e instanceof BudgetExceededError) {
-      return json({ error: "source_unavailable", message: `${e.message} ${free ? "It didn't count as a free search." : "Your credit was returned."}`, balance }, 502);
+      return json({ error: "source_unavailable", message: `${e.message} ${free ? "It didn't count as a free search." : `Your ${creditsGbp(SEARCH_CREDITS)} was returned to your balance.`}`, balance }, 502);
     }
     console.error("[search] failed", e);
     return json({ error: "internal_error", message: "The search failed. Please try again.", balance }, 500);

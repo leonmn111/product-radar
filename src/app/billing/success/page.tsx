@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { getViewer } from "@/server/auth/entitlements";
 import { confirmCheckout } from "@/server/billing/checkout";
+import { creditsGbp, PLANS, STANDARD_DOSSIER_CREDITS } from "@/server/billing/plans";
 
 export const metadata: Metadata = {
   title: "Welcome to Pro — ProductRadar",
@@ -30,7 +31,7 @@ async function Confirmation({ searchParams }: { searchParams: Promise<{ session_
     <>
       <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">You&apos;re on {result.tier === "AGENCY" ? "Agency" : "Pro"} 🎉</h1>
       <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-        Live product analysis is unlocked and you can now see all live products.
+        {result.tier === "AGENCY" ? "Your monthly balance is added as soon as Stripe confirms the invoice." : `Dossiers now cost ${creditsGbp(STANDARD_DOSSIER_CREDITS.PRO)} from your balance, and ${PLANS.pro.monthly.freeSearches} Amazon UK searches a month are free.`}
         {result.periodEnd &&
           ` Your plan renews on ${new Intl.DateTimeFormat("en-GB", { dateStyle: "long" }).format(result.periodEnd)}.`}
       </p>

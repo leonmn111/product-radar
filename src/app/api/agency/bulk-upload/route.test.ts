@@ -151,7 +151,7 @@ describe("POST /api/agency/bulk-upload", () => {
     const s = await (await status(body.jobId)).json();
     expect(s).toMatchObject({ status: "DONE", total: 3, counts: { pending: 0, running: 0, done: 2, failed: 1 } });
     expect(s.items[0]).toMatchObject({ asin: "B0MUGAAAA1", status: "DONE", verdict: "TEST", title: "Product B0MUGAAAA1" });
-    expect(s.items[1]).toMatchObject({ asin: "B0NOTHERE1", status: "FAILED", error: "Amazon UK has no priced product B0NOTHERE1. Its credit was returned." });
+    expect(s.items[1]).toMatchObject({ asin: "B0NOTHERE1", status: "FAILED", error: "Amazon UK has no priced product B0NOTHERE1. Its cost was returned to your balance." });
     expect(credits(id)).toBe(8); // the failed item's credit came back
     expect(mem.alerts.at(-1)).toEqual({ jobId: body.jobId, userId: id, total: 3, done: 2, failed: 1 }); // the owner is told
   });

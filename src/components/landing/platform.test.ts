@@ -9,10 +9,10 @@ const { liveSources } = await import("@/server/live/config");
 const { GET } = await import("@/app/get-started/route");
 
 describe("platformStatus", () => {
-  it("never calls a feature live before it is", () => {
-    expect(platformStatus({ dossiersLive: false, keepaKey: true, agencyOnSale: true })).toEqual({ dossier: "LAUNCHING SOON", momentum: "LAUNCHING SOON", agency: "LAUNCHING SOON" });
-    expect(platformStatus({ dossiersLive: true, keepaKey: false, agencyOnSale: false })).toEqual({ dossier: "LIVE", momentum: "LAUNCHING SOON", agency: "LAUNCHING SOON" });
-    expect(platformStatus({ dossiersLive: true, keepaKey: true, agencyOnSale: true })).toEqual({ dossier: "LIVE", momentum: "LIVE", agency: "LIVE" });
+  it("shows a panel only once its feature is live: no launching-soon badges", () => {
+    expect(platformStatus({ dossiersLive: false, keepaKey: true, agencyOnSale: true })).toEqual({ dossier: false, momentum: false, agency: false });
+    expect(platformStatus({ dossiersLive: true, keepaKey: false, agencyOnSale: false })).toEqual({ dossier: true, momentum: false, agency: false });
+    expect(platformStatus({ dossiersLive: true, keepaKey: true, agencyOnSale: true })).toEqual({ dossier: true, momentum: true, agency: true });
   });
 });
 

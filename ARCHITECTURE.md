@@ -164,6 +164,9 @@ withholds Momentum, which doesn't feed the verdict, and that copy isn't cached.
     and Agency (£149/month).
   - Credit packs: Starter £10 (20 credits), Growth £25 (55), Scale £50 (120). 1 credit = £0.50, so a Standard
     Dossier is 4 credits without a plan.
+  - Credits are the ledger's unit only. Every screen, email and Stripe Checkout line shows the balance and every
+    price in £ (CMA price transparency): a Dossier £2 (£0.50 on Pro or Agency), a search £0.50, top-ups £10, £25
+    (£27.50 of balance) and £50 (£60). Helpers: `gbp`, `creditsGbp`, `balanceGbp` in `src/server/billing/plans.ts`.
   - Typed in `src/server/billing/plans.ts` and sold through Stripe Checkout with inline prices, so nothing is
     set up in the Stripe dashboard. `/upgrade` sells Pro; `POST /api/stripe/checkout` sells any plan or pack
     (packs go live when `CREDIT_PACKS_ON_SALE=on`; Agency only once its 500 monthly credits are granted).

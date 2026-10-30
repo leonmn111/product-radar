@@ -35,9 +35,9 @@ function Tile({ className = "", icon, title, body, children }: { className?: str
 const LEDGER: [string, string][] = [
   ["Selling price", "Amazon UK · live"],
   ["Supplier cost", "AliExpress · live"],
-  ["Import duty", "UK and EU customs rules"],
-  ["VAT", "GOV.UK and EU rates"],
-  ["Platform fees", "published fee schedule"],
+  ["Import duty", "UK customs rules"],
+  ["VAT", "GOV.UK rates"],
+  ["Platform fees", "TikTok Shop UK, published"],
   ["Ad spend", "break-even per sale"],
   ["Shipping", "counted when quoted"],
 ];
@@ -62,7 +62,7 @@ export function TrustBento() {
         <figure className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-background-dark/70 font-mono text-[11px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)] sm:text-[0.8rem]">
           <figcaption className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-3 py-2.5 text-[10px] tracking-widest text-slate-400 uppercase sm:px-4 sm:text-[11px]">
             <span className="truncate">Landed margin · how it&apos;s built</span>
-            <span className="shrink-0 text-accent-mint">UK + EU</span>
+            <span className="shrink-0 text-accent-mint">UK</span>
           </figcaption>
           {/* The rows share whatever height the tile has, so the ledger always fills it. */}
           <dl className="flex flex-1 flex-col divide-y divide-white/[0.04]">

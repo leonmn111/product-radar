@@ -776,7 +776,7 @@ console.log(margin.status === "shown" ? margin.value.uk.netProfit : margin.missi
           <Link href="/terminal" className={link}>
             Dossier terminal
           </Link>
-          , paid in credits.
+          , paid in pounds from their balance.
         </p>
       </Section>
     </main>

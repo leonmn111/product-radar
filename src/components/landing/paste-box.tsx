@@ -137,7 +137,8 @@ export function PasteBox() {
           </button>
         </div>
         <p id={`${ids}-hint`} className="mt-3 text-sm text-slate-400">
-          No card. No account needed for your first verdict.
+          No card. Your first verdict needs no account, and your first Dossier is free. Includes TikTok Shop UK&apos;s 9% commission and
+          £0.50 self-ship fee, the 15% creator cut and UK VAT.
         </p>
       </form>
       <div aria-live="polite">

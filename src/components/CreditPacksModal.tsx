@@ -5,13 +5,10 @@
 // While a pack is opening, its button says so and the others wait; an error is shown in place.
 
 import { useEffect, useId, useRef, useState } from "react";
-import { CREDIT_PACKS, CREDIT_VALUE_PENCE, type CreditPackId } from "@/server/billing/plans";
+import { balanceGbp, CREDIT_PACKS, CREDIT_VALUE_PENCE, creditsGbp, gbp, STANDARD_DOSSIER_CREDITS, type CreditPackId } from "@/server/billing/plans";
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
-const gbp = (pence: number, digits = 0) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: digits, maximumFractionDigits: 2 }).format(pence / 100);
-
 const PACKS = Object.values(CREDIT_PACKS);
 const BEST = PACKS.reduce((a, b) => (a.pricePence / a.credits <= b.pricePence / b.credits ? a : b)).id;
 
@@ -79,11 +76,11 @@ export function CreditPacksModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id={titleId} className="text-lg font-semibold tracking-tight">
-              Buy credits
+              Top up your balance
             </h2>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              You have <span className="font-mono font-semibold text-slate-900 tabular-nums dark:text-white">{balance}</span> credit{balance === 1 ? "" : "s"}. A
-              Standard Dossier costs 4 (1 on Pro).
+              Your balance is <span className="font-mono font-semibold text-slate-900 tabular-nums dark:text-white">{balanceGbp(balance)}</span>. A
+              Standard Dossier costs {creditsGbp(STANDARD_DOSSIER_CREDITS.FREE)} ({creditsGbp(STANDARD_DOSSIER_CREDITS.PRO)} on Pro), a search {creditsGbp(1)}.
             </p>
             {reason && <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 dark:bg-amber-400/10 dark:text-amber-200">{reason}</p>}
           </div>
@@ -114,16 +111,13 @@ export function CreditPacksModal({
                   </span>
                 )}
                 <p className="font-mono text-[11px] font-semibold tracking-widest text-slate-600 uppercase dark:text-slate-400">{p.name}</p>
-                <p className="mt-2 font-mono text-3xl font-bold tracking-tight tabular-nums">{p.credits}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">credits</p>
+                <p className="mt-2 font-mono text-3xl font-bold tracking-tight tabular-nums">{gbp(p.pricePence)}</p>
                 <p className="mt-3 text-sm">
-                  <span className="font-semibold tabular-nums">{gbp(p.pricePence)}</span>
-                  <span className="text-slate-600 dark:text-slate-400"> · {gbp(p.pricePence / p.credits, 2)} a credit</span>
+                  <span className="font-semibold tabular-nums">{balanceGbp(p.credits)}</span>
+                  <span className="text-slate-600 dark:text-slate-400"> added to your balance</span>
                 </p>
-                {p.pricePence / p.credits < CREDIT_VALUE_PENCE && (
-                  <p className="text-xs text-emerald-700 dark:text-emerald-300">
-                    {p.credits - p.pricePence / CREDIT_VALUE_PENCE} bonus credits
-                  </p>
+                {p.credits * CREDIT_VALUE_PENCE > p.pricePence && (
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300">includes a {gbp(p.credits * CREDIT_VALUE_PENCE - p.pricePence)} bonus</p>
                 )}
                 <button
                   type="button"
@@ -150,7 +144,7 @@ export function CreditPacksModal({
               {error}
             </p>
           ) : !onSale ? (
-            <p className="text-slate-600 dark:text-slate-400">Credit packs go on sale soon. Nothing has been charged.</p>
+            <p className="text-slate-600 dark:text-slate-400">Top-ups aren&apos;t available right now. Nothing has been charged.</p>
           ) : (
             <p className="text-slate-600 dark:text-slate-400">Secure checkout by Stripe. It brings you back to your account when you&apos;re done.</p>
           )}

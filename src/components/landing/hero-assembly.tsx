@@ -13,7 +13,7 @@ import { VerdictPill } from "../verdict-pill";
 const EVIDENCE: [string, string][] = [
   ["Amazon UK listings", "Rainforest API"],
   ["AliExpress supplier", "Drop Shipping API"],
-  ["Duty and VAT", "GOV.UK · EU"],
+  ["Duty and VAT", "GOV.UK"],
   ["Platform fees", "fee schedule"],
   ["Resellability", "brand · UKCA"],
 ];

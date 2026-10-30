@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
-import { dossierHref } from "@/components/dashboard/format";
-import { ProductCard } from "@/components/dashboard/product-card";
 import { ProductDashboard } from "@/components/dashboard/product-dashboard";
 import { UpgradeCard } from "@/components/dashboard/upgrade-card";
 import { canIngest, canViewCatalog, getViewer } from "@/server/auth/entitlements";
-import { getShowcase } from "@/server/products/showcase-cache";
 
 export const metadata: Metadata = {
   title: "Catalog — ProductRadar",
@@ -23,28 +21,18 @@ const BILLING_NOTICE: Record<string, { tone: "info" | "error"; text: string }> =
   error: { tone: "error", text: "We couldn't reach the payment provider. Please try again in a moment." },
 };
 
-/** Free accounts: the Pro offer, plus the public showcase dossiers to look at meanwhile. */
-async function ProGate() {
-  const { products, stats } = await getShowcase();
+/** Free accounts: the Pro offer, and their way to a Dossier (the catalog is Pro-only; nothing is showcased). */
+function ProGate() {
   return (
-    <div className="space-y-8">
-      <UpgradeCard signedIn liveProducts={stats.products} />
-      {products.length > 0 && (
-        <section aria-labelledby="preview-heading">
-          <h2 id="preview-heading" className="text-base font-semibold text-slate-900 dark:text-white">
-            Preview a real dossier
-          </h2>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            {products.length === 1 ? "This live product is" : "These live products are"} open to everyone, so you can see
-            exactly what Pro shows for every product in the catalog.
-          </p>
-          <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {products.map((p) => (
-              <ProductCard key={p.id} product={p} href={dossierHref(p)} frame="bento" />
-            ))}
-          </ul>
-        </section>
-      )}
+    <div className="space-y-6">
+      <UpgradeCard signedIn />
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        Checking a product of your own?{" "}
+        <Link href="/terminal" className="font-medium text-accent-mint underline underline-offset-2">
+          Run a Dossier in the terminal
+        </Link>
+        .
+      </p>
     </div>
   );
 }

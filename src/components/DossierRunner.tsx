@@ -1,12 +1,13 @@
 "use client";
 
-// Runs a Standard Dossier for one Amazon UK ASIN, paid in credits (POST /api/dossier/{asin}), and
-// shows it in the DossierTerminal. Without enough credits it doesn't call anything: it opens the
-// credit packs instead. If the server finds the balance too low (it changed meanwhile), the same.
+// Runs a Standard Dossier for one Amazon UK ASIN, paid from the balance (POST /api/dossier/{asin}), and
+// shows it in the DossierTerminal. Every amount shows in £. Without enough balance it doesn't call anything:
+// it opens the top-ups instead. If the server finds the balance too low (it changed meanwhile), the same.
 
 import { useRouter } from "next/navigation";
 import { useId, useState, type FormEvent } from "react";
 import { CreditPacksModal } from "@/components/CreditPacksModal";
+import { balanceGbp, creditsGbp } from "@/server/billing/plans";
 import { DossierTerminal } from "@/components/DossierTerminal";
 import { getDossier } from "@/lib/apiClient";
 import type { Dossier } from "@/types/dossier";
@@ -50,7 +51,7 @@ export function DossierRunner({
   const [asin, setAsin] = useState(reopened?.product.identifiers.asin ?? initialAsin);
   const [state, setState] = useState<State>(reopened ? { kind: "done", dossier: reopened, charged: 0, cache: "reopened" } : { kind: "idle" });
   const [packs, setPacks] = useState<{ open: boolean; reason?: string }>({ open: false });
-  const short = (have: number) => `A Standard Dossier costs ${cost} credit${cost === 1 ? "" : "s"}; you have ${have}.`;
+  const short = (have: number) => `A Standard Dossier costs ${creditsGbp(cost)}; your balance is ${balanceGbp(have)}.`;
 
   async function run(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -107,7 +108,7 @@ export function DossierRunner({
           className={`inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent-mint px-5 text-sm font-semibold whitespace-nowrap text-on-accent shadow-sm hover:bg-accent-mint-strong disabled:cursor-not-allowed disabled:bg-accent-mint/50 ${focusRing}`}
         >
           {running && <span aria-hidden="true" className="size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />}
-          {running ? "Building Dossier…" : freeDossier ? "Run Dossier · free" : `Run Dossier · ${cost} credit${cost === 1 ? "" : "s"}`}
+          {running ? "Building Dossier…" : freeDossier ? "Run Dossier · free" : `Run Dossier · ${creditsGbp(cost)}`}
         </button>
       </form>
 
@@ -130,12 +131,13 @@ export function DossierRunner({
         {state.kind === "running" && <p className="text-slate-600 dark:text-slate-400">Reading Amazon UK and suppliers for {state.asin}. This can take up to a minute.</p>}
         {state.kind === "done" && state.cache === "reopened" && (
           <p className="text-slate-600 dark:text-slate-400">
-            Reopened from your library: the copy you bought on {state.dossier.generatedAt.slice(0, 10)}. No credits used. Run it again for fresh data.
+            Reopened from your library: the copy you bought on {state.dossier.generatedAt.slice(0, 10)}. Nothing charged. Run it again for fresh data.
           </p>
         )}
         {state.kind === "done" && state.cache !== "reopened" && (
           <p className="text-slate-600 dark:text-slate-400">
-            {state.charged} credit{state.charged === 1 ? "" : "s"} used{state.cache === "hit" ? " (from a copy built in the last 48 hours)" : ""}. You have {balance} left.
+            {state.charged > 0 ? `${creditsGbp(state.charged)} charged` : "Nothing charged"}
+            {state.cache === "hit" ? " (from a copy built in the last 48 hours)" : ""}. Your balance is {balanceGbp(balance)}.
           </p>
         )}
       </div>

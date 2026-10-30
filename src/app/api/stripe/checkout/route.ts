@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   if (!creditPacksOnSale()) {
     return Response.json(
-      { error: "not_on_sale", message: "Credit packs aren't on sale yet. You haven't been charged." },
+      { error: "not_on_sale", message: "Top-ups aren't available yet. You haven't been charged." },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   // Only this site's own pages may ask (the session cookie is SameSite=Lax too).
   const origin = request.headers.get("origin");
   if (origin && origin !== base && origin !== originFromHeaders(request.headers)) {
-    return Response.json({ error: "forbidden", message: "Buy credits from your ProductRadar account page." }, { status: 403 });
+    return Response.json({ error: "forbidden", message: "Top up your balance from your ProductRadar account page." }, { status: 403 });
   }
 
   const parsed = Body.safeParse(await request.json().catch(() => null));
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   }
 
   const viewer = await getViewer();
-  if (!viewer) return Response.json({ error: "unauthenticated", message: "Sign in to buy credits." }, { status: 401 });
+  if (!viewer) return Response.json({ error: "unauthenticated", message: "Sign in to top up your balance." }, { status: 401 });
   if (checkoutLimiter.limited(viewer.id)) {
     return Response.json({ error: "rate_limited", message: "Too many requests. Please wait a minute and try again." }, { status: 429 });
   }

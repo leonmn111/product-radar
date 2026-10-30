@@ -94,7 +94,7 @@ describe("POST /api/search", () => {
     expect((await after100.json()).cost).toEqual({ free: false, creditsCharged: 1, creditsRemaining: 4, freeSearchesLeft: 0 });
     mem.users.get(id)!.platformCredits = 0;
     const out = await call("ceramic mug");
-    expect([out.status, (await out.json()).message]).toEqual([402, "You've used this month's 100 free searches, and a search costs 1 credit; you have 0."]);
+    expect([out.status, (await out.json()).message]).toEqual([402, "You've used this month's 100 free searches, and a search costs £0.50; your balance is £0.00."]);
   });
 
   it("returns 402 with no credits and no free searches, before searching", async () => {
@@ -111,7 +111,7 @@ describe("POST /api/search", () => {
     expect([empty.results, empty.cost.creditsCharged, credits(id)]).toEqual([[], 0, 2]);
     search.mockRejectedValueOnce(new SourceError("rainforest", "timed out"));
     const failed = await call("ceramic mug");
-    expect([failed.status, (await failed.json()).message]).toEqual([502, "rainforest: timed out Your credit was returned."]);
+    expect([failed.status, (await failed.json()).message]).toEqual([502, "rainforest: timed out Your £0.50 was returned to your balance."]);
     expect(credits(id)).toBe(2);
     expect(mem.usage.filter((u) => u.userId === id)).toHaveLength(0);
   });

@@ -52,16 +52,16 @@ Check it works: open http://localhost:3000/api/health
 
 ## Landing page, dashboard and dossiers
 
-`/` is the public landing page (`src/app/page.tsx`): hero, live counts (stores tracked, live products, current
-price gaps, evidence items), a showcase of up to two live products with a real price gap between stores
-(`src/server/products/showcase.ts` picks them; nothing is padded), how it works, the agent API, pricing and FAQ.
-The counts and showcase come from `getShowcase()` (`showcase-cache.ts`), cached as one snapshot per hour and only
-read at request time, never during the build. "Get started" goes to sign-up, then straight to Stripe Checkout
-(`/signin?tab=register&callbackUrl=/upgrade`). It's the only indexed page besides `/docs` (see `robots.ts`,
+`/` is the public landing page (`src/app/page.tsx`): the hero with the free-verdict paste box and its small print,
+the platform panels (only features that are live, no "launching soon" badges), how it works, the agent API,
+pricing and FAQ. Since 2026-10-30 there is no product showcase and no live counters (the catalog is all branded,
+so every product reads "Avoid (brand-restricted)"), and every price is shown in £: credits are the ledger's unit
+only, never shown (1 credit = £0.50; helpers `gbp`, `creditsGbp`, `balanceGbp` in `src/server/billing/plans.ts`).
+"Get started" goes to sign-up, then to the Dossier terminal. It's the only indexed page besides `/docs` (see `robots.ts`,
 `sitemap.ts`, `opengraph-image.tsx`). Signed-in visitors never see it: `src/proxy.ts` sends anyone with a session
 cookie to `/dashboard`.
 
-`/dashboard` — the catalog, **Pro only**. Signed out → sign-in; Free → the Pro offer plus the showcase dossiers.
+`/dashboard` — the catalog, **Pro only**. Signed out → sign-in; Free → the Pro offer and a link to the terminal.
 Ranked product cards (`product-card.tsx`): square photo from `Product.imageUrl` (plain `<img>`, lazy, no referrer;
 a brand-monogram tile when there's no photo or it fails to load), brand, title, overall score with its confidence
 badge, best current price, the Value score, the margin summary, and "N sources" plus "Trends" when Google
@@ -116,9 +116,8 @@ Deploy code changes to it with `railway up --service refresh --detach`. The Goog
 
 | | Signed out / Free | Pro (£29/month) or Agency (£149/month) |
 | --- | --- | --- |
-| Landing page showcase and its dossiers | ✓ | ✓ |
 | Catalog (`/dashboard`, `/api/products`) | — (sign-in / Pro offer; API 401 / 403) | ✓ |
-| Any product's dossier (`/dossier/[slug]`) | samples and showcased products only | ✓ |
+| Any product's dossier (`/dossier/[slug]`) | samples only | ✓ |
 | Submit product URLs (`/api/ingest`) | — (401 / 403) | ✓ |
 
 - **Sign-in** (Auth.js v5, `/signin` with "Sign in" / "Create account" tabs): email + password, or a

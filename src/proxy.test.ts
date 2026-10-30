@@ -40,16 +40,15 @@ describe("proxy: signed-in visitors skip the landing page", () => {
 describe("canViewDossier", () => {
   const free = { id: "u1", email: "me@example.com", tier: "FREE" as const };
   const pro = { ...free, tier: "PRO" as const };
-  const live = { isSample: false, showcased: false };
+  const live = { isSample: false };
 
   it("opens any product to Pro", () => {
     expect(canViewDossier(pro, live)).toBe(true);
   });
 
-  it("opens samples and showcased live products to everyone", () => {
+  it("opens only the sample products to everyone else: nothing live is showcased", () => {
     for (const v of [null, free]) {
-      expect(canViewDossier(v, { isSample: true, showcased: false })).toBe(true);
-      expect(canViewDossier(v, { isSample: false, showcased: true })).toBe(true);
+      expect(canViewDossier(v, { isSample: true })).toBe(true);
       expect(canViewDossier(v, live)).toBe(false);
     }
   });

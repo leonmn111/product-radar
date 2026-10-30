@@ -3,9 +3,9 @@ import Link from "next/link";
 import { ContactEmail, Detail, LegalPage, legalLink, type LegalSection } from "@/components/legal/LegalPage";
 import { LEGAL } from "@/lib/legal";
 import { SITE_URL } from "@/lib/site";
-import { CREDIT_PACKS, CREDIT_VALUE_PENCE, PLANS, planPriceLabel, STANDARD_DOSSIER_CREDITS } from "@/server/billing/plans";
+import { balanceGbp, CREDIT_PACKS, creditsGbp, gbp, PLANS, planPriceLabel, STANDARD_DOSSIER_CREDITS } from "@/server/billing/plans";
 
-const DESCRIPTION = "The terms for using ProductRadar: plans, credits, refunds, third-party data and your rights.";
+const DESCRIPTION = "The terms for using ProductRadar: plans, your balance, refunds, third-party data and your rights.";
 export const metadata: Metadata = {
   title: "Terms of Service — ProductRadar",
   description: DESCRIPTION,
@@ -13,10 +13,9 @@ export const metadata: Metadata = {
   openGraph: { title: "Terms of Service — ProductRadar", description: DESCRIPTION, url: `${SITE_URL}/terms` },
 };
 
-const gbp = (pence: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: pence % 100 ? 2 : 0 }).format(pence / 100);
 const packs = Object.values(CREDIT_PACKS)
-  .map((p) => `${p.name} ${gbp(p.pricePence)} for ${p.credits} credits`)
-  .join(", ");
+  .map((p) => `${p.name}: pay ${gbp(p.pricePence)}, get ${balanceGbp(p.credits)}`)
+  .join("; ");
 
 const SECTIONS: LegalSection[] = [
   {
@@ -70,8 +69,8 @@ const SECTIONS: LegalSection[] = [
     ),
   },
   {
-    id: "plans-and-credits",
-    title: "Plans, credits and payment",
+    id: "plans-and-payment",
+    title: "Plans, your balance and payment",
     body: (
       <>
         <ul>
@@ -80,9 +79,10 @@ const SECTIONS: LegalSection[] = [
             {planPriceLabel(PLANS.agency)}. Subscriptions renew every month until you cancel.
           </li>
           <li>
-            <strong>Credits.</strong> Credits pay for searches and Dossiers: 1 credit is worth {gbp(CREDIT_VALUE_PENCE)}. A search costs 1 credit, and a Standard
-            Dossier costs {STANDARD_DOSSIER_CREDITS.FREE} credits ({STANDARD_DOSSIER_CREDITS.PRO} on Pro or Agency). Packs: {packs}. Credits have no cash value and can&apos;t be
-            transferred.
+            <strong>Your balance.</strong> Searches and Dossiers are paid from a prepaid balance in pounds. A search costs {creditsGbp(1)}, and a Standard
+            Dossier costs {creditsGbp(STANDARD_DOSSIER_CREDITS.FREE)} ({creditsGbp(STANDARD_DOSSIER_CREDITS.PRO)} on Pro or Agency). {PLANS.agency.name} adds{" "}
+            {balanceGbp(PLANS.agency.monthly.credits ?? 0)} to your balance each month. Top-ups: {packs}. Your balance can only be spent on ProductRadar: it has no cash
+            value and can&apos;t be transferred.
           </li>
           <li>
             <strong>Agents.</strong> The agent API is paid per request in USDC using the x402 standard, at the price shown in the request&apos;s payment
@@ -103,11 +103,11 @@ const SECTIONS: LegalSection[] = [
       <>
         <ul>
           <li>
-            <strong>Credits you&apos;ve used are non-refundable.</strong> A search that finds nothing, or a Dossier that can&apos;t be built, gives its credits
-            back automatically.
+            <strong>Balance you&apos;ve spent is non-refundable.</strong> A search that finds nothing, or a Dossier that can&apos;t be built, goes back to
+            your balance automatically.
           </li>
           <li>
-            <strong>Unused credits.</strong> You can ask for a refund of a credit pack within 14 days of buying it, for the credits you haven&apos;t used.
+            <strong>Unused balance.</strong> You can ask for a refund of a top-up within 14 days of buying it, for the part you haven&apos;t spent.
           </li>
           <li>
             <strong>Subscriptions.</strong> Cancel any time from your account page. You keep access until the end of the month you&apos;ve paid for, and we
@@ -191,8 +191,8 @@ const SECTIONS: LegalSection[] = [
     title: "Availability and changes to the service",
     body: (
       <p>
-        We work to keep ProductRadar available, but it may be interrupted for maintenance or because a third-party source fails. Features
-        marked &ldquo;launching soon&rdquo; aren&apos;t available yet. We may change or remove features; if a change takes away something you&apos;ve paid for,
+        We work to keep ProductRadar available, but it may be interrupted for maintenance or because a third-party source fails. We may
+        change or remove features; if a change takes away something you&apos;ve paid for,
         we&apos;ll offer a fair refund.
       </p>
     ),
@@ -219,8 +219,8 @@ const SECTIONS: LegalSection[] = [
     body: (
       <p>
         You can stop using ProductRadar and ask us to close your account at any time. We may suspend or close an account that breaks these terms;
-        unless the breach is serious, we&apos;ll tell you first and give you a chance to put it right. If we close an account without cause, we&apos;ll refund unused
-        credits.
+        unless the breach is serious, we&apos;ll tell you first and give you a chance to put it right. If we close an account without cause, we&apos;ll refund your unused
+        balance.
       </p>
     ),
   },

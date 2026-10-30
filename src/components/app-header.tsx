@@ -15,7 +15,7 @@ export function AppHeader() {
     <header className="on-dark sticky top-0 z-40 border-b border-white/10 bg-background-dark text-slate-100">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Link href="/" className={`flex items-center rounded-md ${focusRing}`}>
-          {/* Below 420 px the full logo doesn't fit beside the credits, Upgrade and account buttons: the mark does. */}
+          {/* Below 420 px the full logo doesn't fit beside the balance, Upgrade and account buttons: the mark does. */}
           <Logo priority className="max-[420px]:hidden" />
           <LogoMark className="min-[420px]:hidden" />
         </Link>

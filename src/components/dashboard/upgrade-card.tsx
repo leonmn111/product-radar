@@ -1,14 +1,15 @@
-import { PLANS } from "@/server/billing/plans";
+import { creditsGbp, gbp, PLANS, STANDARD_DOSSIER_CREDITS } from "@/server/billing/plans";
 
+const PRO_DOSSIER = creditsGbp(STANDARD_DOSSIER_CREDITS.PRO);
 const BENEFITS = [
-  "The full catalog: every live product we track, ranked",
-  "Paste any product link and get it scored in seconds",
-  "Price gaps after eBay and Shopify fees, every source linked",
-  "Supplier search and a Shopify import file for each product",
+  `Dossiers for ${PRO_DOSSIER} instead of ${creditsGbp(STANDARD_DOSSIER_CREDITS.FREE)}`,
+  `${PLANS.pro.monthly.freeSearches} free Amazon UK searches a month`,
+  "Profit calculator and supplier search",
+  "A Shopify import file for each product",
 ];
 
-/** The Pro offer, shown where a Free account would otherwise see the catalog. */
-export function UpgradeCard({ signedIn, liveProducts }: { signedIn: boolean; liveProducts?: number }) {
+/** The Pro offer, in £, shown where a Free account reaches a Pro-only page. */
+export function UpgradeCard({ signedIn }: { signedIn: boolean }) {
   return (
     <section
       aria-labelledby="upgrade-title"
@@ -17,12 +18,10 @@ export function UpgradeCard({ signedIn, liveProducts }: { signedIn: boolean; liv
       <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="max-w-2xl">
           <h2 id="upgrade-title" className="text-lg font-semibold text-slate-900 dark:text-white">
-            Unlock the full catalog with Pro
+            Pro: every Dossier for {PRO_DOSSIER}
           </h2>
           <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            {liveProducts
-              ? `Pro opens all ${liveProducts.toLocaleString("en-GB")} live products we track, each with its scores, sourced evidence and both resale fee routes.`
-              : "Pro opens every live product we track, each with its scores, sourced evidence and both resale fee routes."}
+            Check more products for less, with every UK fee, creator cut and VAT line sourced.
           </p>
           <ul className="mt-3 grid gap-1.5 text-sm text-slate-700 sm:grid-cols-2 dark:text-slate-300">
             {BENEFITS.map((b) => (
@@ -41,7 +40,7 @@ export function UpgradeCard({ signedIn, liveProducts }: { signedIn: boolean; liv
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
           <p className="text-slate-900 dark:text-white">
-            <span className="text-3xl font-semibold tracking-tight">£{PLANS.pro.pricePence / 100}</span>
+            <span className="text-3xl font-semibold tracking-tight">{gbp(PLANS.pro.pricePence)}</span>
             <span className="text-sm text-slate-600 dark:text-slate-400"> / month</span>
           </p>
           <a

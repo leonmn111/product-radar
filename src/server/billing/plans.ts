@@ -11,8 +11,19 @@ export type CreditPackId = "starter" | "growth" | "scale";
 export type PlanId = "pro" | "agency";
 export type CheckoutTier = CreditPackId | PlanId;
 
-/** 1 credit = £0.50. */
+/** 1 credit = £0.50. Credits are the ledger's unit only: the site shows every balance and price in £ (CMA). */
 export const CREDIT_VALUE_PENCE = 50;
+
+/** "£2" or "£0.50": pence as the site shows a price (pennies only when there are some). */
+export const gbp = (pence: number) =>
+  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: pence % 100 === 0 ? 0 : 2 }).format(pence / 100);
+
+/** A price held in credits, in £: 4 credits → "£2". */
+export const creditsGbp = (credits: number) => gbp(credits * CREDIT_VALUE_PENCE);
+
+/** A balance held in credits, in £ with pennies: 4 credits → "£2.00". */
+export const balanceGbp = (credits: number) =>
+  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format((credits * CREDIT_VALUE_PENCE) / 100);
 
 export type CreditPack = { id: CreditPackId; name: string; pricePence: number; credits: number };
 
@@ -45,7 +56,7 @@ export const PLANS: Record<PlanId, Plan> = {
     name: "Pro",
     pricePence: 2900,
     interval: "month",
-    description: "100 free searches a month; a Standard Dossier costs 1 credit.",
+    description: "100 free searches a month; a Standard Dossier costs £0.50 from your balance.",
     monthly: { freeSearches: 100 },
   },
   agency: {
@@ -54,7 +65,7 @@ export const PLANS: Record<PlanId, Plan> = {
     name: "Agency",
     pricePence: 14900,
     interval: "month",
-    description: "500 credits a month; a Standard Dossier costs 1 credit.",
+    description: "£250 of balance a month; a Standard Dossier costs £0.50 from it.",
     monthly: { credits: 500 },
   },
 };
@@ -113,7 +124,7 @@ export function checkoutSessionParams(
         price_data: {
           currency: CURRENCY,
           unit_amount: pack.pricePence,
-          product_data: { name: `ProductRadar ${pack.name}`, description: `${pack.credits} platform credits.` },
+          product_data: { name: `ProductRadar ${pack.name}`, description: `${balanceGbp(pack.credits)} of ProductRadar balance.` },
         },
       },
     ],

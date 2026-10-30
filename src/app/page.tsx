@@ -1,27 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 import { Navbar, type NavLink } from "@/components/layout/Navbar";
 import { HeroAssembly } from "@/components/landing/hero-assembly";
-import { LiveStats, LiveStatsSkeleton } from "@/components/landing/live-stats";
 import { PasteBox } from "@/components/landing/paste-box";
 import { Platform, PlatformSkeleton } from "@/components/landing/platform";
-import { Showcase, type ShowcaseProduct } from "@/components/landing/showcase";
 import { TiltTerminal } from "@/components/landing/tilt-terminal";
 import { TrustBento } from "@/components/landing/trust-bento";
 import { SITE_URL } from "@/lib/site";
-import { PLANS } from "@/server/billing/plans";
-import { getShowcase } from "@/server/products/showcase-cache";
+import { CREDIT_PACKS, CREDIT_VALUE_PENCE, creditsGbp, gbp, PLANS, STANDARD_DOSSIER_CREDITS } from "@/server/billing/plans";
 
 // The public landing page. Signed-in visitors never see it: src/proxy.ts sends them
-// to /dashboard. Everything here is static except the live counts and the showcase,
-// which stream in from the database (cached for about an hour).
+// to /dashboard. Everything here is static except the platform panels, which follow the
+// live configuration. No product catalog, no live counters: every price is in £ (CMA).
 // Design: the midnight-blue and mint-green tokens in globals.css (the site is dark only).
 
-const TITLE = "ProductRadar — Institutional-grade product research for Amazon & AliExpress";
+const TITLE = "ProductRadar — Know if it'll make money in the UK before you buy the stock";
 const DESCRIPTION =
-  "Product research for UK resellers: an 8-part Dossier per product with true landed margin after VAT, duty and fees, resellability checks, supplier matches and every source cited.";
+  "Paste an Amazon UK link and get Launch, Test small or Avoid free. The full Dossier shows every UK fee, creator cut, VAT and duty line, each with its source.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -33,13 +29,17 @@ export const metadata: Metadata = {
 };
 
 // Sign up: /get-started sends new accounts to the Dossier terminal once live Dossiers are on, and to
-// the dashboard (Pro offer and showcase) until then. Free to create, nothing to pay up front.
+// the dashboard (the Pro offer) until then. Free to create, nothing to pay up front.
 const GET_STARTED = "/get-started";
-const PRO_PRICE = new Intl.NumberFormat("en-GB", {
-  style: "currency",
-  currency: "GBP",
-  minimumFractionDigits: 0,
-}).format(PLANS.pro.pricePence / 100);
+const PRO_PRICE = gbp(PLANS.pro.pricePence);
+// Pay as you go, in £ (1 credit = 50p inside the ledger; the site only ever shows pounds).
+const DOSSIER_PRICE = creditsGbp(STANDARD_DOSSIER_CREDITS.FREE);
+const PRO_DOSSIER_PRICE = creditsGbp(STANDARD_DOSSIER_CREDITS.PRO);
+const SEARCH_PRICE = creditsGbp(1);
+const TOP_UPS = Object.values(CREDIT_PACKS).map((p) => {
+  const bonus = p.credits * CREDIT_VALUE_PENCE - p.pricePence;
+  return `${gbp(p.pricePence)}${bonus > 0 ? ` (+${gbp(bonus)} bonus)` : ""}`;
+});
 
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 // Midnight text on mint passes WCAG AA comfortably (about 10:1); it glows and grows on hover.
@@ -92,80 +92,43 @@ function CallToAction({ className = "" }: { className?: string }) {
 
 const SECTIONS: NavLink[] = [
   { href: "#platform", label: "Platform" },
-  { href: "#showcase", label: "Showcase" },
   { href: "#how-it-works", label: "How it works" },
   { href: "#agents", label: "For agents" },
   { href: "#pricing", label: "Pricing" },
 ];
 
-// ── Streamed sections ────────────────────────────────────────────────────────
-
-async function HeroStats() {
-  await connection(); // per request (cached ~1h), never during the build
-  const { stats } = await getShowcase();
-  return <LiveStats stats={stats} />;
-}
-
-async function ShowcaseContent() {
-  await connection();
-  const { products: all } = await getShowcase();
-  // Only the two real-price resale routes go to the browser, nothing else from the margin insight, and
-  // none at all for a product that fails a resale check: it shows its risk instead of a price gap.
-  const products: ShowcaseProduct[] = all.map(({ margin, ...p }) => ({
-    ...p,
-    margin: p.resellable && margin ? { arbitrage: margin.arbitrage, arbitrageOwnStore: margin.arbitrageOwnStore } : null,
-  }));
-  if (products.length === 0) {
-    return (
-      <p className="rounded-xl border border-dashed border-line-dark p-8 text-center text-sm text-slate-400">
-        No two stores are selling the same product at different prices right now, so there&apos;s no live price gap to
-        show. Pro members see the full catalog either way.
-      </p>
-    );
-  }
-  return <Showcase products={products} />;
-}
-
-function ShowcaseSkeleton() {
-  const block = "animate-pulse rounded-2xl bg-white/5";
-  return (
-    <div aria-hidden="true" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <div className={`h-[30rem] sm:row-span-3 lg:row-span-2 ${block}`} />
-      <div className={`h-44 lg:col-span-2 ${block}`} />
-      <div className={`h-60 ${block}`} />
-      <div className={`h-60 ${block}`} />
-    </div>
-  );
-}
-
 // ── Static content ───────────────────────────────────────────────────────────
 
 const STEPS = [
   {
-    title: "Add a product page",
-    body: "Paste a link to any product in a store. ProductRadar reads the price, star rating and review count from the page itself, and adds other stores and reviews as evidence.",
+    title: "Paste an Amazon UK link",
+    body: "Get Launch, Test small or Avoid free, with no account. A branded product is flagged Avoid (brand-restricted) at once, and a product that loses money before ads is Avoid too.",
     icon: "M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244",
   },
   {
-    title: "Every number gets a source",
-    body: "Each score is calculated from evidence with its link, the time it was read and a quality rating. Thin evidence lowers the confidence, and the dossier says so.",
+    title: "Open the full Dossier",
+    body: "Every UK fee, the creator cut, VAT and duty, line by line, each with its source, the time it was read and a quality rating. Thin evidence is withheld, never guessed.",
     icon: "M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z",
   },
   {
-    title: "Decide with both fee routes",
-    body: "See what a price gap between stores is worth after eBay fees and after Shopify card fees. Then find suppliers and export a draft Shopify listing.",
+    title: "Decide before you buy stock",
+    body: "See the most a sale can spend on ads and still break even, the matched AliExpress suppliers, and export a draft Shopify listing when it's worth testing.",
     icon: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z",
   },
 ];
 
 const PRO_FEATURES = [
+  `Dossiers for ${PRO_DOSSIER_PRICE} each instead of ${DOSSIER_PRICE}, paid from your balance`,
   "100 free Amazon UK searches a month",
-  "Standard Dossiers for 1 credit instead of 4",
-  "The full catalog: every live product we track, ranked",
-  "Add any product page and get it scored in seconds",
-  "Price gaps after eBay and Shopify fees, every source linked",
   "Profit calculator, supplier search and a Shopify import file",
   "Cancel any time from your account page",
+];
+
+const PAYG_FEATURES = [
+  "Your first Dossier is free when you sign up",
+  `${DOSSIER_PRICE} per Dossier, ${SEARCH_PRICE} per search`,
+  `Top up ${TOP_UPS.join(", ")}`,
+  "A search that finds nothing, or a Dossier that can't be built, costs nothing",
 ];
 
 const AGENT_FEATURES = [
@@ -180,20 +143,20 @@ const FAQ: { q: string; a: ReactNode }[] = [
     a: "No. Verdicts and margins are rule-based: fixed formulas applied to cited evidence. The same evidence always gives the same result, and every Dossier lists the evidence behind it.",
   },
   {
+    q: "What do Launch, Test small and Avoid mean?",
+    a: "Launch: the evidence is strong and the profit is proven with every cost counted. Test small: nothing argues against it, but the profit isn't proven yet, so try a small order first. Avoid: it loses money before ads, it's a branded product (Avoid (brand-restricted): reselling a brand needs its invoice, and dropshipping it risks a store ban), or the evidence argues against it. Not enough evidence: we say what's missing instead of guessing.",
+  },
+  {
     q: "Where do the numbers come from?",
-    a: "Amazon UK listings and prices come live from Rainforest API, and supplier prices live from AliExpress's official Drop Shipping API. VAT and duty follow GOV.UK and EU customs rules, and platform fees their published fee schedules, each one linked. Every number keeps its source link, the time it was read and a quality rating. Sales-rank history for Momentum is added once our Keepa connection is live.",
+    a: "Amazon UK listings and prices come live from Rainforest API, and supplier prices live from AliExpress's official Drop Shipping API. VAT and duty follow GOV.UK rules, and platform fees their published fee schedules, each one linked. Every number keeps its source link, the time it was read and a quality rating.",
   },
   {
     q: "What does the landed margin include?",
-    a: "The Amazon UK selling price, the AliExpress unit cost, import duty and VAT for the UK or an EU market, the selling platform's fees, and the break-even ad cost per sale. Shipping is counted when the supplier quotes it. Anything that can't be sourced is listed as left out, never guessed.",
+    a: "The Amazon UK selling price, the AliExpress unit cost, UK VAT and duty, TikTok Shop UK's 9% commission and £0.50 self-ship fee, the 15% creator cut, and the most a sale can spend on ads and still break even. Shipping is counted when the supplier quotes it. Anything that can't be sourced is listed as left out, never guessed.",
   },
   {
-    q: "What are the two fee routes in the showcase?",
-    a: "When two stores sell a product that passes the resale checks at different prices, the showcase works out what you'd keep reselling it on eBay, and what you'd keep in your own Shopify shop after card fees. A product flagged High IP Risk shows no price gap. Its prices are captured from the store pages, and each fee rule links to its source. Shipping, VAT and advertising aren't included there.",
-  },
-  {
-    q: "What's a credit?",
-    a: "Credits pay for searches and Dossiers. A new account's first Standard Dossier is free. After that, a search costs 1 credit and a Standard Dossier 4, or 1 on Pro, and Pro includes 100 free searches a month. A search that finds nothing, or a Dossier that can't be built, costs nothing. Every Dossier you buy stays in your library, and reopening one is free.",
+    q: "What does it cost?",
+    a: `Signing up is free, and your first Dossier is free. After that a Dossier is ${DOSSIER_PRICE} and a search ${SEARCH_PRICE}, paid from a balance you top up in pounds: ${TOP_UPS.join(", ")}. On Pro (${PRO_PRICE} a month) a Dossier is ${PRO_DOSSIER_PRICE} and 100 searches a month are free. A search that finds nothing, or a Dossier that can't be built, costs nothing. Every Dossier you buy stays in your library, and reopening one is free.`,
   },
   {
     q: "Can I cancel?",
@@ -252,29 +215,19 @@ export default function Home() {
                   Live Dossier Terminal · Amazon UK and AliExpress
                 </p>
                 {/* Each phrase wraps as a unit; the smallest phones get a touch less than text-5xl so it fits. */}
-                <h1 id="hero-title" className="mt-7 text-[2.6rem] leading-[1.05] font-extrabold tracking-tighter text-balance text-white max-[400px]:text-[2.15rem] sm:text-5xl lg:text-6xl">
-                  <span className="inline-block">Institutional-Grade</span>{" "}
-                  <span className="inline-block text-accent-mint">E-Commerce Intelligence</span>
+                <h1 id="hero-title" className="mt-7 text-[2.4rem] leading-[1.08] font-extrabold tracking-tighter text-balance text-white max-[400px]:text-[2.05rem] sm:text-5xl lg:text-[3.5rem]">
+                  Know if it&apos;ll make money in the UK <span className="text-accent-mint">— before you buy the stock.</span>
                 </h1>
                 <p className="mt-6 max-w-2xl text-lg/8 text-slate-300 sm:text-xl/8">
-                  The Live Dossier Terminal turns an Amazon UK product into an 8-part Dossier, built on demand from live data:
-                  the true landed margin after VAT, duty, fees and ads, whether you can legally resell it, the best AliExpress
-                  supplier matches, and every number cited. Thin evidence is withheld, never guessed.
+                  Paste an Amazon UK link. Get Launch, Test small or Avoid free, then open the full Dossier: every UK fee,
+                  creator cut, VAT and duty line, each with its source.
                 </p>
-                {/* The one action: paste a product, get its verdict free. */}
+                {/* The one action: paste a product, get its verdict free. Its small print sits right under the button. */}
                 <PasteBox />
-                <p className="mt-6 font-mono text-[11px] tracking-widest text-slate-400 uppercase">
-                  UK + EU margins · 8 parts · every number cited · confidence-gated
-                </p>
               </div>
               <TiltTerminal>
                 <HeroAssembly />
               </TiltTerminal>
-            </div>
-            <div className="mx-auto mt-16 max-w-5xl">
-              <Suspense fallback={<LiveStatsSkeleton />}>
-                <HeroStats />
-              </Suspense>
             </div>
           </div>
         </section>
@@ -302,29 +255,9 @@ export default function Home() {
                 Create a free account
                 <Arrow />
               </Link>
-              <p className="text-sm text-slate-400">Searches cost 1 credit (Pro: 100 free a month). A Dossier is 4 credits, or 1 on Pro.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Showcase */}
-        <section id="showcase" aria-labelledby="showcase-title" className="scroll-mt-16 py-16 sm:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl">
-              <p className={eyebrow}>Live showcase</p>
-              <h2 id="showcase-title" className={`mt-2 ${sectionTitle}`}>
-                The margin engine, on real products
-              </h2>
-              <p className="mt-4 text-lg/8 text-slate-400">
-                Real prices captured from real stores, checked for IP and compliance risk before any money maths. A
-                branded product is flagged High IP Risk and gets no margin, so you never source one that could get your
-                store banned. Click the card for the full dossier.
+              <p className="text-sm text-slate-400">
+                A Dossier is {DOSSIER_PRICE} ({PRO_DOSSIER_PRICE} on Pro), a search {SEARCH_PRICE} (Pro: 100 free a month). Your first Dossier is free.
               </p>
-            </div>
-            <div className="mt-10">
-              <Suspense fallback={<ShowcaseSkeleton />}>
-                <ShowcaseContent />
-              </Suspense>
             </div>
           </div>
         </section>
@@ -441,11 +374,31 @@ export default function Home() {
             <div className="mx-auto max-w-2xl text-center">
               <p className={eyebrow}>Pricing</p>
               <h2 id="pricing-title" className={`mt-2 ${sectionTitle}`}>
-                One plan for people, pay-per-request for agents
+                Every price in pounds, before you pay
               </h2>
             </div>
-            <div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-5">
-              <div className="flex flex-col rounded-2xl bg-surface-dark p-6 shadow-xl ring-2 shadow-black/30 ring-accent-mint sm:p-8 lg:col-span-3">
+            <div className="mx-auto mt-12 grid max-w-6xl gap-6 lg:grid-cols-3">
+              <div className="flex flex-col rounded-2xl bg-white/[0.03] p-6 ring-1 ring-line-dark sm:p-8">
+                <h3 className="text-lg font-semibold text-white">Pay as you go</h3>
+                <p className="mt-4 flex items-baseline gap-1">
+                  <span className="text-5xl font-semibold tracking-tight text-white">{DOSSIER_PRICE}</span>
+                  <span className="text-sm text-slate-400">/ Dossier</span>
+                </p>
+                <ul className="mt-6 space-y-3 text-sm text-slate-300">
+                  {PAYG_FEATURES.map((f) => (
+                    <li key={f} className="flex gap-3">
+                      <Check />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-auto pt-8">
+                  <Link href={GET_STARTED} className={`w-full ${secondaryButton}`}>
+                    Create a free account
+                  </Link>
+                </div>
+              </div>
+              <div className="flex flex-col rounded-2xl bg-surface-dark p-6 shadow-xl ring-2 shadow-black/30 ring-accent-mint sm:p-8">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-lg font-semibold text-white">Pro</h3>
                   <span className="rounded-full bg-accent-mint/10 px-2.5 py-1 text-xs font-semibold text-accent-mint ring-1 ring-accent-mint/30 ring-inset">
@@ -464,13 +417,15 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <Link href={GET_STARTED} className={`group mt-8 w-full ${primaryButton}`}>
-                  Create a free account
-                  <Arrow />
-                </Link>
-                <p className="mt-3 text-center text-xs text-slate-400">Free to create · upgrade any time</p>
+                <div className="mt-auto pt-8">
+                  <Link href={GET_STARTED} className={`group w-full ${primaryButton}`}>
+                    Create a free account
+                    <Arrow />
+                  </Link>
+                  <p className="mt-3 text-center text-xs text-slate-400">Free to create · upgrade any time</p>
+                </div>
               </div>
-              <div className="flex flex-col rounded-2xl bg-white/[0.03] p-6 ring-1 ring-line-dark sm:p-8 lg:col-span-2">
+              <div className="flex flex-col rounded-2xl bg-white/[0.03] p-6 ring-1 ring-line-dark sm:p-8">
                 <h3 className="text-lg font-semibold text-white">Agent API</h3>
                 <p className="mt-4 text-2xl font-semibold tracking-tight text-white">Pay per request</p>
                 <p className="mt-1 text-sm text-slate-400">in USDC, with no subscription</p>

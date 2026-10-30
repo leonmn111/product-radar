@@ -172,7 +172,7 @@ async function AccountContent({ searchParams }: { searchParams: SearchParams }) 
           role="status"
           className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-900 ring-1 ring-emerald-600/20 ring-inset dark:bg-emerald-950/30 dark:text-emerald-200 dark:ring-emerald-400/30"
         >
-          Payment received. Your credits are added as soon as Stripe confirms it, usually within seconds: the balance is at the top of the page.
+          Payment received. Your balance is topped up as soon as Stripe confirms it, usually within seconds: it&apos;s at the top of the page.
         </p>
       )}
       {params.checkout === "cancelled" && (

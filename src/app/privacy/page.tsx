@@ -36,8 +36,8 @@ const SECTIONS: LegalSection[] = [
           back into the password.
         </li>
         <li>
-          <strong>Your plan and purchases:</strong> your plan, its renewal date, your Stripe customer reference, your credit balance and a record of every
-          credit purchase, spend and refund, the Dossiers you&apos;ve bought and any bulk uploads (the product IDs in them).
+          <strong>Your plan and purchases:</strong> your plan, its renewal date, your Stripe customer reference, your balance and a record of every
+          top-up, spend and refund, the Dossiers you&apos;ve bought and any bulk uploads (the product IDs in them).
         </li>
         <li>
           <strong>Searches:</strong> we count how many searches you run, to apply Pro&apos;s free allowance. We don&apos;t store what you searched for.
@@ -65,7 +65,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <ul>
         <li>
-          <strong>To provide the service you signed up for</strong> (your account, plan, credits, Dossiers, receipts): <em>contract</em>.
+          <strong>To provide the service you signed up for</strong> (your account, plan, balance, Dossiers, receipts): <em>contract</em>.
         </li>
         <li>
           <strong>To keep ProductRadar secure</strong> and prevent fraud and abuse: <em>legitimate interests</em>.
@@ -136,7 +136,7 @@ const SECTIONS: LegalSection[] = [
     title: "How long we keep it",
     body: (
       <ul>
-        <li>Your account, its Dossiers and credit history: until you ask us to close your account.</li>
+        <li>Your account, its Dossiers and balance history: until you ask us to close your account.</li>
         <li>Purchase and payment records: six years, as UK tax law requires, even after an account closes.</li>
         <li>Server logs: kept briefly by our host for security, then deleted.</li>
       </ul>

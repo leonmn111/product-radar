@@ -98,8 +98,8 @@ describe("POST /api/stripe/webhook", () => {
     const again = await send(completed(pack()));
     expect((await again.json()).result).toBe("already_credited");
     // The receipt went out once, for the first delivery only.
-    expect(sent.map((e) => [e.to, e.subject])).toEqual([["user_1@example.com", "Receipt: Growth Pack, 55 credits (£25.00)"]]);
-    expect(sent[0].text).toContain("55 credits");
+    expect(sent.map((e) => [e.to, e.subject])).toEqual([["user_1@example.com", "Receipt: Growth Pack, £25.00 top-up"]]);
+    expect(sent[0].text).toContain("£27.50");
     expect(sent[0].text).toContain("http://localhost:3457/library");
     expect(balance("user_1")).toBe(55); // the repeat's increment was rolled back with its transaction
     expect(mem.ledger).toEqual([{ userId: "user_1", kind: "PURCHASE", delta: 55, balanceAfter: 55, stripeSessionId: "cs_test_growth", reference: "growth" }]);
@@ -177,15 +177,15 @@ describe("POST /api/stripe/webhook: Agency renewals", () => {
       { userId: "agency_1", kind: "GRANT", delta: 500, balanceAfter: before + 500, stripeInvoiceId: "in_agency_oct", reference: "plan:agency" },
     ]);
     const renewal = sent.filter((e) => e.to === "agency_1@example.com");
-    expect(renewal.map((e) => e.subject)).toEqual(["Your Agency plan renewed: 500 credits added"]);
+    expect(renewal.map((e) => e.subject)).toEqual(["Your Agency plan renewed: £250.00 added to your balance"]);
     expect(renewal[0].text).toContain("£149.00");
-    expect(renewal[0].text).toContain(`${before + 500} credits`);
+    expect(renewal[0].text).toContain(new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format((before + 500) / 2));
     expect(renewal[0].text).toContain("PR-0001");
   });
 
   it("grants the first month too, welcoming the new subscriber", async () => {
     await send(invoicePaid(invoice({ id: "in_agency_first", billing_reason: "subscription_create" })));
-    expect(sent.at(-1)?.subject).toBe("Welcome to Agency: 500 credits added");
+    expect(sent.at(-1)?.subject).toBe("Welcome to Agency: £250.00 added to your balance");
   });
 
   it("knows an untagged Agency invoice by its £149 subscription line", async () => {

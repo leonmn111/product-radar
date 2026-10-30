@@ -29,8 +29,7 @@ export const canViewCatalog = (v: Viewer) => v !== null && PAID_TIERS.includes(v
 export const canExportToShopify = (v: Viewer) => v !== null && PAID_TIERS.includes(v.tier);
 
 /**
- * Open one product's dossier page. Pro sees any product; everyone else sees the
- * sample products and the live products featured on the public landing page.
+ * Open one product's dossier page. Pro sees any product; everyone else sees the sample products only.
+ * Nothing live is showcased publicly (the catalog is all branded: "Avoid (brand-restricted)").
  */
-export const canViewDossier = (v: Viewer, product: { isSample: boolean; showcased: boolean }) =>
-  product.isSample || product.showcased || canViewLiveData(v);
+export const canViewDossier = (v: Viewer, product: { isSample: boolean }) => product.isSample || canViewLiveData(v);

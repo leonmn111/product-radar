@@ -8,11 +8,12 @@ import { DossierLibrary } from "@/components/DossierLibrary";
 import { db } from "@/lib/db";
 import { getViewer } from "@/server/auth/entitlements";
 import { freeSearchesLeft } from "@/server/billing/allowances";
+import { balanceGbp } from "@/server/billing/plans";
 import { creditPacksOnSale } from "@/server/billing/sales";
 
 export const metadata: Metadata = {
   title: "Dossier library — ProductRadar",
-  description: "Your plan, your credits and every Dossier you've bought.",
+  description: "Your plan, your balance and every Dossier you've bought.",
   robots: { index: false, follow: false },
 };
 
@@ -31,7 +32,7 @@ async function AccountStrip() {
   if (!user) redirect("/signin?callbackUrl=%2Flibrary");
   const free = await freeSearchesLeft(db, viewer.id);
   return (
-    <section aria-label="Your plan and credits" className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 shadow-sm sm:grid-cols-4 dark:border-line-dark dark:bg-surface-raised">
+    <section aria-label="Your plan and balance" className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 shadow-sm sm:grid-cols-4 dark:border-line-dark dark:bg-surface-raised">
       <div className="bg-white p-3 dark:bg-background-dark">
         <p className={stat}>Plan</p>
         <p className="mt-1">
@@ -41,8 +42,8 @@ async function AccountStrip() {
         </p>
       </div>
       <div className="bg-white p-3 dark:bg-background-dark">
-        <p className={stat}>Credits</p>
-        <p className="mt-1 font-mono text-2xl font-bold tabular-nums">{user.platformCredits}</p>
+        <p className={stat}>Balance</p>
+        <p className="mt-1 font-mono text-2xl font-bold tabular-nums">{balanceGbp(user.platformCredits)}</p>
       </div>
       <div className="bg-white p-3 dark:bg-background-dark">
         <p className={stat}>Free searches left</p>

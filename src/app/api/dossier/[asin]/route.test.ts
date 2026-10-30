@@ -163,13 +163,13 @@ describe("POST /api/dossier/{asin}", () => {
   it("returns the credits when the product doesn't exist or a source fails", async () => {
     const user = viewer(8);
     const missing = await call("B0NOTHERE1");
-    expect([missing.status, (await missing.json()).message]).toEqual([404, "Amazon UK has no priced product B0NOTHERE1. Your 4 credits were returned."]);
+    expect([missing.status, (await missing.json()).message]).toEqual([404, "Amazon UK has no priced product B0NOTHERE1. Your £2 was returned to your balance."]);
     vi.mocked(retail.product).mockRejectedValueOnce(new SourceError("rainforest", "timed out"));
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
     const failed = await call();
     expect([failed.status, (await failed.json()).message]).toEqual([
       503,
-      "A data source (rainforest) didn't answer properly, so no Dossier was built. Try again in a few minutes. Your 4 credits were returned.",
+      "A data source (rainforest) didn't answer properly, so no Dossier was built. Try again in a few minutes. Your £2 was returned to your balance.",
     ]);
     errors.mockRestore();
     expect(credits(user)).toBe(8);

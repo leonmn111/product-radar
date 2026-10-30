@@ -15,7 +15,7 @@ import { ownedDossier } from "@/services/library";
 
 export const metadata: Metadata = {
   title: "Dossier terminal — ProductRadar",
-  description: "Run a Standard Dossier for any Amazon UK product, paid in credits.",
+  description: "Run a Standard Dossier for any Amazon UK product, paid in pounds from your balance.",
   robots: { index: false, follow: false },
 };
 

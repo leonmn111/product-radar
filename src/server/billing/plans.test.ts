@@ -49,7 +49,7 @@ describe("checkoutSessionParams", () => {
       cancel_url: "https://theproductradar.io/account?checkout=cancelled",
     });
     expect(p.line_items).toEqual([
-      { quantity: 1, price_data: { currency: "gbp", unit_amount: 2500, product_data: { name: "ProductRadar Growth Pack", description: "55 platform credits." } } },
+      { quantity: 1, price_data: { currency: "gbp", unit_amount: 2500, product_data: { name: "ProductRadar Growth Pack", description: "£27.50 of ProductRadar balance." } } },
     ]);
   });
 

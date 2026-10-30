@@ -13,7 +13,6 @@ import { db } from "@/lib/db";
 import { canIngest, canViewCatalog, canViewDossier, getViewer } from "@/server/auth/entitlements";
 import { liveSupplierSource } from "@/server/live/config";
 import { getProductBySlug, type ProductDto } from "@/server/products/service";
-import { getShowcase } from "@/server/products/showcase-cache";
 import { getCatalogMargin } from "@/services/catalogMargin";
 
 type Params = PageProps<"/dossier/[slug]">["params"];
@@ -97,8 +96,8 @@ function ProductSummary({ product: p }: { product: ProductDto }) {
   );
 }
 
-/** A live product outside the public showcase, opened by a Free account. */
-function LockedDossier({ name, liveProducts }: { name: string; liveProducts: number }) {
+/** A live product, opened by an account without Pro. */
+function LockedDossier({ name }: { name: string }) {
   return (
     <div className="space-y-6">
       <div>
@@ -107,7 +106,7 @@ function LockedDossier({ name, liveProducts }: { name: string; liveProducts: num
           This product&apos;s dossier is part of the Pro catalog.
         </p>
       </div>
-      <UpgradeCard signedIn liveProducts={liveProducts} />
+      <UpgradeCard signedIn />
     </div>
   );
 }
@@ -127,11 +126,9 @@ async function DossierContent({ params }: { params: Params }) {
   const [viewer, product] = await Promise.all([getViewer(), getProductBySlug(db, slug)]);
   if (!product) notFound();
 
-  const showcase = await getShowcase();
-  const showcased = showcase.products.some((p) => p.id === product.id);
-  if (!canViewDossier(viewer, { isSample: product.isSample, showcased })) {
+  if (!canViewDossier(viewer, { isSample: product.isSample })) {
     if (!viewer) redirect(`/signin?callbackUrl=${encodeURIComponent(`/dossier/${slug}`)}`);
-    return <LockedDossier name={product.name} liveProducts={showcase.stats.products} />;
+    return <LockedDossier name={product.name} />;
   }
 
   const pro = canViewCatalog(viewer);
@@ -144,12 +141,6 @@ async function DossierContent({ params }: { params: Params }) {
         <span aria-hidden="true">←</span> {pro ? "Back to catalog" : "Back to ProductRadar"}
       </Link>
       <ProductSummary product={product} />
-      {showcased && !pro && (
-        <p className="rounded-lg bg-accent-mint/10 px-4 py-3 text-sm text-slate-900 ring-1 ring-accent-mint/30 ring-inset">
-          <strong className="font-semibold">Free preview.</strong> This live product is open to everyone. Pro opens a
-          dossier like this for every product in the catalog.
-        </p>
-      )}
       <Suspense
         fallback={
           <div aria-hidden="true" className="space-y-4">

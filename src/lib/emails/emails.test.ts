@@ -14,9 +14,9 @@ describe("CreditPurchaseReceipt", () => {
     libraryUrl: "https://theproductradar.io/library",
   });
 
-  it("states the pack, credits added, amount paid and new balance", () => {
-    expect(r.subject).toBe("Receipt: Growth Pack, 55 credits (£25.00)");
-    for (const s of ["Growth Pack", "+55", "£25.00", "59 credits", "2026-10-16 12:30 UTC", "cs_live_123"]) {
+  it("states the pack, amount paid, what it added and the new balance, all in £", () => {
+    expect(r.subject).toBe("Receipt: Growth Pack, £25.00 top-up");
+    for (const s of ["Growth Pack", "£27.50", "£25.00", "£29.50", "2026-10-16 12:30 UTC", "cs_live_123"]) {
       expect(r.html).toContain(s);
       expect(r.text).toContain(s);
     }
@@ -33,7 +33,7 @@ describe("BulkJobCompleteAlert", () => {
   it("states the job, rows processed and the refunds, with a link to the library", () => {
     const a = BulkJobCompleteAlert({ jobId: "01a1451c-85d4-70a3-8c84-89bc51b5804c", total: 100, done: 97, failed: 3, libraryUrl: "https://theproductradar.io/library" });
     expect(a.subject).toBe("Bulk job done: 97 of 100 scored");
-    for (const s of ["01a1451c-85d4-70a3-8c84-89bc51b5804c", "100 of 100", "97", "their credits were returned"]) expect(a.text).toContain(s);
+    for (const s of ["01a1451c-85d4-70a3-8c84-89bc51b5804c", "100 of 100", "97", "their cost was returned to your balance"]) expect(a.text).toContain(s);
     expect(a.html).toContain('href="https://theproductradar.io/library"');
   });
 
@@ -46,7 +46,7 @@ describe("BulkJobCompleteAlert", () => {
 });
 
 describe("SubscriptionRenewal", () => {
-  it("states the plan, credits added, amount paid, new balance, period and invoice", async () => {
+  it("states the plan, amount paid, what it added, the new balance, period and invoice, all in £", async () => {
     const { SubscriptionRenewal } = await import("./subscriptionRenewal");
     const r = SubscriptionRenewal({
       planName: "Agency",
@@ -60,8 +60,8 @@ describe("SubscriptionRenewal", () => {
       firstPeriod: false,
       libraryUrl: "https://theproductradar.io/library",
     });
-    expect(r.subject).toBe("Your Agency plan renewed: 500 credits added");
-    for (const s of ["Agency", "+500", "£149.00", "512 credits", "2026-11-01 to 2026-12-01", "PR-0002"]) {
+    expect(r.subject).toBe("Your Agency plan renewed: £250.00 added to your balance");
+    for (const s of ["Agency", "£250.00", "£149.00", "£256.00", "2026-11-01 to 2026-12-01", "PR-0002"]) {
       expect(r.html).toContain(s);
       expect(r.text).toContain(s);
     }

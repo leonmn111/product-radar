@@ -86,10 +86,10 @@ async function LiveSearch({ searchParams }: { searchParams: SearchParams }) {
   if (!canRun) {
     return (
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-surface-dark dark:ring-white/10">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Live search is coming</h2>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Search isn&apos;t available here</h2>
         <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-          We&apos;re connecting live sources (Amazon US and UK, and AliExpress suppliers). Searches open here with credit packs; AI
-          agents will be able to use the paid API at /api/agent/v2/search as soon as both sources are connected.
+          This server isn&apos;t connected to the live sources (Amazon UK and AliExpress suppliers), so nothing can be searched or
+          charged.
         </p>
       </div>
     );

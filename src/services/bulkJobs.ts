@@ -113,7 +113,7 @@ export async function processBulkJob(db: PrismaClient, jobId: string, deps: Bulk
     }
     if (error) {
       await deps.refund(job.userId, BULK_CREDITS_PER_ASIN, item.dossierId).catch((e) => console.error("[bulk] refund failed", item.id, e));
-      await db.bulkJobItem.update({ where: { id: item.id }, data: { status: "FAILED", error: `${error} Its credit was returned.` } });
+      await db.bulkJobItem.update({ where: { id: item.id }, data: { status: "FAILED", error: `${error} Its cost was returned to your balance.` } });
     } else {
       await db.bulkJobItem.update({ where: { id: item.id }, data: { status: "DONE" } });
     }

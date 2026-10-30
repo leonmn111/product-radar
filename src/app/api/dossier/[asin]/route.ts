@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { getViewer } from "@/server/auth/entitlements";
 import { createDbCreditStore, InsufficientCreditsError } from "@/server/billing/credits";
-import { STANDARD_DOSSIER_CREDITS } from "@/server/billing/plans";
+import { balanceGbp, creditsGbp, STANDARD_DOSSIER_CREDITS } from "@/server/billing/plans";
 import { liveSources } from "@/server/live/config";
 import { isSourceFailure, reportSourceFailure } from "@/server/live/unavailable";
 import { dbDossierCache } from "@/services/dossierCache";
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // Development sample data is allowed outside production only (liveSources refuses it in production).
   const live = liveSources({ allowSample: true });
   if (!live.ready) {
-    return json({ error: "live_search_unavailable", message: "Live Dossiers aren't switched on yet. No credits were used.", missing: live.missing }, 503);
+    return json({ error: "live_search_unavailable", message: "Live Dossiers aren't switched on yet. Nothing was charged.", missing: live.missing }, 503);
   }
 
   const credits = createDbCreditStore(db);
@@ -54,14 +54,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   } catch (e) {
     if (!(e instanceof InsufficientCreditsError)) throw e;
     return json(
-      { error: "insufficient_credits", message: `A Standard Dossier costs ${cost} credits; you have ${e.balance}.`, needed: cost, balance: e.balance },
+      { error: "insufficient_credits", message: `A Standard Dossier costs ${creditsGbp(cost)}; your balance is ${balanceGbp(e.balance)}.`, needed: cost, balance: e.balance },
       402,
     );
   }
 
   const fail = async (status: number, body: { error: string; message: string }) => {
     balance = await credits.refund(viewer.id, cost, id);
-    return json({ ...body, message: `${body.message} Your ${cost} credit${cost === 1 ? " was" : "s were"} returned.`, balance }, status);
+    return json({ ...body, message: `${body.message} Your ${creditsGbp(cost)} was returned to your balance.`, balance }, status);
   };
   try {
     const result = await getProductDossier(asin, {

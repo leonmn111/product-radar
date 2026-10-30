@@ -19,7 +19,7 @@ export function BulkJobCompleteAlert(d: BulkJobCompleteData): Omit<Email, "to"> 
   ];
   const subject = `Bulk job done: ${d.done} of ${d.total} scored`;
   const intro = d.failed
-    ? `Your bulk upload has finished. ${d.done} products were scored; ${d.failed} couldn't be, and their credits were returned.`
+    ? `Your bulk upload has finished. ${d.done} products were scored; ${d.failed} couldn't be, and their cost was returned to your balance.`
     : `Your bulk upload has finished. All ${d.done} products were scored.`;
   const footer = "Each Dossier is kept in your library, and reopening one is free.";
   return {
