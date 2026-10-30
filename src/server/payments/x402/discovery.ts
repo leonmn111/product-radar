@@ -113,7 +113,7 @@ const MANIFEST: ManifestEndpoint[] = [
     input: { queryParams: { q: "ceramic coffee mug" } },
     params: { queryParams: { q: { type: "string", minLength: 2, maxLength: 120, description: "What to search for" } } },
     required: { queryParams: ["q"] },
-    example: { id: "<64 hex>", product: { title: "…", market: "UK", identifiers: { asin: "B0…" } }, verdict: { status: "shown", value: { kind: "TEST", reasons: ["…"] } } },
+    example: { id: "<64 hex>", product: { title: "…", market: "UK", identifiers: { asin: "B0…" } }, verdict: { status: "shown", value: { kind: "TEST", label: "Test small", gate: null, reasons: ["…"] } } },
   },
   {
     path: "/api/agent/v2/dossier/:asin",

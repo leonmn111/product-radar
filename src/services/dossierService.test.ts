@@ -115,6 +115,38 @@ describe("buildDossier", () => {
     expect(d.evidence.some((e) => e.provider !== "rainforest" && e.provider !== "aliexpress")).toBe(false); // no fee rules cited
   });
 
+  it("G3: a branded product is Avoid (brand-restricted), with no supplier matches or supplier evidence", () => {
+    const powerBank = "Magnetic Power Bank 10000mAh for MagSafe";
+    const d = buildDossier({ ...strong, ukListings: [1, 2, 3, 4].map((n) => listing(n, 24.99, powerBank)), suppliers: [offer(1, 6, "GBP", powerBank)] }, ctx);
+    expect(d.verdict).toMatchObject({ status: "shown", value: { kind: "AVOID", label: "Avoid (brand-restricted)", gate: "G3_BRAND" } });
+    expect(d.supplierMatches).toEqual([]);
+    expect(d.product.identifiers.supplierIds).toEqual([]);
+    expect(JSON.stringify(d)).not.toMatch(/aliexpress/i);
+  });
+
+  // Regression: the INKEY moisturiser must never get anything but Avoid.
+  it("G3 regression: the INKEY moisturiser is Avoid, even on evidence too thin for any other verdict", () => {
+    const inkey = "The INKEY List Bio-Active Ceramide Moisturiser 50ml";
+    const details = { brand: "The INKEY List", sellerName: "Amazon", soldByAmazon: true, category: "Beauty", description: "A rich moisturiser with ceramides that repairs the skin barrier.", bulletPoints: [] };
+    for (const listings of [[1, 2, 3, 4], [1]]) {
+      const d = buildDossier(
+        { query: "B0MUG1", productId: "B0MUG1", details, ukListings: listings.map((n) => listing(n, 15, inkey)), suppliers: [offer(1, 2.13, "GBP", inkey), offer(2, 2.7, "GBP", inkey)] },
+        ctx,
+      );
+      expect(d.verdict).toMatchObject({ status: "shown", value: { kind: "AVOID", label: "Avoid (brand-restricted)", gate: "G3_BRAND" } });
+      expect(d.supplierMatches).toEqual([]);
+    }
+  });
+
+  it("G1: a loss before ads on the cheapest channel is Avoid, Loses £X per sale before ads", () => {
+    // £10 on TikTok Shop UK: VAT £1.67 and fees £2.50 leave £5.83, less a £9 supplier cost.
+    const d = buildDossier({ ...strong, ukListings: [1, 2, 3, 4].map((n) => listing(n, 10)), suppliers: [offer(1, 9), offer(2, 9), offer(3, 9)] }, ctx);
+    expect(d.landedMargin.status).toBe("shown");
+    expect(d.verdict).toMatchObject({ status: "shown", value: { kind: "AVOID", label: "Avoid", gate: "G1_PROFIT" } });
+    if (d.verdict.status !== "shown") throw new Error("unreachable");
+    expect(d.verdict.value.reasons[0]).toMatch(/^Loses £3\.17 per sale before ads: /);
+  });
+
   it("shows the verdict but no numbers between 0.5 and 0.7", () => {
     const d = buildDossier({ ...strong, ukListings: strong.ukListings.slice(0, 2), suppliers: [offer(1, 2.1)] }, ctx);
     expect(d.verdict.confidence).toBeGreaterThanOrEqual(0.5);
@@ -251,6 +283,9 @@ describe("fetchProductDossierData (real recorded Amazon UK responses)", () => {
     expect(d.resellability.brandDirect).toMatchObject({ value: true, evidenceIds: ["rainforest:amazon.co.uk:B0CH33F5P2:page"] });
     expect(d.resellability.brandDirect.reason).toContain('the seller "UGREEN GROUP LIMITED UK" is the brand "UGREEN"');
     expect(d.landedMargin).toMatchObject({ status: "withheld", reason: "Not Sellable" });
+    // G3: the seller is the brand, so no supplier was ever searched.
+    expect(supplier.search).not.toHaveBeenCalled();
+    expect(d.verdict).toMatchObject({ value: { label: "Avoid (brand-restricted)" } });
   });
 
   it("is null when Amazon UK has no such product, after one call", async () => {

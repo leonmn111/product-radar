@@ -10,6 +10,7 @@ import { useId, useRef, useState, type FormEvent } from "react";
 import { parseAmazonUkLink } from "@/server/live/amazonLink";
 import type { FreeVerdict } from "@/types/freeVerdict";
 import { RISK_BADGE, RISK_SHORT_NOTE } from "../dashboard/resellability";
+import { VerdictPill } from "../verdict-pill";
 
 type State =
   | { kind: "idle" }
@@ -18,12 +19,6 @@ type State =
   | { kind: "done"; result: FreeVerdict };
 
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
-
-const PILL: Record<"LAUNCH" | "TEST" | "AVOID", { label: string; tone: string }> = {
-  LAUNCH: { label: "LAUNCH", tone: "bg-accent-mint text-on-accent" },
-  TEST: { label: "TEST · start small", tone: "bg-amber-400 text-background-dark" },
-  AVOID: { label: "AVOID", tone: "bg-rose-400 text-background-dark" },
-};
 
 function Result({ result: r }: { result: FreeVerdict }) {
   const v = r.verdict;
@@ -36,10 +31,8 @@ function Result({ result: r }: { result: FreeVerdict }) {
       <p className="mt-2 line-clamp-2 font-semibold text-white">{r.title}</p>
       {v.status === "shown" ? (
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <span className={`rounded-full px-3 py-1 font-mono text-xs font-bold tracking-wider ${PILL[v.kind].tone}`}>
-            {PILL[v.kind].label}
-            {r.risk && ` · ${RISK_BADGE[r.risk]}`}
-          </span>
+          <VerdictPill tier={v.kind} gate={v.gate} />
+          {r.risk === "compliance" && <span className="text-sm font-semibold text-white">{RISK_BADGE.compliance}</span>}
           <span className="text-sm text-slate-300">
             Confidence <span className="font-semibold text-white tabular-nums">{v.confidence.toFixed(2)}</span>
           </span>
@@ -47,7 +40,7 @@ function Result({ result: r }: { result: FreeVerdict }) {
       ) : (
         <div className="mt-4">
           <p className="text-sm text-slate-300">
-            <span className="font-semibold text-white">No verdict yet:</span> the evidence is too thin (confidence {v.confidence.toFixed(2)}, a verdict needs 0.5). Missing:
+            <VerdictPill tier="WITHHELD" className="mr-2 align-middle" /> the evidence is too thin (confidence {v.confidence.toFixed(2)}, a verdict needs 0.5). Missing:
           </p>
           <ul className="mt-1 list-disc pl-5 text-sm text-slate-400">
             {v.missing.map((m) => (

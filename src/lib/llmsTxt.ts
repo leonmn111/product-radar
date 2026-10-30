@@ -21,7 +21,8 @@ export function llmsTxt(): string {
 
 > Product research for UK and EU sellers. ProductRadar builds an 8-part Dossier for an Amazon UK product: verdict, resellability, landed margin, momentum, saturation, supplier matches, evidence and exports. The landed margin is calculated after VAT, import duty, marketplace fees and advertising, from live Amazon UK and AliExpress prices: every number cites its source, and a part below its confidence gate is withheld, never estimated.
 
-- A verdict (LAUNCH, TEST or AVOID) is shown at 0.5 confidence or more; every number (margins, momentum, saturation, scores) needs 0.7.
+- A verdict (LAUNCH, TEST or AVOID; on screen Launch, Test small, Avoid) is shown at 0.5 confidence or more, otherwise "Not enough evidence"; every number (margins, momentum, saturation, scores) needs 0.7.
+- Two hard gates decide first: a brand or trademark is AVOID "Avoid (brand-restricted)" (gate G3_BRAND) with no supplier matches, even below 0.5; a loss before ads on the cheapest modelled channel is AVOID "Loses £X per sale before ads" (gate G1_PROFIT).
 - Scores, verdicts and margins are calculated estimates, not guarantees.
 - Branded and brand-restricted products are flagged as not sellable and get no margin.
 - AI agents pay per request in USDC over x402 (HTTP 402): no account or API key.

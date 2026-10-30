@@ -6,17 +6,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getHistory, type LibraryEntry } from "@/lib/apiClient";
+import { VerdictPill } from "./verdict-pill";
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-mint";
 const muted = "text-slate-600 dark:text-slate-400";
 const num = "font-mono tabular-nums";
-const VERDICT: Record<LibraryEntry["verdict"], string> = {
-  LAUNCH: "text-emerald-700 ring-emerald-600/30 bg-emerald-50 dark:text-emerald-300 dark:ring-emerald-400/30 dark:bg-emerald-400/10",
-  TEST: "text-amber-800 ring-amber-600/30 bg-amber-50 dark:text-amber-300 dark:ring-amber-400/30 dark:bg-amber-400/10",
-  AVOID: "text-red-700 ring-red-600/30 bg-red-50 dark:text-red-300 dark:ring-red-400/30 dark:bg-red-400/10",
-  WITHHELD: "text-slate-700 ring-slate-400/40 bg-gray-100 dark:text-slate-300 dark:ring-slate-500/40 dark:bg-surface-raised",
-};
 const utc = (iso: string | null) => (iso ? `${iso.slice(0, 10)} ${iso.slice(11, 16)}` : "—");
 
 type State = { kind: "loading" } | { kind: "error"; message: string } | { kind: "ready"; items: LibraryEntry[] };
@@ -95,9 +90,7 @@ export function DossierLibrary() {
                       {d.sample && <span className="font-mono text-[10px] text-amber-700 uppercase dark:text-amber-300">sample data</span>}
                     </td>
                     <td className="px-3 py-2">
-                      <span className={`inline-flex rounded-sm px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider uppercase ring-1 ring-inset ${VERDICT[d.verdict]}`}>
-                        {d.verdict}
-                      </span>
+                      <VerdictPill tier={d.verdict} size="sm" />
                     </td>
                     <td className={`px-3 py-2 text-right ${num}`}>{d.confidence === null ? "—" : d.confidence.toFixed(2)}</td>
                     <td className={`px-3 py-2 text-right whitespace-nowrap ${num}`}>{utc(d.generatedAt)}</td>

@@ -7,6 +7,7 @@
 // cites, and the real gates (0.5 for a verdict, 0.7 for numbers). Real verdicts come from the paste box.
 
 import type { CSSProperties } from "react";
+import { VerdictPill } from "../verdict-pill";
 
 // Each kind of evidence a Dossier cites, and where it comes from.
 const EVIDENCE: [string, string][] = [
@@ -94,8 +95,8 @@ export function HeroAssembly() {
         {/* 4. The verdict */}
         <div className="flex items-center justify-between gap-3 border-t border-line-dark pt-3">
           <span className="text-slate-400">Verdict</span>
-          <span className="assemble rounded-full bg-amber-400 px-3 py-1 text-xs font-bold tracking-wider text-background-dark" style={step("assemble-pop", AT.verdict, 380)}>
-            TEST · start small
+          <span className="assemble inline-flex" style={step("assemble-pop", AT.verdict, 380)}>
+            <VerdictPill tier="TEST" size="sm" />
           </span>
         </div>
       </div>

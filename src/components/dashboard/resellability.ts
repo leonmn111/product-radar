@@ -1,6 +1,7 @@
-// The five resellability checks (engine/compliance.ts), in plain words. No imports, so both the
+// The five resellability checks (engine/compliance.ts), in plain words. No server imports, so both the
 // server-side margin service and the browser can use it.
 
+import { brandRestricted } from "@/engine/verdict";
 import type { ResellabilityFlags } from "@/types/dossier";
 
 export const RESELLABILITY_LABEL: Record<keyof ResellabilityFlags, string> = {
@@ -19,13 +20,14 @@ export const trippedChecks = (flags: ResellabilityFlags) =>
 
 /**
  * What a failed resale check means for a seller. "ip": a brand or trademark is involved, so wholesale
- * needs the brand's invoice and dropshipping or private label risks a store ban. "compliance": no brand
+ * needs the brand's invoice and dropshipping or private label risks a store ban: gate G3, the verdict is
+ * "Avoid (brand-restricted)" and no supplier links are shown (engine/verdict.ts). "compliance": no brand
  * problem, but the goods are regulated (UKCA marking, cosmetics rules, batteries). null: no check failed.
  */
 export type ResaleRisk = "ip" | "compliance" | null;
 
 export function resaleRisk(flags: ResellabilityFlags): ResaleRisk {
-  if (flags.trademarkRisk.value === true || flags.brandDirect.value === true) return "ip";
+  if (brandRestricted(flags)) return "ip";
   if (flags.requiresUKCA.value === true || flags.cosmetics.value === true || flags.batteries.value === true) return "compliance";
   return null;
 }
@@ -49,22 +51,18 @@ export const RISK_SHORT_NOTE: Record<NonNullable<ResaleRisk>, string> = {
 
 // ── Warnings on premium features for a product that fails a resale check (owner's wording) ──────────
 
-/** High IP Risk: the supplier side is similar, unbranded alternatives, never the brand itself (owner's wording). */
-export const ALTERNATIVES_WARNING =
-  "⚠️ High IP Risk: Dropshipping this exact brand risks a store ban. Data below is based on sourcing similar, unbranded alternatives.";
-export const ALTERNATIVES_LABEL = "Similar / White-Label Alternatives";
-
-/** Above the calculator. */
+/** Above the calculator. For a brand-restricted product the seller enters the brand's wholesale price. */
 export const CALCULATOR_WARNING: Record<NonNullable<ResaleRisk>, string> = {
-  ip: ALTERNATIVES_WARNING,
+  ip: "⚠️ HIGH IP RISK: Dropshipping this brand risks a store ban. Margins shown are for authorized wholesale only.",
   compliance: "⚠️ REGULATED GOODS: Selling without the right UK safety marking and paperwork can get listings removed. Margins shown assume a compliant supply.",
 };
 
-/** On the supplier search. */
-export const SUPPLIER_WARNING: Record<NonNullable<ResaleRisk>, string> = {
-  ip: "⚠️ Unauthorized Suppliers: Sourcing branded goods here carries high counterfeit risk.",
-  compliance: "⚠️ Regulated goods: check each supplier's UKCA or CE marking and safety paperwork before you buy.",
-};
+/** On the supplier search, for regulated goods. */
+export const SUPPLIER_WARNING_COMPLIANCE = "⚠️ Regulated goods: check each supplier's UKCA or CE marking and safety paperwork before you buy.";
+
+/** In place of the supplier search for a brand-restricted product (gate G3): no supplier links at all. */
+export const NO_SUPPLIERS_NOTE =
+  "No supplier links for brand-restricted products. If you resell this brand, buy only from the brand or its authorised distributor, with an invoice.";
 
 /** The confirmation before the Shopify file downloads. */
 export const EXPORT_CONFIRM: Record<NonNullable<ResaleRisk>, string> = {

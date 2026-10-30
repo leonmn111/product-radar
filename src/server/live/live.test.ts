@@ -5,7 +5,7 @@ import { SourceError } from "@/server/sources/types";
 import { BudgetExceededError, QueryBudget } from "./budget";
 import { CONFIDENCE_GATE, confidenceOf } from "./confidence";
 import { liveMargin } from "./margin";
-import { searchTermFor, similarityScore, stem, SUPPLIER_MATCH_MIN, supplierMatchScore, titleSimilarity } from "./match";
+import { searchTermFor, SUPPLIER_MATCH_MIN, supplierMatchScore, titleSimilarity } from "./match";
 import { groupSameProduct, runLiveSearch } from "./search";
 import type { Market, RetailListing, SupplierOffer } from "./types";
 
@@ -192,16 +192,5 @@ describe("runLiveSearch", () => {
   it("groups listings of the same product, most corroborated first", () => {
     const groups = groupSameProduct([listing("Aluminium Laptop Stand", 30), listing(product, 21), listing(`${product} Portable`, 22)]);
     expect(groups.map((g) => g.length)).toEqual([2, 1]);
-  });
-});
-
-describe("similarity for alternatives (High IP Risk only)", () => {
-  it("compares word stems, so spellings and word forms agree", () => {
-    expect(stem("moisturiser")).toBe(stem("moisturizer"));
-    expect(stem("moisturising")).toBe(stem("moisturizing"));
-    expect(stem("cases")).toBe("case");
-    expect(stem("colour")).toBe(stem("color"));
-    expect(similarityScore("Bio-Active Ceramide Moisturiser", "Ceramide Barrier Moisturizer Panthenol")).toBe(0.5);
-    expect(supplierMatchScore("Bio-Active Ceramide Moisturiser", "Ceramide Barrier Moisturizer Panthenol")).toBe(0.25); // the strict rule is unchanged
   });
 });

@@ -147,7 +147,7 @@ const DOSSIER_SHAPE = json({
   product: { title: "<Amazon UK title>", query: "ceramic coffee mug", market: "UK", country: "GB", currency: "GBP", identifiers: { asin: "<ASIN>" } },
   sample: false,
   notes: ["<what isn't covered, in plain words>"],
-  verdict: { status: "shown", confidence: "<0.5–1>", value: { kind: "LAUNCH | TEST | AVOID", reasons: ["…"] }, evidenceIds: ["…"] },
+  verdict: { status: "shown", confidence: "<0.5–1>", value: { kind: "LAUNCH | TEST | AVOID", label: "Launch | Test small | Avoid | Avoid (brand-restricted)", gate: "G1_PROFIT | G3_BRAND | null", reasons: ["…"] }, evidenceIds: ["…"] },
   resellability: { brandDirect: { value: "<true | false | null>", reason: "…", evidenceIds: ["…"] }, trademarkRisk: "…", requiresUKCA: "…", cosmetics: "…", batteries: "…" },
   landedMargin: {
     status: "shown",
@@ -555,7 +555,7 @@ console.log(margin.status === "shown" ? margin.value.uk.netProfit : margin.missi
           <Table
             head={["Part", "Gate", "What it holds"]}
             rows={[
-              [<Part key="v">verdict</Part>, "0.5", "LAUNCH, TEST or AVOID, with plain-words reasons"],
+              [<Part key="v">verdict</Part>, "0.5", "LAUNCH (Launch), TEST (Test small) or AVOID (Avoid), with plain-words reasons. Two hard gates come first: a brand or trademark is AVOID, \"Avoid (brand-restricted)\" (G3), with no supplier matches; a loss before ads is AVOID, \"Loses £X per sale before ads\" (G1). Withheld reads \"Not enough evidence\"."],
               [<Part key="r">resellability</Part>, "none", "Brand-direct seller, trademark risk, UKCA/CE marking, cosmetics and battery rules: each true, false or not checkable, with its reason"],
               [
                 <Part key="l">landedMargin</Part>,

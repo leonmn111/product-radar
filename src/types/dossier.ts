@@ -55,8 +55,15 @@ export type Gated<T> =
 
 export type VerdictKind = "LAUNCH" | "TEST" | "AVOID";
 
+/** The hard gate behind an Avoid (engine/verdict.ts): G3 a brand or trademark, G1 a loss before ads. */
+export type VerdictGate = "G1_PROFIT" | "G3_BRAND";
+
 export interface Verdict {
   kind: VerdictKind;
+  /** On screen: "Launch", "Test small", "Avoid" or "Avoid (brand-restricted)". Absent on Dossiers built before 2026-10-30. */
+  label: string;
+  /** The hard gate that decided an Avoid, or null. Absent on Dossiers built before 2026-10-30. */
+  gate: VerdictGate | null;
   reasons: string[]; // plain-words reasons, each backed by the parts it cites
 }
 

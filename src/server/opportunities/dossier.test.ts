@@ -67,6 +67,8 @@ const product = (over: Partial<ProductDto> = {}) =>
     offers: [offer],
     evidenceCount: evidence.length,
     evidence,
+    resellable: true,
+    resaleRisk: null,
     ...over,
   }) as ProductDto;
 
@@ -106,12 +108,24 @@ describe("agent dossier", () => {
 
   it("strips the store name from the title and builds supplier searches and a Shopify draft", () => {
     expect(d.product.name).toBe("Kestrel Buds Pro");
-    expect(d.sourcing.searchUrls.aliexpress).toContain("aliexpress.com");
+    expect(d.sourcing.searchUrls?.aliexpress).toContain("aliexpress.com");
     expect(d.shopifyImportCsv).toContain('"draft"');
   });
 
-  it("gives no verdict without an overall score", () => {
+  it("says Not enough evidence without an overall score", () => {
     const bare = buildDossier(product({ bestOffer: null, margin: null, offers: [], scores: {} }));
-    expect(bare.verdict).toBeNull();
+    expect(bare.verdict).toMatchObject({ kind: "WITHHELD", label: "Not enough evidence", gate: null });
+  });
+
+  it("never proves a profit here, so never says Launch", () => {
+    const strong = buildDossier(product({ scores: { OVERALL: score(70, 0.8), QUALITY: score(80, 0.8), DEMAND: score(60, 0.8), VALUE: score(70, 0.8) } }));
+    expect(strong.verdict).toMatchObject({ kind: "TEST", label: "Test small" });
+  });
+
+  it("G3: a branded product is Avoid (brand-restricted), with no supplier links at all", () => {
+    const branded = buildDossier(product({ resellable: false, resaleRisk: "ip", scores: { OVERALL: score(70, 0.8), QUALITY: score(80, 0.8) } }));
+    expect(branded.verdict).toMatchObject({ kind: "AVOID", label: "Avoid (brand-restricted)", gate: "G3_BRAND" });
+    expect(branded.sourcing).toMatchObject({ keywords: null, searchUrls: null });
+    expect(JSON.stringify(branded)).not.toMatch(/aliexpress|alibaba/i);
   });
 });

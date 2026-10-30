@@ -57,7 +57,7 @@ describe("DossierTerminal", () => {
     const d = build(4, 2);
     expect(d.landedMargin.status).toBe("shown");
     const out = html(d);
-    expect(out).toContain(">TEST<");
+    expect(out).toContain("Test small</span>");
     expect(out).toContain("Net profit per unit");
     expect(out).toContain("£12.99");
     expect(out).not.toContain("VERDICT WITHHELD");
@@ -69,6 +69,7 @@ describe("DossierTerminal", () => {
     expect(d.verdict.status).toBe("withheld");
     const out = html(d);
     expect(out).toContain("VERDICT WITHHELD: Insufficient Market Evidence");
+    expect(out).toContain("Not enough evidence</span>");
     expect(out).toContain('data-testid="margin-blurred"');
     expect(out).toMatch(/aria-hidden="true" class="[^"]*blur-sm/);
     expect(out).not.toContain("Net profit per unit");

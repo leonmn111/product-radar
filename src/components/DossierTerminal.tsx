@@ -9,10 +9,12 @@
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import { FINANCIAL_THRESHOLD, VERDICT_THRESHOLD } from "@/engine/confidence";
-import type { ComplianceFlag, Dossier, Evidence, Gated, Momentum, ResellabilityFlags, VerdictKind } from "@/types/dossier";
+import { brandRestricted } from "@/engine/verdict";
+import type { ComplianceFlag, Dossier, Evidence, Gated, Momentum, ResellabilityFlags } from "@/types/dossier";
 import type { LandedMargin, LineBasis, Money } from "@/types/financials";
 import { roundRatings } from "./dashboard/format";
-import { complianceNote, IP_RISK_NOTE, resaleRisk, RISK_BADGE } from "./dashboard/resellability";
+import { complianceNote, IP_RISK_NOTE, NO_SUPPLIERS_NOTE, resaleRisk, RISK_BADGE } from "./dashboard/resellability";
+import { VerdictPill } from "./verdict-pill";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
@@ -105,16 +107,11 @@ function BlurredMargin() {
 
 // ── Parts ────────────────────────────────────────────────────────────────────
 
-const VERDICT_TEXT: Record<VerdictKind, string> = {
-  LAUNCH: "text-emerald-700 dark:text-emerald-300",
-  TEST: "text-amber-700 dark:text-amber-300",
-  AVOID: "text-red-700 dark:text-red-300",
-};
-
-function VerdictPanel({ verdict }: { verdict: Dossier["verdict"] }) {
+function VerdictPanel({ verdict, flags }: { verdict: Dossier["verdict"]; flags: ResellabilityFlags }) {
   if (verdict.status === "withheld") {
     return (
       <div className="space-y-3">
+        <VerdictPill tier="WITHHELD" />
         <div role="note" className="rounded-sm border-l-4 border-amber-500 bg-amber-50 px-3 py-2 dark:border-amber-400 dark:bg-amber-400/10">
           <p className="font-mono text-xs font-bold tracking-wide text-amber-900 dark:text-amber-200">VERDICT WITHHELD: Insufficient Market Evidence</p>
           <p className="mt-1 text-xs text-amber-900 dark:text-amber-100">
@@ -126,10 +123,12 @@ function VerdictPanel({ verdict }: { verdict: Dossier["verdict"] }) {
     );
   }
   const v = verdict.value;
+  // Dossiers built before the hard gates (2026-10-30) carry no gate: a brand's Avoid is still G3.
+  const gate = v.gate ?? (v.kind === "AVOID" && brandRestricted(flags) ? "G3_BRAND" : null);
   return (
     <div className="space-y-2">
-      <p className="flex items-baseline gap-3">
-        <span className={`font-mono text-3xl font-bold tracking-tight ${VERDICT_TEXT[v.kind]}`}>{v.kind}</span>
+      <p className="flex flex-wrap items-center gap-3">
+        <VerdictPill tier={v.kind} gate={gate} />
         <span className={`text-xs ${muted}`}>
           confidence <span className={num}>{conf(verdict.confidence)}</span>
         </span>
@@ -305,7 +304,9 @@ function SaturationPanel({ saturation }: { saturation: Dossier["saturation"] }) 
   );
 }
 
-function SuppliersPanel({ matches }: { matches: Dossier["supplierMatches"] }) {
+function SuppliersPanel({ matches, restricted }: { matches: Dossier["supplierMatches"]; restricted: boolean }) {
+  // Gate G3: never a supplier link for a brand-restricted product, even on a Dossier built before the gate.
+  if (restricted) return <p className="text-xs font-semibold">{NO_SUPPLIERS_NOTE}</p>;
   if (matches.length === 0) return <p className={`text-xs ${muted}`}>No supplier listing matches this product.</p>;
   return (
     <div className="overflow-x-auto">
@@ -442,7 +443,7 @@ export function DossierTerminal({ dossier }: { dossier: Dossier }) {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Panel n={1} title="Verdict" status={gateTag(d.verdict)}>
-          <VerdictPanel verdict={d.verdict} />
+          <VerdictPanel verdict={d.verdict} flags={d.resellability} />
         </Panel>
         <Panel n={2} title="Resellability" status={tripped ? <Tag tone="bad">{RISK_BADGE[resaleRisk(d.resellability) ?? "ip"]}</Tag> : <Tag tone="ok">Clear</Tag>}>
           <ResellabilityPanel flags={d.resellability} />
@@ -456,8 +457,13 @@ export function DossierTerminal({ dossier }: { dossier: Dossier }) {
         <Panel n={5} title="Saturation" status={gateTag(d.saturation)}>
           <SaturationPanel saturation={d.saturation} />
         </Panel>
-        <Panel n={6} title="Supplier matches" status={<Tag tone={d.supplierMatches.length ? "ok" : "off"}>{d.supplierMatches.length} of 3</Tag>} className="md:col-span-2">
-          <SuppliersPanel matches={d.supplierMatches} />
+        <Panel
+          n={6}
+          title="Supplier matches"
+          status={brandRestricted(d.resellability) ? <Tag tone="bad">Brand-restricted</Tag> : <Tag tone={d.supplierMatches.length ? "ok" : "off"}>{d.supplierMatches.length} of 3</Tag>}
+          className="md:col-span-2"
+        >
+          <SuppliersPanel matches={d.supplierMatches} restricted={brandRestricted(d.resellability)} />
         </Panel>
         <Panel n={7} title="Evidence" status={<Tag tone="off">{d.evidence.length === 1 ? "1 item" : `${d.evidence.length} items`}</Tag>} className="md:col-span-2 xl:col-span-3">
           <EvidencePanel evidence={d.evidence} />

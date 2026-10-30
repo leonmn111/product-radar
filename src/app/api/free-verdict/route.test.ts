@@ -48,7 +48,7 @@ const dossier = (verdict: Dossier["verdict"]): Dossier =>
     resellability: flags(),
     landedMargin: { status: "shown", confidence: 0.8, value: { uk: { netProfit: { amount: 5.63, currency: "GBP" } } }, evidenceIds: [] },
   }) as unknown as Dossier;
-const shown = dossier({ status: "shown", confidence: 0.82, value: { kind: "TEST", reasons: ["£5.63 net per unit (21% of the price)"] }, evidenceIds: [] });
+const shown = dossier({ status: "shown", confidence: 0.82, value: { kind: "TEST", label: "Test small", gate: null, reasons: ["£5.63 net per unit (21% of the price)"] }, evidenceIds: [] });
 
 beforeEach(() => {
   vi.mocked(liveSources).mockReturnValue({ ready: true, sample: false, sources: {} as never });
@@ -82,7 +82,7 @@ describe("POST /api/free-verdict", () => {
     expect(body).toEqual({
       asin: "B0TESTMUG1",
       title: "Plain White Ceramic Coffee Mug 350ml",
-      verdict: { status: "shown", kind: "TEST", confidence: 0.82 },
+      verdict: { status: "shown", kind: "TEST", gate: null, confidence: 0.82 },
       evidenceCount: 2,
       supplierMatches: 1,
       risk: null,

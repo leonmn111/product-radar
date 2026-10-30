@@ -24,7 +24,7 @@ const STATUS_TONE: Record<Status, string> = {
 };
 
 const PARTS: [string, string][] = [
-  ["01", "Verdict: LAUNCH / TEST / AVOID"],
+  ["01", "Verdict: Launch / Test small / Avoid"],
   ["02", "Resellability: brand, trademark, UKCA, batteries"],
   ["03", "True landed margin: VAT, duty, fees, ROI"],
   ["04", "Momentum: 12-week sales trend"],

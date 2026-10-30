@@ -65,30 +65,3 @@ export function supplierMatchScore(productTitle: string, supplierTitle: string):
   if (keySpecs.length && offerSpecs.length && !keySpecs.some((s) => offer.has(s))) return 0;
   return key.filter((t) => offer.has(t)).length / key.length;
 }
-
-/**
- * Looser, for similar alternatives (a High IP Risk product's unbranded lookalikes): the same one-way share
- * of the product's key words, but comparing word stems, so British and American spellings and word forms
- * count as one word ("moisturiser", "moisturizer", "moisturising"; "mixer", "mixers", "mixing"). Sizes and
- * specs both titles state must still agree.
- */
-export function similarityScore(productTitle: string, offerTitle: string): number {
-  const key = [...new Set(searchTermFor(productTitle).split(" ").filter(Boolean).map(stem))];
-  const offer = new Set([...tokens(offerTitle)].map(stem));
-  if (key.length === 0 || offer.size === 0) return 0;
-  const keySpecs = key.filter(hasDigit);
-  const offerSpecs = [...offer].filter(hasDigit);
-  if (keySpecs.length && offerSpecs.length && !keySpecs.some((s) => offer.has(s))) return 0;
-  return key.filter((t) => offer.has(t)).length / key.length;
-}
-
-/**
- * A light English stem, the same on both sides of a comparison: British -is- spellings to -iz-, -our to -or,
- * a plural s off, then -ation, -ing or -er ("moisturisers" → "moisturiz", "cases" → "case", "mixing" → "mix").
- */
-export function stem(word: string): string {
-  if (hasDigit(word) || word.length <= 4) return word;
-  let w = word.replace(/is(e|es|ed|er|ers|ing|ation|ations)$/, "iz$1").replace(/our$/, "or");
-  if (w.endsWith("s") && !w.endsWith("ss")) w = w.slice(0, -1);
-  return w.replace(/(ation|ing|er)$/, "") || w;
-}

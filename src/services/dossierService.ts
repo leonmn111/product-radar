@@ -15,6 +15,9 @@
 // Gates (CLAUDE.md Rule 5): below 0.5 the Verdict is withheld; below 0.7 the margin, momentum and
 // saturation are withheld as "Insufficient Data". A product that isn't sellable gets its failure
 // reasons in Resellability and no financial calculation at all. Nothing withheld is estimated.
+// The verdict's hard gates (engine/verdict.ts) come first: G3, a brand-restricted product is "Avoid
+// (brand-restricted)" even below 0.5, with no supplier matches or supplier evidence in its Dossier; G1, a
+// loss before ads on the cheapest modelled channel is "Avoid", "Loses £X per sale before ads".
 
 import { checkResellability, isSellable } from "@/engine/compliance";
 import { calculateConfidence, FINANCIAL_THRESHOLD, VERDICT_THRESHOLD } from "@/engine/confidence";
@@ -23,6 +26,7 @@ import { calculateEUMargin, calculateUKMargin } from "@/engine/margin";
 import { calculateMomentum } from "@/engine/momentum";
 import { POLICY_EVIDENCE } from "@/engine/policy";
 import { expandQuery } from "@/engine/synonyms";
+import { BRAND_RESTRICTED_REASON, brandRestricted, launchReady, profitGate, verdictLabel } from "@/engine/verdict";
 import { QueryBudget } from "@/server/live/budget";
 import { median } from "@/server/live/margin";
 import { searchTermFor, SUPPLIER_MATCH_MIN, supplierMatchScore } from "@/server/live/match";
@@ -34,8 +38,6 @@ import type { DossierCacheStore } from "@/services/dossierCache";
 import type { Dossier, Evidence, Gated, LandedMargins, Momentum, ResellabilityFlags, Saturation, SupplierMatch, SupplierMatches, Verdict } from "@/types/dossier";
 import type { CostInput, FeeStack, ReturnsInput } from "@/types/financials";
 
-const LAUNCH_MIN_MARGIN_PCT = 25; // net margin, % of the retail price
-const LAUNCH_MIN_ROI_PCT = 50; // net profit ÷ landed cost
 const CORROBORATED = 4; // listings of one product that clear the numbers gate on their own (engine/confidence.ts)
 
 // ── Input ────────────────────────────────────────────────────────────────────
@@ -101,6 +103,20 @@ async function searchWithSynonyms(
   return [...byId.values()];
 }
 
+/** The resale checks on a listing's own text (and its product page, when it was read). */
+function listingFlags(title: string, details: Omit<RetailProductDetail, "listing"> | null | undefined, evidenceIds: string[]): ResellabilityFlags {
+  return checkResellability({
+    title,
+    brand: details?.brand ?? null,
+    sellerName: details?.sellerName ?? null,
+    category: details?.category ?? null,
+    description: details?.description ?? null,
+    bulletPoints: details?.bulletPoints ?? null,
+    market: "UK",
+    evidenceIds,
+  });
+}
+
 /**
  * Supplier offers for a product. A supplier source that fails (token refused or expired, network,
  * rate limit, the query's budget) throws: it is never read as "no supplier matches", which would turn an
@@ -114,7 +130,7 @@ function supplierOffers(title: string, supplier: SupplierSource, budget: QueryBu
 /**
  * Searches Amazon UK for the query (and its synonyms when too few listings agree), picks the product
  * most listings agree on, and asks the supplier source for it. Default budget: 3 calls, which is the
- * search, one synonym search at most, and the supplier search.
+ * search, one synonym search at most, and the supplier search (none for a brand-restricted product).
  */
 export async function fetchDossierData(
   query: string,
@@ -125,7 +141,8 @@ export async function fetchDossierData(
   const terms = expandQuery(query);
   const ukListings = await searchWithSynonyms(terms.length ? terms : [query], sources.retail, budget, maxExtraSearches, (ls) => groupSameProduct(ls)[0]?.length ?? 0, [], notes);
   const top = groupSameProduct(ukListings)[0];
-  const suppliers = top ? await supplierOffers(top[0].title, sources.supplier, budget) : [];
+  // G3: a brand-restricted product's suppliers are never searched.
+  const suppliers = top && !brandRestricted(listingFlags(top[0].title, null, [])) ? await supplierOffers(top[0].title, sources.supplier, budget) : [];
   return { query, ukListings, suppliers, notes };
 }
 
@@ -152,7 +169,8 @@ export async function fetchProductDossierData(
   } catch (e) {
     notes.push(`The search for other listings of this product failed (${failure(e)}), so only its own page was used.`);
   }
-  const suppliers = await supplierOffers(listing.title, sources.supplier, budget);
+  // G3: a brand-restricted product's suppliers are never searched.
+  const suppliers = brandRestricted(listingFlags(listing.title, details, [])) ? [] : await supplierOffers(listing.title, sources.supplier, budget);
   return { query: asin, productId: listing.id, details, ukListings, suppliers, notes };
 }
 
@@ -188,32 +206,28 @@ const medianInput = (items: { price: number; evidenceId: string }[]): CostInput 
   evidenceIds: items.map((i) => i.evidenceId),
 });
 
-function decideVerdict(args: {
-  confidence: number;
-  flags: ResellabilityFlags;
-  supplierCount: number;
-  margins: LandedMargins | null;
-}): Verdict {
+function decideVerdict(args: { flags: ResellabilityFlags; supplierCount: number; margins: LandedMargins | null }): Verdict {
+  const verdict = (kind: Verdict["kind"], reasons: string[], gate: Verdict["gate"] = null): Verdict => ({ kind, label: verdictLabel(kind, gate), gate, reasons });
   const blocked = tripped(args.flags);
-  if (blocked.length) return { kind: "AVOID", reasons: blocked.map(([name, f]) => `${name}: ${f.reason}`) };
-  if (args.supplierCount === 0) return { kind: "AVOID", reasons: ["No exact supplier match found: no AliExpress listing carries at least 80% of this product's key words, so it can't be sourced from there."] };
+  // G3, before anything else: a brand or trademark.
+  if (brandRestricted(args.flags)) return verdict("AVOID", [BRAND_RESTRICTED_REASON, ...blocked.map(([name, f]) => `${name}: ${f.reason}`)], "G3_BRAND");
+  if (blocked.length) return verdict("AVOID", blocked.map(([name, f]) => `${name}: ${f.reason}`));
+  if (args.supplierCount === 0) return verdict("AVOID", ["No exact supplier match found: no AliExpress listing carries at least 80% of this product's key words, so it can't be sourced from there."]);
   const uk = args.margins?.uk;
-  if (!uk) {
-    return { kind: "TEST", reasons: ["Sellable and matched to a supplier, but the evidence is too thin to show the numbers yet."] };
+  if (!uk) return verdict("TEST", ["Sellable and matched to a supplier, but the evidence is too thin to show the numbers yet."]);
+  // G1: a loss before ads on the cheapest UK channel modelled (the Dossier's market).
+  const loss = profitGate([uk]);
+  if (loss) {
+    return verdict("AVOID", [`${loss.reason}: VAT, fees and the supplier cost come to more than its £${uk.retailPrice.amount.toFixed(2)} price.`], "G1_PROFIT");
   }
   const profit = `£${uk.netProfit.amount.toFixed(2)} net per unit (${uk.netMarginPct}% of the price)`;
-  if (uk.netProfit.amount <= 0) return { kind: "AVOID", reasons: [`Loses money: ${profit}.`] };
-  if (uk.complete && uk.netMarginPct >= LAUNCH_MIN_MARGIN_PCT && uk.roiPercentage >= LAUNCH_MIN_ROI_PCT) {
-    return { kind: "LAUNCH", reasons: [`${profit}, ${uk.roiPercentage}% return on landed cost, every cost accounted for.`] };
-  }
+  if (uk.netProfit.amount <= 0) return verdict("AVOID", [`Loses money once your ad cost is paid: ${profit}.`]);
+  if (launchReady(uk)) return verdict("LAUNCH", [`${profit}, ${uk.roiPercentage}% return on landed cost, every cost accounted for.`]);
   const gaps = uk.excluded.map((x) => x.label.toLowerCase());
-  return {
-    kind: "TEST",
-    reasons: [
-      `${profit}, ${uk.roiPercentage}% return on landed cost.`,
-      ...(gaps.length ? [`Not yet counted: ${gaps.join(", ")}. Test with a small order before scaling.`] : []),
-    ],
-  };
+  return verdict("TEST", [
+    `${profit}, ${uk.roiPercentage}% return on landed cost.`,
+    ...(gaps.length ? [`Not yet counted: ${gaps.join(", ")}. Test with a small order before scaling.`] : []),
+  ]);
 }
 
 /**
@@ -246,9 +260,17 @@ export function buildDossier(input: DossierInput, ctx: { id: string; now: Date; 
       })
       .filter((m) => m.title >= SUPPLIER_MATCH_MIN)
       .sort((a, b) => b.score - a.score);
-  const matched = matchIn(input.suppliers, "GBP");
-  const skippedCurrency = input.suppliers.filter((o) => o.unitPrice.currency !== "GBP").length;
+
+  // 1. Compliance first: a product that can't be resold gets no financial calculation.
+  const flags = listingFlags(lead.title, input.details, input.details ? [lead.evidence.id] : group.map((l) => l.evidence.id));
+  const sellable = isSellable(flags);
+
+  // G3: a brand-restricted product shows no supplier anywhere: no matches, no supplier evidence, no supplier ids.
+  const restricted = brandRestricted(flags);
+  const matched = restricted ? [] : matchIn(input.suppliers, "GBP");
+  const skippedCurrency = restricted ? 0 : input.suppliers.filter((o) => o.unitPrice.currency !== "GBP").length;
   if (skippedCurrency) notes.push(`${skippedCurrency} supplier offer(s) weren't priced in GBP and were left out (nothing is converted here).`);
+  if (restricted) notes.push("Brand-restricted (a brand or trademark is involved): no supplier is shown for it.");
 
   const retailEvidence = group.map((l) => toEvidence(l.evidence, "marketplace", l.price.amount));
   const historyEvidence = input.history ? [toEvidence(input.history.evidence, "marketplace", null)] : [];
@@ -261,25 +283,11 @@ export function buildDossier(input: DossierInput, ctx: { id: string; now: Date; 
     ...(m.image === null || !imageMatcher ? {} : { imageMatch: { score: m.image, method: imageMatcher.method, comparedWith: lead.evidence.id } }),
   }));
 
-  // 1. Compliance first: a product that can't be resold gets no financial calculation.
-  const d = input.details;
-  const flags = checkResellability({
-    title: lead.title,
-    brand: d?.brand ?? null,
-    sellerName: d?.sellerName ?? null,
-    category: d?.category ?? null,
-    description: d?.description ?? null,
-    bulletPoints: d?.bulletPoints ?? null,
-    market: "UK",
-    evidenceIds: d ? [lead.evidence.id] : group.map((l) => l.evidence.id),
-  });
-  const sellable = isSellable(flags);
-
   // 2. Confidence over every source, supplier evidence weighed by how well it matches.
   const confidence = calculateConfidence([...retailEvidence, ...supplierEvidence, ...historyEvidence], ctx.now);
   const evidenceGap = [
     ...(group.length < 4 ? [`more independent Amazon UK listings of this product (${group.length} found agree on it)`] : []),
-    ...(matched.length === 0 ? ["an exact supplier match (no exact supplier match found: no AliExpress listing carries 80% of the product's key words)"] : matched.length < 3 ? [`more or closer supplier matches (${matched.length} found)`] : []),
+    ...(restricted ? [] : matched.length === 0 ? ["an exact supplier match (no exact supplier match found: no AliExpress listing carries 80% of the product's key words)"] : matched.length < 3 ? [`more or closer supplier matches (${matched.length} found)`] : []),
   ];
 
   // 3. The financial gate, then the margins.
@@ -349,15 +357,17 @@ export function buildDossier(input: DossierInput, ctx: { id: string; now: Date; 
     if (input.adDuration?.method === "simulated") notes.push("Ad duration is SIMULATED (a random 0–120 days): development only, never on real data.");
   }
 
-  // 5. The verdict gate.
+  // 5. The verdict gate. G3 decides even below it: the brand check reads the listing's own text.
   const verdict: Gated<Verdict> =
-    confidence < VERDICT_THRESHOLD
+    confidence < VERDICT_THRESHOLD && !restricted
       ? withheld("Insufficient Data", confidence, evidenceGap.length ? evidenceGap : ["more evidence"])
       : {
           status: "shown",
           confidence,
-          value: decideVerdict({ confidence, flags, supplierCount: matched.length, margins }),
-          evidenceIds: [...retailEvidence, ...supplierEvidence].map((e) => e.id),
+          value: decideVerdict({ flags, supplierCount: matched.length, margins }),
+          evidenceIds: restricted
+            ? [...new Set([flags.trademarkRisk, flags.brandDirect].flatMap((f) => (f.value === true ? f.evidenceIds : [])))]
+            : [...retailEvidence, ...supplierEvidence].map((e) => e.id),
         };
 
   const supplierMatches = matched.slice(0, 3).map(

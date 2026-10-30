@@ -11,6 +11,7 @@ import { dbDossierCache } from "@/services/dossierCache";
 import { getProductDossier } from "@/services/dossierService";
 import { dbFreeVerdictQuota, utcDay } from "@/services/freeVerdicts";
 import type { Dossier } from "@/types/dossier";
+import { brandRestricted } from "@/engine/verdict";
 import type { FreeVerdict } from "@/types/freeVerdict";
 
 // POST /api/free-verdict { link } — the landing page's paste box: one Amazon UK product's verdict and its
@@ -33,7 +34,7 @@ function teaser(d: Dossier, asin: string, fromCache: boolean): FreeVerdict {
     title: d.product.title,
     verdict:
       v.status === "shown"
-        ? { status: "shown", kind: v.value.kind, confidence: v.confidence }
+        ? { status: "shown", kind: v.value.kind, gate: v.value.gate ?? (v.value.kind === "AVOID" && brandRestricted(d.resellability) ? "G3_BRAND" : null), confidence: v.confidence }
         : { status: "withheld", reason: v.reason, confidence: v.confidence, missing: v.missing },
     evidenceCount: new Set(d.evidence.map((e) => e.sourceUrl)).size, // distinct pages: one read four times counts once
     supplierMatches: d.supplierMatches.length,

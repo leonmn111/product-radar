@@ -3,25 +3,33 @@
 // every sentence in the verdict is built from the product's own scores and
 // evidence (CLAUDE.md Rule 3), and everything is presented as an estimate (Rule 4).
 
+import { VERDICT_THRESHOLD } from "@/engine/confidence";
 import { SHOPIFY_PLACEHOLDER_BODY } from "@/engine/exports";
+import {
+  BRAND_RESTRICTED_REASON,
+  contributionText,
+  LAUNCH_MIN_MARGIN_PCT,
+  LAUNCH_MIN_ROI_PCT,
+  launchReady,
+  profitGate,
+  verdictLabel,
+  type HardGate,
+  type VerdictTier,
+} from "@/engine/verdict";
 import type { ProductDto } from "@/server/products/service";
-import { humanizeSlug, type Evidence } from "./format";
+import type { Gated } from "@/types/dossier";
+import type { LandedMargin, Money } from "@/types/financials";
+import { formatPrice, humanizeSlug, type Evidence } from "./format";
 
 // ── Verdict ──────────────────────────────────────────────────────────────────
 //
-// Scores are shrunk toward a neutral 50 when evidence is thin, so in practice
-// they cluster between ~40 and ~75; thresholds are set for that range.
-
-export type VerdictKind = "HIGH_POTENTIAL" | "MODERATE_RISK" | "CROWDED_MARKET";
-
-export const VERDICT_LABEL: Record<VerdictKind, string> = {
-  HIGH_POTENTIAL: "High Potential",
-  MODERATE_RISK: "Moderate Risk",
-  CROWDED_MARKET: "Crowded Market",
-};
+// The four-tier scale and its hard gates live in engine/verdict.ts. In order:
+//   G3 brand → "Avoid (brand-restricted)"; G1 a loss before ads on the landed margin → "Avoid";
+//   below the 0.5 verdict gate → "Not enough evidence"; then the scores.
+// Scores are shrunk toward a neutral 50 when evidence is thin, so in practice they cluster between
+// ~40 and ~75; thresholds are set for that range. Launch also needs a proven profit (launchReady).
 
 export const VERDICT_RULES = {
-  minConfidence: 0.3, // below this, never more than "Moderate Risk"
   high: { overall: 62, quality: 65, minTrend: 45, minDemand: 45 },
   crowded: { demand: 60, maxValue: 55 },
   // TREND is Ad Momentum since scoring v2.0.0: 75+ is RISING (+10% active ads a month), 25 or under FALLING.
@@ -30,8 +38,10 @@ export const VERDICT_RULES = {
 } as const;
 
 export type Verdict = {
-  kind: VerdictKind;
+  kind: VerdictTier;
   label: string;
+  /** The hard gate that decided an Avoid, if one did. */
+  gate: HardGate | null;
   sentences: [string, string];
   confidence: number;
   sourceCount: number; // distinct pages behind the OVERALL score: one page read four times counts once
@@ -86,54 +96,97 @@ function factsSentence(f: Facts, trend: number | undefined): string {
   return `${joined.charAt(0).toUpperCase()}${joined.slice(1)}.`;
 }
 
-export function opportunityVerdict(p: ProductDto): Verdict | null {
+const joinList = (xs: string[]) => (xs.length === 1 ? xs[0] : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`);
+
+/**
+ * The product's verdict. `landed` is its UK landed margin (services/catalogMargin.ts) when it was
+ * calculated: G1 reads it, and Launch needs it. Without it the profit is unproven, so the best a product
+ * can get is Test small.
+ */
+export function opportunityVerdict(
+  p: Pick<ProductDto, "scores" | "evidence" | "resaleRisk">,
+  landed?: { margin: Gated<LandedMargin> } | null,
+): Verdict {
   const overall = p.scores.OVERALL;
-  if (!overall) return null;
   const v = (d: string) => p.scores[d]?.value;
   const quality = v("QUALITY");
   const demand = v("DEMAND");
   const value = v("VALUE");
   const trend = v("TREND");
   const R = VERDICT_RULES;
+  const verdict = (kind: VerdictTier, why: string, gate: HardGate | null = null): Verdict => ({
+    kind,
+    label: verdictLabel(kind, gate),
+    gate,
+    sentences: [factsSentence(evidenceFacts(p.evidence), trend), why],
+    confidence: overall?.confidence ?? 0,
+    sourceCount: overall?.sourceCount ?? 0,
+  });
 
-  let kind: VerdictKind;
-  let why: string;
-  if (overall.confidence < R.minConfidence) {
-    kind = "MODERATE_RISK";
-    why = `We only have limited evidence so far (${Math.round(overall.confidence * 100)}% confidence), so treat this as an early read rather than a green light.`;
-  } else if (demand !== undefined && demand >= R.crowded.demand && value !== undefined && value < R.crowded.maxValue) {
-    kind = "CROWDED_MARKET";
-    why = "Demand is clearly proven, but it's priced above similar products we track, so a new seller would be competing for buyers who already have strong options.";
-  } else if (
+  // G3, before anything else: a brand or trademark.
+  if (p.resaleRisk === "ip") return verdict("AVOID", BRAND_RESTRICTED_REASON, "G3_BRAND");
+
+  // G1: a loss before ads on the landed margin (shown only from 0.7 confidence).
+  const margin = landed?.margin.status === "shown" ? landed.margin.value : null;
+  const loss = margin ? profitGate([margin]) : null;
+  if (loss) {
+    const m = loss.margin;
+    return verdict(
+      "AVOID",
+      `${loss.reason}: it sells for ${formatPrice(m.retailPrice.amount.toFixed(2), m.currency)}, and VAT, fees and the supplier cost come to more, even on the cheapest channel modelled.`,
+      "G1_PROFIT",
+    );
+  }
+
+  // The verdict gate (Rule 5).
+  if (!overall) return verdict("WITHHELD", "There isn't enough evidence to score it yet.");
+  if (overall.confidence < VERDICT_THRESHOLD) {
+    return verdict(
+      "WITHHELD",
+      `We only have limited evidence so far (${Math.round(overall.confidence * 100)}% confidence; a verdict needs ${Math.round(VERDICT_THRESHOLD * 100)}%).`,
+    );
+  }
+
+  if (demand !== undefined && demand >= R.crowded.demand && value !== undefined && value < R.crowded.maxValue) {
+    return verdict(
+      "AVOID",
+      "Crowded market: demand is clearly proven, but it's priced above similar products we track, so a new seller would be competing for buyers who already have strong options.",
+    );
+  }
+  const strong =
     overall.value >= R.high.overall &&
     quality !== undefined &&
     quality >= R.high.quality &&
     (trend === undefined || trend >= R.high.minTrend) &&
-    (demand === undefined || demand >= R.high.minDemand)
-  ) {
-    kind = "HIGH_POTENTIAL";
-    why =
-      value !== undefined && value >= 60
-        ? "Strong ratings plus good value against similar products make it one of the better opportunities we track and worth testing."
-        : "Strong ratings and healthy demand make it one of the better opportunities we track and worth testing.";
-  } else {
-    kind = "MODERATE_RISK";
-    const risks: string[] = [];
-    if (trend !== undefined && trend <= R.weak.trend) risks.push("ad momentum is falling");
-    if (quality !== undefined && quality < R.weak.quality) risks.push("ratings are only middling");
-    if (demand !== undefined && demand < R.weak.demand) risks.push("demand signals are weak");
-    why = risks.length
-      ? `The main risks: ${risks.length === 1 ? risks[0] : `${risks.slice(0, -1).join(", ")} and ${risks.at(-1)}`}.`
-      : `Its overall score of ${Math.round(overall.value)}/100 shows no major red flags, but nothing that clearly stands out either.`;
+    (demand === undefined || demand >= R.high.minDemand);
+  if (strong) {
+    const signals = value !== undefined && value >= 60 ? "Strong ratings plus good value against similar products" : "Strong ratings and healthy demand";
+    const price = (m: Money) => formatPrice(m.amount.toFixed(2), m.currency);
+    if (margin && launchReady(margin)) {
+      return verdict(
+        "LAUNCH",
+        `${signals}, and it keeps ${price(margin.netProfit)} per sale (${margin.netMarginPct}% of the price, ${margin.roiPercentage}% return on cost) with every cost accounted for, ads included.`,
+      );
+    }
+    const uncounted = margin?.excluded.filter((x) => x.kind !== "ad_cost").map((x) => x.label) ?? [];
+    const proof = !margin
+      ? "the profit isn't proven yet (no landed margin clears its evidence gate)"
+      : margin.complete
+        ? `it keeps ${price(margin.netProfit)} per sale after every cost (${margin.netMarginPct}% of the price), short of the ${LAUNCH_MIN_MARGIN_PCT}% margin and ${LAUNCH_MIN_ROI_PCT}% return on cost a launch needs`
+        : `it keeps ${contributionText(margin)}, and ${uncounted.length ? `some costs aren't counted yet (${uncounted.join(", ")})` : "your ad cost per sale isn't known yet"}`;
+    return verdict("TEST", `${signals} make it one of the better opportunities we track, but ${proof}. Test with a small order first.`);
   }
 
-  return {
-    kind,
-    label: VERDICT_LABEL[kind],
-    sentences: [factsSentence(evidenceFacts(p.evidence), trend), why],
-    confidence: overall.confidence,
-    sourceCount: overall.sourceCount,
-  };
+  const risks: string[] = [];
+  if (trend !== undefined && trend <= R.weak.trend) risks.push("ad momentum is falling");
+  if (quality !== undefined && quality < R.weak.quality) risks.push("ratings are only middling");
+  if (demand !== undefined && demand < R.weak.demand) risks.push("demand signals are weak");
+  return verdict(
+    "TEST",
+    risks.length
+      ? `The main risks: ${joinList(risks)}. Test with a small order before committing.`
+      : `Its overall score of ${Math.round(overall.value)}/100 shows no major red flags, but nothing that clearly stands out either. Test with a small order first.`,
+  );
 }
 
 // ── Money inputs ─────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@ import { FINANCIAL_THRESHOLD } from "@/engine/confidence";
 import { UK_VAT_EVIDENCE } from "@/engine/policy";
 import type { SupplierOffer } from "@/server/live/types";
 import type { SupplierSource } from "@/server/sources/types";
-import { buildCatalogMargin, getCatalogMargin, memorySupplierCache, type CatalogProduct } from "./catalogMargin";
+import { BRAND_RESTRICTED_MARGIN, buildCatalogMargin, getCatalogMargin, memorySupplierCache, type CatalogProduct } from "./catalogMargin";
 
 const now = new Date("2026-10-24T12:00:00.000Z");
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000).toISOString();
@@ -62,61 +62,34 @@ const matching = [
 const source = (search: SupplierSource["search"]): SupplierSource & { search: ReturnType<typeof vi.fn> } => ({ name: "aliexpress", search: vi.fn(search) });
 
 describe("catalog landed margin: the gates", () => {
-  it("prices a branded (High IP Risk) product on similar, unbranded alternatives, searched without the brand", async () => {
-    const supplier = source(async () => [...matching, supplierOffer("1006", "Silicone Kitchen Utensils Turner Tongs Spatula Spoon", 2.4)]);
+  it("G3: never searches suppliers for a branded (High IP Risk) product, so it has no supplier links and no margin", async () => {
+    const supplier = source(async () => matching);
     const p = { ...unbranded(fourStores()), name: "KitchenPro Silicone Kitchen Utensil Set 12 Piece", brand: "KitchenPro" };
     const r = await getCatalogMargin(p, { supplier, now: () => now, cache: memorySupplierCache() });
     expect(r.resellability.trademarkRisk.value).toBe(true);
-    expect(r.basis).toBe("alternatives");
-    expect(supplier.search.mock.calls[0][0]).toBe("silicone kitchen utensil 12"); // no brand: a brand search finds counterfeits
-    expect(r.margin.status).toBe("shown");
-    // The 3-of-4-words listing is a similar alternative here; for an unbranded product it wouldn't match.
-    expect(r.supplierMatches.map((m) => m.url)).toContain("https://www.aliexpress.com/item/1006.html");
-    const exact = buildCatalogMargin(unbranded(fourStores()), { status: "found", offers: [supplierOffer("1006", "Silicone Kitchen Utensils Turner Tongs Spatula Spoon", 2.4)] }, now);
-    expect([exact.basis, exact.margin.status]).toEqual(["exact", "withheld"]);
+    expect(supplier.search).not.toHaveBeenCalled();
+    expect(r.margin).toMatchObject({ status: "withheld", reason: "Not Sellable", missing: [BRAND_RESTRICTED_MARGIN] });
+    expect(r.supplierMatches).toEqual([]);
+    expect(JSON.stringify(r)).not.toMatch(/aliexpress/i);
+    // The UK price still reaches the calculator.
+    expect(r.retail).toMatchObject({ price: 22.24, stores: 4 });
   });
 
-  it("says when no similar alternative is found for a branded product", () => {
-    const p = { ...unbranded(fourStores()), name: "KitchenPro Silicone Kitchen Utensil Set 12 Piece", brand: "KitchenPro" };
-    const r = buildCatalogMargin(p, { status: "found", offers: [matching[3]] }, now);
-    expect(r.margin.status === "withheld" && r.margin.missing[0]).toMatch(/^No similar, unbranded alternative found/);
-  });
-
-  it("keeps spare parts and dearer-than-the-brand machines out of a branded product's alternatives", () => {
-    // From a real search for the Ooni Halo Pro's brand-free words: a replacement dough hook and commercial mixers.
-    const mixer = (prices: number[]) => ({
-      ...unbranded(prices.map((p, i) => offer(`uk${i}.test`, p))),
-      name: "Ooni Halo Pro Spiral Dough Mixer",
-      brand: "Ooni",
-      category: "gadgets",
-    });
-    const offers = [
-      supplierOffer("2001", "Spiral Dough Hook Replacement for Kitchen Aid Mixer - Coated Dough Hook", 8.89),
-      supplierOffer("2002", "10L 20L 30L Spiral Dough Mixer Stainless Steel Electric for Bakery Shop", 1085.96),
-      supplierOffer("2003", "Commercial Spiral Dough Mixer Heavy Duty Industrial Flour Kneading", 2382.52),
-    ];
-    const r = buildCatalogMargin(mixer([699, 699, 699, 699]), { status: "found", offers }, now);
-    expect(r.basis).toBe("alternatives");
-    expect(r.margin.status === "withheld" && r.margin.missing[0]).toBe(
-      "No comparable alternative found: of 3 similar AliExpress listings, 2 cost more than this product sells for before VAT (a different class of product, not one to resell at its price) and 1 is a spare part or accessory, so no margin is calculated.",
-    );
-    // A home mixer priced below the brand's own price does count.
-    const withHome = buildCatalogMargin(mixer([699, 699, 699, 699]), { status: "found", offers: [...offers, supplierOffer("2004", "Spiral Dough Mixer 7L Home Kitchen Stand Mixer", 210)] }, now);
-    expect(withHome.supplierMatches.map((m) => m.url)).toEqual(["https://www.aliexpress.com/item/2004.html"]);
-  });
-
-  it("matches British and American spellings for alternatives", () => {
-    // From a real search: "Moisturiser" (UK) against "Moisturizer" (US) listings.
+  it("G3: the INKEY moisturiser gets no supplier search, whatever the suppliers would have offered", () => {
     const cream = { ...unbranded(fourStores()), name: "The INKEY List Bio-Active Ceramide Moisturiser", brand: "The INKEY List UK", category: "beauty" };
-    const r = buildCatalogMargin(cream, { status: "found", offers: [supplierOffer("3001", "Ceramide Barrier Moisturizer Panthenol Hyaluronic Acid", 2.13), supplierOffer("3002", "Ceramide Moisturizing Face Cream Skin Barrier", 2.73)] }, now);
-    expect(r.supplierMatches).toHaveLength(2);
+    const offers = [supplierOffer("3001", "Ceramide Barrier Moisturizer Panthenol Hyaluronic Acid", 2.13), supplierOffer("3002", "Bio-Active Ceramide Moisturiser", 2.73)];
+    const r = buildCatalogMargin(cream, { status: "found", offers }, now);
+    expect(r.margin.status === "withheld" && r.margin.reason).toBe("Not Sellable");
+    expect(r.supplierMatches).toEqual([]);
+    expect(r.evidence.every((e) => e.sourceType !== "supplier")).toBe(true);
   });
 
   it("keeps exact matching for a regulated but unbranded product (Compliance Gated)", () => {
     const p = { ...unbranded(fourStores()), name: "Silicone Kitchen Utensil Set 12 Piece with USB Charger" };
     const r = buildCatalogMargin(p, { status: "found", offers: matching }, now);
     expect(r.resellability.requiresUKCA.value).toBe(true);
-    expect(r.basis).toBe("exact");
+    // The utensil sets don't carry "USB charger": under the strict 80% rule they aren't this product.
+    expect(r.margin.status === "withheld" && r.margin.missing[0]).toMatch(/^No exact supplier match found/);
   });
 
   it("needs a current UK price in GBP and converts nothing", () => {

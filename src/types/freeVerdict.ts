@@ -3,7 +3,7 @@
 export type FreeVerdict = {
   asin: string;
   title: string;
-  verdict: { status: "shown"; kind: "LAUNCH" | "TEST" | "AVOID"; confidence: number } | { status: "withheld"; reason: string; confidence: number; missing: string[] };
+  verdict: { status: "shown"; kind: "LAUNCH" | "TEST" | "AVOID"; gate: "G1_PROFIT" | "G3_BRAND" | null; confidence: number } | { status: "withheld"; reason: string; confidence: number; missing: string[] };
   evidenceCount: number;
   supplierMatches: number;
   /** A failed resale check: "ip" shows as High IP Risk, "compliance" as Compliance Gated. */

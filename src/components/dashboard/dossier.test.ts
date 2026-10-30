@@ -10,6 +10,9 @@ import {
   supplierSearchUrls,
 } from "./dossier";
 import { SHOPIFY_PLACEHOLDER_BODY } from "@/engine/exports";
+import { calculateUKMargin } from "@/engine/margin";
+import { catalogResellability } from "@/services/catalogMargin";
+import { resaleRisk } from "./resellability";
 import { marginInsight } from "@/server/margins/engine";
 import { LATEST_FX } from "@/server/scoring/fx-latest";
 
@@ -46,8 +49,8 @@ function product(scores: Record<string, ReturnType<typeof score>>, evidence = [m
     isSample: true,
     rrp: null,
     bestOffer: null,
-    resellable: false,
-    resaleRisk: "ip",
+    resellable: true,
+    resaleRisk: null,
     margin: null,
     scores,
     offers: [],
@@ -58,40 +61,107 @@ function product(scores: Record<string, ReturnType<typeof score>>, evidence = [m
   } as ProductDto;
 }
 
-describe("opportunity verdict", () => {
-  it("gives no verdict without an overall score", () => {
-    expect(opportunityVerdict(product({}))).toBeNull();
+// A landed margin as the dossier's catalogMargin service shows it: sourced price and supplier cost, plus
+// whatever else is known. Every other cost is named as excluded.
+const landed = (retail: number, supplier: number, extra: Partial<Parameters<typeof calculateUKMargin>[0]> = {}) => {
+  const cost = (amount: number) => ({ amount, basis: "sourced" as const, evidenceIds: [`e-${amount}`] });
+  const value = calculateUKMargin({ retailPrice: cost(retail), supplierCost: cost(supplier), shipping: null, returns: null, adCostPerSale: null, ...extra });
+  return { margin: { status: "shown" as const, confidence: 0.8, value, evidenceIds: value.evidenceIds } };
+};
+const strongScores = { OVERALL: score(64.9), QUALITY: score(68.7), VALUE: score(84), DEMAND: score(48), TREND: score(49) };
+
+describe("opportunity verdict: the four tiers", () => {
+  it("says Not enough evidence without an overall score", () => {
+    const v = opportunityVerdict(product({}));
+    expect([v.kind, v.label]).toEqual(["WITHHELD", "Not enough evidence"]);
   });
 
-  it("rates strong quality, value and demand as High Potential", () => {
-    const v = opportunityVerdict(product({ OVERALL: score(64.9), QUALITY: score(68.7), VALUE: score(84), DEMAND: score(48), TREND: score(49) }))!;
-    expect(v.kind).toBe("HIGH_POTENTIAL");
+  it("says Not enough evidence below the 0.5 verdict gate, whatever the scores", () => {
+    const v = opportunityVerdict(product({ OVERALL: score(80, 0.2), QUALITY: score(90) }));
+    expect([v.kind, v.label]).toEqual(["WITHHELD", "Not enough evidence"]);
+    expect(v.sentences[1]).toContain("20% confidence; a verdict needs 50%");
+  });
+
+  it("gives strong signals without a proven profit Test small, never Launch", () => {
+    const v = opportunityVerdict(product(strongScores));
+    expect([v.kind, v.label]).toEqual(["TEST", "Test small"]);
     expect(v.sentences[0]).toBe("Buyers rate it 4.5/5 (1 source), it has about 12,400 reviews and its ad momentum (active Meta ads) is steady.");
+    expect(v.sentences[1]).toMatch(/the profit isn't proven yet/);
+    // A profit before ads, but shipping and returns not counted yet: still Test small.
+    const partial = opportunityVerdict(product(strongScores), landed(22.24, 3.5));
+    expect(partial.kind).toBe("TEST");
+    expect(partial.sentences[1]).toMatch(/keeps £10\.08 per sale before ads \(45\.3% of the price\), and some costs aren't counted yet \(Shipping per unit, Returns allowance\)/);
   });
 
-  it("flags proven demand at an uncompetitive price as Crowded Market", () => {
-    const v = opportunityVerdict(product({ OVERALL: score(64), QUALITY: score(74), VALUE: score(52), DEMAND: score(63.5) }))!;
-    expect(v.kind).toBe("CROWDED_MARKET");
+  it("launches only with strong signals and a proven profit, every cost accounted for", () => {
+    const known = (amount: number) => ({ amount, basis: "caller_supplied" as const, evidenceIds: [] });
+    const full = landed(30, 3, { shipping: known(2), returns: { returnRate: 0.05, costPerReturn: 5, basis: "caller_supplied", evidenceIds: [] }, adCostPerSale: known(2) });
+    expect(full.margin.value.complete).toBe(true);
+    const v = opportunityVerdict(product(strongScores), full);
+    expect([v.kind, v.label, v.gate]).toEqual(["LAUNCH", "Launch", null]);
+    expect(v.sentences[1]).toMatch(/keeps £11\.25 per sale \(37\.5% of the price, 225% return on cost\)/);
   });
 
-  it("never goes above Moderate Risk on thin evidence", () => {
-    const v = opportunityVerdict(product({ OVERALL: score(80, 0.2), QUALITY: score(90) }))!;
-    expect(v.kind).toBe("MODERATE_RISK");
-    expect(v.sentences[1]).toContain("20% confidence");
+  it("flags proven demand at an uncompetitive price as Avoid (crowded market)", () => {
+    const v = opportunityVerdict(product({ OVERALL: score(64), QUALITY: score(74), VALUE: score(52), DEMAND: score(63.5) }));
+    expect([v.kind, v.label, v.gate]).toEqual(["AVOID", "Avoid", null]);
+    expect(v.sentences[1]).toMatch(/^Crowded market/);
   });
 
   it("names the specific risks", () => {
-    const v = opportunityVerdict(product({ OVERALL: score(52), QUALITY: score(59), DEMAND: score(45), TREND: score(20) }, [metric("SEARCH_INTEREST", 40)]))!;
-    expect(v.kind).toBe("MODERATE_RISK");
+    const v = opportunityVerdict(product({ OVERALL: score(52), QUALITY: score(59), DEMAND: score(45), TREND: score(20) }, [metric("SEARCH_INTEREST", 40)]));
+    expect(v.kind).toBe("TEST");
     // Search interest is a plain fact now; the direction is Ad Momentum (TREND, scoring v2.0.0).
     expect(v.sentences[0]).toBe("Search interest is 40/100 and its ad momentum (active Meta ads) is falling.");
-    expect(v.sentences[1]).toBe("The main risks: ad momentum is falling, ratings are only middling and demand signals are weak.");
+    expect(v.sentences[1]).toBe("The main risks: ad momentum is falling, ratings are only middling and demand signals are weak. Test with a small order before committing.");
   });
 
   it("uses only the latest capture per source for ratings", () => {
     const ev = [metric("RATING", 3.0, "2026-09-01T00:00:00.000Z"), { ...metric("RATING", 4.0), source: { name: "S", url: "https://s.test/RATING/1", type: "REVIEW" as const } }];
     ev[0].source.url = "https://s.test/RATING/1";
-    expect(opportunityVerdict(product({ OVERALL: score(55) }, ev))!.sentences[0]).toBe("Buyers rate it 4.0/5 (1 source).");
+    expect(opportunityVerdict(product({ OVERALL: score(55) }, ev)).sentences[0]).toBe("Buyers rate it 4.0/5 (1 source).");
+  });
+});
+
+describe("opportunity verdict: the hard gates", () => {
+  it("G1: a loss before ads on the cheapest modelled channel is Avoid, whatever the scores", () => {
+    const loss = landed(10, 9); // £10 retail: VAT £1.67 and TikTok Shop fees £2.50 leave £5.83, less a £9 supplier cost
+    expect(loss.margin.value.breakEvenAdCost.amount).toBe(-3.17);
+    const cases: Record<string, ReturnType<typeof score>>[] = [strongScores, { OVERALL: score(80, 0.2) }, {}];
+    for (const scores of cases) {
+      const v = opportunityVerdict(product(scores), loss);
+      expect([v.kind, v.label, v.gate]).toEqual(["AVOID", "Avoid", "G1_PROFIT"]);
+      expect(v.sentences[1]).toMatch(/^Loses £3\.17 per sale before ads: it sells for £10\.00/);
+    }
+  });
+
+  it("G1: breaking even before ads (£0) is Avoid too", () => {
+    const even = landed(10, 5.83);
+    expect(even.margin.value.breakEvenAdCost.amount).toBe(0);
+    expect(opportunityVerdict(product(strongScores), even).sentences[1]).toMatch(/^Loses £0\.00 per sale before ads/);
+  });
+
+  it("G3: a branded product is Avoid (brand-restricted), whatever its scores, evidence or margin", () => {
+    const v = opportunityVerdict({ ...product(strongScores), resaleRisk: "ip" }, landed(30, 3));
+    expect([v.kind, v.label, v.gate]).toEqual(["AVOID", "Avoid (brand-restricted)", "G3_BRAND"]);
+    expect(opportunityVerdict({ ...product({}), resaleRisk: "ip" }).label).toBe("Avoid (brand-restricted)");
+  });
+
+  // Regression: the INKEY moisturiser, a real catalog product, was rated "High Potential" despite its brand.
+  it("G3 regression: the INKEY moisturiser returns Avoid", () => {
+    const inkey = {
+      ...product(strongScores),
+      name: "The INKEY List Bio-Active Ceramide Moisturiser",
+      brand: "The INKEY List UK",
+      category: "beauty",
+      description: "A rich moisturiser with ceramides and peptides that repairs and plumps the skin barrier.",
+    };
+    const risk = resaleRisk(catalogResellability(inkey));
+    expect(risk).toBe("ip");
+    const v = opportunityVerdict({ ...inkey, resaleRisk: risk }, landed(15, 2.13));
+    expect(v.kind).toBe("AVOID");
+    expect(v.label).toBe("Avoid (brand-restricted)");
+    expect(v.sentences[1]).toMatch(/^Brand-restricted/);
   });
 });
 

@@ -391,8 +391,8 @@ range: a category average is not a supplier cost (CLAUDE.md Rule 6).
   own prices.
   - The resale checks come first (`src/engine/compliance.ts`). A product that fails one has
     `product.resellable` false and no price gaps, but its margin still runs.
-  - For High IP Risk, the suppliers are similar, unbranded alternatives: a brand-free search, half the words
-    must match, labelled as such.
+  - A brand-restricted product (High IP Risk, gate G3) stops there: no supplier search, no margin, no
+    supplier links, and the verdict "Avoid (brand-restricted)".
   - Retail = median of the stores' current GBP prices.
   - Supplier = median of the live AliExpress offers whose titles match (one budgeted call, cached for a day
     per search term; a failed search is never cached).

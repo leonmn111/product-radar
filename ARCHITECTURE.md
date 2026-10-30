@@ -14,7 +14,7 @@ A Dossier answers "should I sell this, and what would I really keep?" in eight p
 
 | # | Part | What it holds | Gate |
 | --- | --- | --- | --- |
-| 1 | **Verdict** | `LAUNCH`, `TEST` or `AVOID`, with the reasons behind it | Hidden below **0.5** confidence |
+| 1 | **Verdict** | `LAUNCH`, `TEST` or `AVOID` (on screen: Launch, Test small, Avoid), with the reasons behind it; hard gates G3 (brand) and G1 (loss before ads) first | "Not enough evidence" below **0.5** confidence (a G3 Avoid shows regardless) |
 | 2 | **Resellability** | Flags: `brandDirect`, `trademarkRisk`, `requiresUKCA`, `cosmetics`, `batteries`, each with its reason and evidence | Each flag cites its evidence; unknown stays unknown |
 | 3 | **LandedMargin** | Landed cost against net revenue, per channel and market (see the margin model) | Hidden below **0.7** |
 | 4 | **Momentum** | 12-week trend slope, sales velocity, how long ads have been running | Hidden below **0.7** |
@@ -25,6 +25,16 @@ A Dossier answers "should I sell this, and what would I really keep?" in eight p
 
 ### Confidence gates (CLAUDE.md Rule 5)
 
+- **The verdict scale** (`src/engine/verdict.ts`): Launch, Test small, Avoid, or Not enough evidence
+  (withheld). Two hard gates decide first, whatever the scores say:
+  - **G3 Brand/IP:** a `brandDirect` or `trademarkRisk` failure is "Avoid (brand-restricted)", even below
+    0.5 (it reads the listing's own text, so it isn't an estimate). No supplier is searched, and no supplier
+    match, link or evidence appears anywhere for the product.
+  - **G1 Profit:** the contribution before ads (`breakEvenAdCost`: the price less VAT, fees, the supplier
+    cost and every other sourced cost) is £0 or less on the cheapest modelled channel: "Avoid", with the
+    reason "Loses £X per sale before ads".
+  - Launch also needs a proven profit (`launchReady`): every cost counted, 25%+ net margin, 50%+ return on
+    landed cost. Without it the best verdict is Test small.
 - **Two tiers.** The Verdict is shown from **0.5** confidence. Every number (margins, momentum,
   saturation, scores) needs **0.7**. Below its gate a part is *withheld*: the Dossier says so and lists
   the evidence it still needs. It never shows a greyed-out or estimated value.
@@ -89,19 +99,11 @@ What a failure means for the seller (CLAUDE.md Rule 7, `resaleRisk()` in
 - A `brandDirect` or `trademarkRisk` failure is **High IP Risk**. Only `requiresUKCA`, `cosmetics` or
   `batteries` failures are **Compliance Gated**.
 - Either way the product is never hidden, blurred or excluded (v1 dossier, `src/services/catalogMargin.ts`).
-- High IP Risk: the supplier search and landed margin run on similar, unbranded alternatives
-  (`CatalogMargin.basis = "alternatives"`).
-  - AliExpress is searched with the brand-free words, and a listing needs half of them
-    (`ALTERNATIVE_MATCH_MIN`, 0.5, as word stems).
-  - Spare parts and accessories don't count, and nor does anything dearer than the brand's own price before
-    VAT. When nothing qualifies, the margin says so ("No comparable alternative found: …") rather than
-    pricing an unrelated product.
-  - The UI labels it "Similar / White-Label Alternatives" under the High IP Risk warning.
-  - The retail price is the brand's own, and is labelled as such.
-- Every other product keeps the strict 80% exact match.
-- The profit calculator, supplier search and Shopify export stay open under warning banners. The export
-  asks for confirmation (the server checks `acknowledgeRisk`).
-- The paid v2 Dossier is unchanged: a branded product's margin there is still withheld as Not Sellable.
+- High IP Risk is gate G3: the verdict is "Avoid (brand-restricted)", no supplier is searched (catalog
+  dossier, paid Dossier and v1 API alike), the landed margin is "Not calculated" (Not Sellable) and no
+  supplier link is shown. The profit calculator stays open for the brand's wholesale price, and the Shopify
+  export stays open under its warning and asks for confirmation (the server checks `acknowledgeRisk`).
+- Compliance Gated keeps the strict 80% exact supplier match and its margin, under warnings.
 
 ## Momentum, saturation, suppliers
 

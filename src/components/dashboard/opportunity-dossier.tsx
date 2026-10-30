@@ -5,14 +5,9 @@ import type { ProductDto } from "@/server/products/service";
 import { FINANCIAL_THRESHOLD } from "@/engine/confidence";
 import { money2, ukSellingCosts } from "@/engine/sellingCosts";
 import type { CatalogMargin } from "@/services/catalogMargin";
-import {
-  opportunityVerdict,
-  parseMoney,
-  shopifyPrices,
-  sourcingKeywords,
-  supplierSearchUrls,
-  type VerdictKind,
-} from "./dossier";
+import type { VerdictTier } from "@/engine/verdict";
+import { VerdictPill } from "../verdict-pill";
+import { opportunityVerdict, parseMoney, shopifyPrices, sourcingKeywords, supplierSearchUrls } from "./dossier";
 import { PLANS, planPriceLabel } from "@/server/billing/plans";
 import { formatPrice } from "./format";
 import { LandedMarginCard } from "./landed-margin";
@@ -23,10 +18,10 @@ import {
   complianceNote,
   EXPORT_CONFIRM,
   IP_RISK_NOTE,
+  NO_SUPPLIERS_NOTE,
   RESELLABILITY_ORDER,
   resaleRisk,
-  RISK_BADGE,
-  SUPPLIER_WARNING,
+  SUPPLIER_WARNING_COMPLIANCE,
   type ResaleRisk,
 } from "./resellability";
 
@@ -38,10 +33,11 @@ const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 da
 const cardTitle = "text-sm font-semibold text-slate-900 dark:text-white";
 
 /**
- * The v1 dossier. A product that fails a resale check (product.resellable) gets no price gaps, but its
- * landed margin, calculator, supplier search and Shopify export all stay open, each under a clear warning
- * of the risk (High IP Risk or Compliance Gated); for High IP Risk the suppliers are similar, unbranded
- * alternatives (CatalogMargin.basis), and the export asks for confirmation.
+ * The v1 dossier. The verdict is the four-tier scale with its hard gates (engine/verdict.ts). A product that
+ * fails a resale check (product.resellable) gets no price gaps. A brand-restricted one (High IP Risk, gate
+ * G3) is "Avoid (brand-restricted)": no landed margin and no supplier links anywhere, but the calculator
+ * (for the brand's wholesale price) and the Shopify export stay open under warnings, and the export asks
+ * for confirmation. A Compliance Gated one keeps its margin and supplier search under warnings.
  * The calculator starts from the sourced waterfall when it's shown; otherwise from the UK store price
  * when that clears the 0.7 gate, and the seller adds their own cost.
  */
@@ -75,14 +71,12 @@ export function OpportunityDossier({ product, landed, viewer }: { product: Produ
           {...calculator}
           cost={supplierCost}
           onCost={setSupplierCost}
-          costLabel={risk === "ip" && !shown ? "Supplier or wholesale cost" : "Supplier cost per unit"}
+          costLabel={risk === "ip" ? "Wholesale cost per unit" : "Supplier cost per unit"}
           costHint={
             shown
-              ? landed.basis === "alternatives"
-                ? "Starts at the AliExpress price of similar, unbranded alternatives"
-                : "Starts at the sourced AliExpress price"
+              ? "Starts at the sourced AliExpress price"
               : risk === "ip"
-                ? "An unbranded alternative's quote, or the brand's wholesale price if you're authorised"
+                ? "The brand's wholesale price, if you're an authorised reseller"
                 : risk === "compliance"
                   ? "From a supplier with the right UK safety paperwork"
                   : "Enter a supplier's quote"
@@ -113,92 +107,46 @@ export function OpportunityDossier({ product, landed, viewer }: { product: Produ
 
 // ── Verdict ──────────────────────────────────────────────────────────────────
 
-const VERDICT_STYLE: Record<VerdictKind, { card: string; badge: string; icon: string }> = {
-  HIGH_POTENTIAL: {
-    card: "border-emerald-200 bg-emerald-50/60 dark:border-emerald-500/30 dark:bg-emerald-950/20",
-    badge: "bg-emerald-600 text-white dark:bg-emerald-500 dark:text-emerald-950",
-    icon: "M10 2.5 12.2 7l5 .7-3.6 3.5.9 5L10 13.8 5.5 16.2l.9-5L2.8 7.7l5-.7L10 2.5Z",
-  },
-  MODERATE_RISK: {
-    card: "border-amber-200 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-950/20",
-    badge: "bg-amber-500 text-amber-950 dark:bg-amber-400",
-    icon: "M10 3 18 17H2L10 3Zm0 5v4m0 2.5v.5",
-  },
-  CROWDED_MARKET: {
-    card: "border-rose-200 bg-rose-50/60 dark:border-rose-500/30 dark:bg-rose-950/20",
-    badge: "bg-rose-600 text-white dark:bg-rose-500 dark:text-rose-950",
-    icon: "M7 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm6 0a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM2 16c0-2.8 2.2-5 5-5s5 2.2 5 5m1-5c2.8 0 5 2.2 5 5",
-  },
+const VERDICT_CARD: Record<VerdictTier, string> = {
+  LAUNCH: "border-teal-200 bg-teal-50/60 dark:border-teal-500/30 dark:bg-teal-950/20",
+  TEST: "border-amber-200 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-950/20",
+  AVOID: "border-red-200 bg-red-50/60 dark:border-red-500/30 dark:bg-red-950/20",
+  WITHHELD: "border-slate-200 bg-slate-50 dark:border-line-dark dark:bg-surface-dark",
 };
 
+/**
+ * The verdict, on the four-tier scale: Launch, Test small, Avoid ("Avoid (brand-restricted)" for a brand,
+ * gate G3; "Loses £X per sale before ads", gate G1) or Not enough evidence. A product that fails a resale
+ * check also shows what that means for a seller.
+ */
 function VerdictCard({ product, landed }: { product: ProductDto; landed: CatalogMargin }) {
-  if (!product.resellable) return <RiskVerdictCard product={product} landed={landed} />;
-  const verdict = opportunityVerdict(product);
-  if (!verdict) {
-    return (
-      <section className={card} aria-label="Opportunity verdict">
-        <p className="text-sm text-slate-700 dark:text-slate-300">
-          There isn&apos;t enough evidence to give this product a verdict yet.
-        </p>
-      </section>
-    );
-  }
-  const style = VERDICT_STYLE[verdict.kind];
+  const verdict = opportunityVerdict(product, landed);
+  const flags = landed.resellability;
+  const risk = product.resellable ? null : (resaleRisk(flags) ?? "ip");
+  const flagged = RESELLABILITY_ORDER.filter((k) => flags[k].value === true).map((k) => flags[k].reason);
+  const confidence = `${Math.round(verdict.confidence * 100)}% confidence`;
   return (
-    <section aria-labelledby={`verdict-${product.id}`} className={`rounded-xl border p-4 shadow-sm sm:p-5 ${style.card}`}>
+    <section aria-labelledby={`verdict-${product.id}`} className={`rounded-xl border p-4 shadow-sm sm:p-5 ${VERDICT_CARD[verdict.kind]}`}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h3 id={`verdict-${product.id}`} className={cardTitle}>
           Opportunity verdict
         </h3>
-        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${style.badge}`}>
-          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-4">
-            <path d={style.icon} />
-          </svg>
-          {verdict.label}
-        </span>
+        <VerdictPill tier={verdict.kind} gate={verdict.gate} />
       </div>
+      {risk && <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{risk === "ip" ? IP_RISK_NOTE : complianceNote(flags)}</p>}
       <p className="mt-3 max-w-3xl text-base/7 text-slate-800 dark:text-slate-200">
         {verdict.sentences[0]} {verdict.sentences[1]}
+        {risk && flagged.length > 0 && ` Flagged because ${flagged.length === 1 ? flagged[0] : `${flagged.slice(0, -1).join(", ")} and ${flagged.at(-1)}`}.`}
       </p>
       <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
-        Rule-based estimate from {verdict.sourceCount} source{verdict.sourceCount === 1 ? "" : "s"} ·{" "}
-        {Math.round(verdict.confidence * 100)}% confidence · not a guarantee. See the evidence below.
+        {verdict.gate === "G3_BRAND"
+          ? "Rule-based, from the product's own listing text. See the resale checks below."
+          : verdict.gate === "G1_PROFIT"
+            ? "Rule-based, from the landed margin below. A calculated estimate, not a guarantee."
+            : verdict.kind === "WITHHELD"
+              ? "Rule-based. A verdict is given from 50% confidence; see the evidence below."
+              : `Rule-based estimate from ${verdict.sourceCount} source${verdict.sourceCount === 1 ? "" : "s"} · ${confidence} · not a guarantee. See the evidence below.`}
       </p>
-    </section>
-  );
-}
-
-/**
- * The verdict for a product that fails a resale check, whatever its scores say: High IP Risk when a brand
- * or trademark is involved, Compliance Gated when only the regulated-goods checks fail.
- */
-function RiskVerdictCard({ product, landed }: { product: ProductDto; landed: CatalogMargin }) {
-  const flags = landed.resellability;
-  const risk = resaleRisk(flags) ?? "ip";
-  const reasons = RESELLABILITY_ORDER.filter((k) => flags[k].value === true).map((k) => flags[k].reason);
-  const facts = opportunityVerdict(product)?.sentences[0];
-  return (
-    <section aria-labelledby={`verdict-${product.id}`} className="rounded-xl border border-rose-200 bg-rose-50/60 p-4 shadow-sm sm:p-5 dark:border-rose-500/30 dark:bg-rose-950/20">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h3 id={`verdict-${product.id}`} className={cardTitle}>
-          Opportunity verdict
-        </h3>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-700 px-3 py-1 text-sm font-semibold text-white">
-          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-4">
-            <path d="M10 2.5 3.5 5v4.5c0 4 2.8 7.1 6.5 8 3.7-.9 6.5-4 6.5-8V5L10 2.5ZM10 7v3.5m0 2.5v.5" />
-          </svg>
-          {RISK_BADGE[risk]}
-        </span>
-      </div>
-      <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{risk === "ip" ? IP_RISK_NOTE : complianceNote(flags)}</p>
-      <p className="mt-3 max-w-3xl text-base/7 text-slate-800 dark:text-slate-200">
-        {facts ? `${facts} ` : ""}
-        Flagged because {reasons.length === 1 ? reasons[0] : `${reasons.slice(0, -1).join(", ")} and ${reasons.at(-1)}`}.{" "}
-        {risk === "ip"
-          ? "The supplier prices and margin below are for similar, unbranded alternatives, not this brand."
-          : "The margin below assumes a supplier with the right UK safety paperwork."}
-      </p>
-      <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">Rule-based, from the product&apos;s own listing text. See the resale checks below.</p>
     </section>
   );
 }
@@ -374,6 +322,8 @@ function SupplierAndExport({
   const merchant = product.bestOffer?.merchant ?? null;
   const keywords = sourcingKeywords({ ...product, merchant });
   const urls = supplierSearchUrls(keywords);
+  // Gate G3: a brand-restricted product gets no supplier links at all.
+  const restricted = risk === "ip";
   const [exported, setExported] = useState(false);
   const prices = shopifyPrices(product);
   const money = (x: number) => formatPrice(String(x), prices.currency ?? "GBP");
@@ -391,17 +341,25 @@ function SupplierAndExport({
     <section aria-labelledby={`source-${product.id}`} className={`${card} flex flex-col gap-5`}>
       <div>
         <h3 id={`source-${product.id}`} className={cardTitle}>
-          Find suppliers
+          {restricted ? "Suppliers" : "Find suppliers"}
         </h3>
-        {risk && (
+        {restricted ? (
           <div className="mt-2">
-            <RiskWarning text={SUPPLIER_WARNING[risk]} />
+            <RiskWarning text={NO_SUPPLIERS_NOTE} />
           </div>
+        ) : (
+          <>
+            {risk === "compliance" && (
+              <div className="mt-2">
+                <RiskWarning text={SUPPLIER_WARNING_COMPLIANCE} />
+              </div>
+            )}
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Searches for <q className="font-medium text-slate-900 dark:text-slate-100">{keywords}</q> without brand names.
+            </p>
+          </>
         )}
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          Searches for <q className="font-medium text-slate-900 dark:text-slate-100">{keywords}</q> without brand names.
-        </p>
-        {viewer.proTools ? (
+        {viewer.proTools && !restricted ? (
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <a href={urls.aliexpress} target="_blank" rel="noopener noreferrer" className={`${supplierBtn} bg-accent-mint text-on-accent hover:bg-accent-mint-strong`}>
               Find on AliExpress
@@ -472,10 +430,12 @@ function SupplierAndExport({
             <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-accent-mint">
               <path fillRule="evenodd" d="M10 2a4 4 0 0 0-4 4v2H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-1V6a4 4 0 0 0-4-4Zm2 6V6a2 2 0 1 0-4 0v2h4Z" clipRule="evenodd" />
             </svg>
-            Supplier search and Shopify export are Pro features
+            {restricted ? "Shopify export is a Pro feature" : "Supplier search and Shopify export are Pro features"}
           </p>
           <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            Go from product idea to supplier to a draft listing in your shop in a couple of clicks.
+            {restricted
+              ? "Turn a product into a draft listing in your shop in a couple of clicks."
+              : "Go from product idea to supplier to a draft listing in your shop in a couple of clicks."}
           </p>
           <a
             href="/upgrade"

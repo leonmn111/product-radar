@@ -14,7 +14,7 @@ The product is moving from a static Postgres catalog (v1, what runs today) to a 
 Scrape on Demand** engine (v2). Read these before any change:
 
 - [CLAUDE.md](CLAUDE.md): the rules (vertical slices, x402 isolation, evidence first, estimates,
-  the two confidence gates (Verdict 0.5, numbers 0.7), real numbers only, branded = High IP Risk (warned, not hidden),
+  the two confidence gates (Verdict 0.5, numbers 0.7), real numbers only, branded = High IP Risk ("Avoid (brand-restricted)", no supplier links),
   data access within the rules).
 - [ARCHITECTURE.md](ARCHITECTURE.md): the 8-part Dossier, the two confidence gates, the UK/EU
   landed-margin model, monetization, data sources and the code layout.

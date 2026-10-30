@@ -1,8 +1,7 @@
 // The UK landed margin waterfall on the dossier page (src/services/catalogMargin.ts): retail price,
 // then every cost line with how it's known, down to the net profit, and the resale checks that run
 // first. A withheld margin shows why and what evidence it still needs, never a number (CLAUDE.md Rule 5).
-// For a High IP Risk product the suppliers are similar, unbranded alternatives, labelled as such under a
-// warning; nothing is blurred or held back for being risky.
+// A brand-restricted product (High IP Risk, gate G3) has no margin and no supplier links: the card says why.
 
 import type { ReactNode } from "react";
 import { FINANCIAL_THRESHOLD } from "@/engine/confidence";
@@ -10,7 +9,7 @@ import type { CatalogMargin } from "@/services/catalogMargin";
 import type { ComplianceFlag } from "@/types/dossier";
 import type { LandedMargin, LineBasis, Money } from "@/types/financials";
 import { formatDateTime, formatPrice, roundRatings } from "./format";
-import { ALTERNATIVES_LABEL, ALTERNATIVES_WARNING, CALCULATOR_WARNING, RESELLABILITY_LABEL, RESELLABILITY_ORDER, resaleRisk } from "./resellability";
+import { CALCULATOR_WARNING, RESELLABILITY_LABEL, RESELLABILITY_ORDER, resaleRisk } from "./resellability";
 
 const card = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 dark:border-line-dark dark:bg-surface-dark";
 const muted = "text-slate-600 dark:text-slate-400";
@@ -53,7 +52,6 @@ function RiskBanner({ text }: { text: string }) {
 function Waterfall({ m, landed }: { m: LandedMargin; landed: CatalogMargin }) {
   const stores = landed.retailOffers.length;
   const suppliers = landed.supplierMatches.length;
-  const alternatives = landed.basis === "alternatives";
   const row = "flex items-baseline justify-between gap-4 py-2";
   const value = "shrink-0 text-right font-medium tabular-nums text-slate-900 dark:text-white";
   const loss = m.netProfit.amount < 0;
@@ -64,13 +62,8 @@ function Waterfall({ m, landed }: { m: LandedMargin; landed: CatalogMargin }) {
           <dt className="min-w-0">
             <span className="font-semibold text-slate-900 dark:text-white">Retail price</span>
             <span className={`block text-xs ${muted}`}>
-              {alternatives ? "the brand's own price: " : ""}median of {stores} current UK store price{stores === 1 ? "" : "s"}, VAT included
+              median of {stores} current UK store price{stores === 1 ? "" : "s"}, VAT included
             </span>
-            {alternatives && (
-              <span className="block text-xs font-medium text-amber-800 dark:text-amber-300">
-                An unbranded alternative usually sells for less: try a lower price in the calculator below.
-              </span>
-            )}
           </dt>
           <dd className={`${value} font-semibold`}>{money(m.retailPrice)}</dd>
         </div>
@@ -78,11 +71,7 @@ function Waterfall({ m, landed }: { m: LandedMargin; landed: CatalogMargin }) {
           <div key={`${l.kind}-${l.label}`} className={row}>
             <dt className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-slate-800 dark:text-slate-200">
               <span>
-                {l.kind !== "supplier"
-                  ? l.label
-                  : alternatives
-                    ? `Supplier unit cost (median of ${suppliers} similar, unbranded alternative${suppliers === 1 ? "" : "s"} on AliExpress)`
-                    : `Supplier unit cost (median of ${suppliers} matched AliExpress listing${suppliers === 1 ? "" : "s"})`}
+                {l.kind !== "supplier" ? l.label : `Supplier unit cost (median of ${suppliers} matched AliExpress listing${suppliers === 1 ? "" : "s"})`}
               </span>
               <Chip tone={BASIS[l.basis].tone}>{BASIS[l.basis].label}</Chip>
             </dt>
@@ -126,7 +115,7 @@ function Waterfall({ m, landed }: { m: LandedMargin; landed: CatalogMargin }) {
       </p>
       {suppliers > 0 && (
         <div className="mt-4">
-          <h4 className="text-xs font-semibold text-slate-900 dark:text-white">{alternatives ? ALTERNATIVES_LABEL : "Matched suppliers"}</h4>
+          <h4 className="text-xs font-semibold text-slate-900 dark:text-white">Matched suppliers</h4>
           <ul className="mt-1 divide-y divide-gray-200 text-xs dark:divide-line-dark">
             {landed.supplierMatches.map((s) => (
               <li key={s.evidenceId} className="flex items-baseline justify-between gap-3 py-1.5">
@@ -136,9 +125,7 @@ function Waterfall({ m, landed }: { m: LandedMargin; landed: CatalogMargin }) {
                 </a>
                 <span className="shrink-0 tabular-nums text-slate-900 dark:text-white">
                   {formatPrice(String(s.unitPrice), "GBP")}{" "}
-                  <span className={muted}>
-                    · {Math.round(s.matchScore * 100)}% {alternatives ? "similar" : "match"}
-                  </span>
+                  <span className={muted}>· {Math.round(s.matchScore * 100)}% match</span>
                 </span>
               </li>
             ))}
@@ -193,8 +180,17 @@ export function LandedMarginCard({ productId, landed }: { productId: string; lan
   const headingId = `landed-${productId}`;
   const g = landed.margin;
   const risk = resaleRisk(landed.resellability);
-  const status = g.status === "shown" ? <Chip tone="ok">Shown · confidence {conf(g.confidence)}</Chip> : <Chip tone="warn">Withheld</Chip>;
-  const banner = landed.basis === "alternatives" ? ALTERNATIVES_WARNING : risk === "compliance" ? CALCULATOR_WARNING.compliance : null;
+  // Gate G3: a brand-restricted product's margin isn't calculated at all.
+  const restricted = g.status === "withheld" && g.reason === "Not Sellable";
+  const status =
+    g.status === "shown" ? (
+      <Chip tone="ok">Shown · confidence {conf(g.confidence)}</Chip>
+    ) : restricted ? (
+      <Chip tone="bad">Not calculated</Chip>
+    ) : (
+      <Chip tone="warn">Withheld</Chip>
+    );
+  const banner = risk === "compliance" ? CALCULATOR_WARNING.compliance : null;
   return (
     <section aria-labelledby={headingId} className={card}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -204,27 +200,38 @@ export function LandedMarginCard({ productId, landed }: { productId: string; lan
         {status}
       </div>
       {banner && <RiskBanner text={banner} />}
-      <p className={`mt-2 text-sm ${muted}`}>
-        {g.status === "shown"
-          ? `Selling on ${CHANNEL[g.value.channel]}: the retail price less the supplier cost, ${pct(g.value.vat.rate * 100)} UK VAT and the platform's fees. Every line says how it's known; what can't be sourced is named, never guessed.`
-          : "The retail price less the supplier cost, UK VAT and platform fees, from live sources only. Nothing is estimated while it's withheld."}
-      </p>
+      {!restricted && (
+        <p className={`mt-2 text-sm ${muted}`}>
+          {g.status === "shown"
+            ? `Selling on ${CHANNEL[g.value.channel]}: the retail price less the supplier cost, ${pct(g.value.vat.rate * 100)} UK VAT and the platform's fees. Every line says how it's known; what can't be sourced is named, never guessed.`
+            : "The retail price less the supplier cost, UK VAT and platform fees, from live sources only. Nothing is estimated while it's withheld."}
+        </p>
+      )}
 
       {g.status === "shown" ? (
         <Waterfall m={g.value} landed={landed} />
       ) : (
         <div className="mt-4 rounded-lg border border-gray-200 p-3 dark:border-line-dark">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">
-            {g.confidence > 0 && g.confidence < FINANCIAL_THRESHOLD
-              ? `Withheld: the evidence's confidence is ${conf(g.confidence)}, below the ${conf(FINANCIAL_THRESHOLD)} numbers need`
-              : "Withheld: not enough evidence yet"}
-          </p>
-          <p className={`mt-1 text-xs ${muted}`}>Needs:</p>
-          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm text-slate-800 dark:text-slate-200">
-            {g.missing.map((m) => (
-              <li key={m}>{m}</li>
-            ))}
-          </ul>
+          {restricted ? (
+            <>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">Not calculated: brand-restricted</p>
+              <p className="mt-1 text-sm text-slate-800 dark:text-slate-200">{g.missing.join(" ")}</p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                {g.confidence > 0 && g.confidence < FINANCIAL_THRESHOLD
+                  ? `Withheld: the evidence's confidence is ${conf(g.confidence)}, below the ${conf(FINANCIAL_THRESHOLD)} numbers need`
+                  : "Withheld: not enough evidence yet"}
+              </p>
+              <p className={`mt-1 text-xs ${muted}`}>Needs:</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm text-slate-800 dark:text-slate-200">
+                {g.missing.map((m) => (
+                  <li key={m}>{m}</li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
 
