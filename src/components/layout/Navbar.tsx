@@ -37,8 +37,13 @@ export function Navbar({ links = [], ctaHref = "/get-started", ctaLabel = "Run D
           <Link href="/signin" className={`max-[420px]:hidden ${navLink}`}>
             Sign in
           </Link>
-          {/* A mailto or other external link is a plain anchor; a page of the site goes through Link. */}
-          {/^(mailto:|https?:)/.test(ctaHref) ? (
+          {/* A mailto or another site is a plain anchor (another site opens in a new tab); a page of this site goes through Link. */}
+          {/^https?:/.test(ctaHref) ? (
+            <a href={ctaHref} target="_blank" rel="noopener noreferrer" className={cta}>
+              {ctaLabel}
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          ) : ctaHref.startsWith("mailto:") ? (
             <a href={ctaHref} className={cta}>
               {ctaLabel}
             </a>

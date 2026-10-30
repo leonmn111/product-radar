@@ -5,7 +5,7 @@ import { SITE_URL } from "@/lib/site";
 
 // The B2B sales page for TikTok Shop UK agencies (the agency pivot), with a small section for
 // e-commerce accountants. Static: no account, no database. The one action is booking a 15-minute
-// walkthrough, by email for now (a calendar link can replace BOOK_HREF). Nothing is sold online here:
+// walkthrough on Calendly, in a new tab; the accountants' partner button is an email. Nothing is sold online here:
 // the pilot is set up after the call, and its price is shown in pounds up front (CMA).
 // Design: the landing page's midnight-blue and mint tokens (globals.css), dark only.
 
@@ -24,7 +24,8 @@ export const metadata: Metadata = {
 };
 
 const mailto = (subject: string) => `mailto:${LEGAL.contactEmail ?? ""}?subject=${encodeURIComponent(subject)}`;
-const BOOK_HREF = mailto("Book a 15-minute ProductRadar walkthrough");
+/** The owner's Calendly booking page: every "Book a walkthrough" / "Book a call" button opens it in a new tab. */
+const BOOK_HREF = "https://calendly.com/menallaleon/30min";
 const PARTNER_HREF = mailto("ProductRadar partner programme for accountants");
 
 const PILOT = { name: "Founding Partner Pilot", pricePence: 9900, months: 3 };
@@ -64,8 +65,9 @@ function Check() {
 
 function BookButton({ className = "" }: { className?: string }) {
   return (
-    <a href={BOOK_HREF} className={`${primaryButton} ${className}`}>
+    <a href={BOOK_HREF} target="_blank" rel="noopener noreferrer" className={`${primaryButton} ${className}`}>
       Book a 15-minute walkthrough
+      <span className="sr-only"> (opens Calendly in a new tab)</span>
       <Arrow />
     </a>
   );
