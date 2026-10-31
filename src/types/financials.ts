@@ -82,7 +82,7 @@ export type EUMarginParams = MarginParamsBase & {
   country: string; // ISO code of the destination: "DE", "FR", …
   feeStack: FeeStack;
   vatRate?: RateInput; // default: the country's standard rate, when known
-  includeProposedHandlingFee?: boolean; // the €2 handling fee is proposed, not adopted (default true)
+  includeHandlingFee?: boolean; // the €2 Union handling fee, from 1 November 2026 (default true)
 };
 
 // ── Landed margin ────────────────────────────────────────────────────────────

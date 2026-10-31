@@ -97,8 +97,8 @@ describe("calculateEUMargin", () => {
 
   it("adds the 2026 €3 customs duty and the €2 handling fee per item on a parcel under €150", () => {
     expect(m.lines.find((l) => l.kind === "duty")).toMatchObject({ amount: { amount: 3, currency: "EUR" }, basis: "sourced", evidenceIds: [EU_DUTY_EVIDENCE.id] });
-    // Proposed, not adopted: included by default but labelled an estimate.
-    expect(m.lines.find((l) => l.kind === "handling")).toMatchObject({ amount: { amount: 2, currency: "EUR" }, basis: "estimate", evidenceIds: [EU_HANDLING_FEE_EVIDENCE.id] });
+    // In force from 1 November 2026 (Irish Revenue, 29 September 2026): sourced, not an estimate.
+    expect(m.lines.find((l) => l.kind === "handling")).toMatchObject({ amount: { amount: 2, currency: "EUR" }, basis: "sourced", evidenceIds: [EU_HANDLING_FEE_EVIDENCE.id] });
     expect(m.landedCost.amount).toBe(11.9); // 4.50 + 2.40 + 3.00 + 2.00
   });
 
@@ -116,22 +116,23 @@ describe("calculateEUMargin", () => {
     expect(m.complete).toBe(true);
   });
 
-  it("charges the €3 once per item type, so identical units in one parcel share it", () => {
+  it("charges the €3 and the €2 once per distinct item, so identical units in one parcel share them", () => {
     const two = calculateEUMargin({ ...euSale, unitsPerParcel: 2 });
     expect(two.lines.find((l) => l.kind === "duty")?.amount.amount).toBe(1.5);
-    expect(two.lines.find((l) => l.kind === "handling")?.amount.amount).toBe(2);
+    expect(two.lines.find((l) => l.kind === "handling")?.amount.amount).toBe(1);
   });
 
-  it("drops the low-value rules above €150: VAT at import, and the commodity-code duty named", () => {
+  it("drops the low-value rules above €150: VAT at import, the commodity-code duty named, but the €2 handling fee still due", () => {
     const big = calculateEUMargin({ ...euSale, retailPrice: sourced(238, "listing:amazon.de:2") }); // €200 before VAT
-    expect(big.lines.some((l) => l.kind === "duty" || l.kind === "handling")).toBe(false);
+    expect(big.lines.some((l) => l.kind === "duty")).toBe(false);
+    expect(big.lines.find((l) => l.kind === "handling")?.amount.amount).toBe(2);
     expect(big.vat.collectedAt).toBe("import");
     expect(big.excluded.map((e) => e.kind)).toEqual(["duty"]);
   });
 
-  it("can leave out the proposed handling fee, and says so", () => {
-    const without = calculateEUMargin({ ...euSale, includeProposedHandlingFee: false });
-    expect(without.excluded).toEqual([{ kind: "handling", label: "EU customs handling fee", reason: "proposed but not adopted; left out at the caller's request" }]);
+  it("can leave out the handling fee, and says so", () => {
+    const without = calculateEUMargin({ ...euSale, includeHandlingFee: false });
+    expect(without.excluded).toEqual([{ kind: "handling", label: "EU Union handling fee", reason: "left out at the caller's request" }]);
     expect(without.netProfit.amount).toBe(5.14);
   });
 

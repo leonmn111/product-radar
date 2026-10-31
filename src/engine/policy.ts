@@ -42,28 +42,31 @@ export const UK_LOW_VALUE_THRESHOLD_GBP = 135;
 
 // ── EU ───────────────────────────────────────────────────────────────────────
 
+// Both EU charges, from a national customs authority: Irish Revenue's press release of 29 September 2026.
+const REVENUE_IE_HANDLING_FEE = "https://www.revenue.ie/en/corporate/press-office/press-releases/2026/pr-092926-handling-fee.aspx";
+
 export const EU_DUTY_EVIDENCE = policy({
   id: "policy:eu:fixed-customs-duty-3eur",
-  provider: "apc-pli.com (reporting the EU Council decision)",
+  provider: "Revenue (Irish Tax and Customs), press release of 29 September 2026",
   sourceType: "official",
-  sourceUrl: "https://www.apc-pli.com/service-alerts/eu-fixed-customs-duty",
-  quality: 75,
+  sourceUrl: REVENUE_IE_HANDLING_FEE,
+  quality: 90,
   claim:
-    "From 1 July 2026 the EU charges a fixed €3 customs duty on parcels valued under €150, per individual item within a shipment based on tariff classification, for goods from non-EU sellers registered under IOSS.",
+    "A €3 Customs Duty per item has applied since 1 July 2026 to e-commerce packages worth €150 or less sent from outside the EU to consumers. Above €150 the goods' own customs duty applies instead (e.g. 12% on jeans, 16.9% on runners).",
   value: 3,
-  publishedAt: "2025-12-19T00:00:00.000Z",
+  publishedAt: "2026-09-29T00:00:00.000Z",
 });
 
 export const EU_HANDLING_FEE_EVIDENCE = policy({
-  id: "policy:eu:proposed-handling-fee",
-  provider: "apc-pli.com (reporting the EU Council)",
+  id: "policy:eu:union-handling-fee",
+  provider: "Revenue (Irish Tax and Customs), press release of 29 September 2026",
   sourceType: "official",
-  sourceUrl: "https://www.apc-pli.com/service-alerts/eu-fixed-customs-duty",
-  quality: 50,
+  sourceUrl: REVENUE_IE_HANDLING_FEE,
+  quality: 90,
   claim:
-    "A separate EU customs handling fee is being discussed as part of broader customs reform; it is not adopted. The €2 per item used here is the playbook's figure.",
+    "From 1 November 2026 the EU charges a Union Handling Fee of €2 per distinct item in a package (identical items count once) on all e-commerce goods sent from outside the EU to consumers, whatever their value. It is separate from the €3 Customs Duty, and paid by the seller or the business delivering the goods.",
   value: 2,
-  publishedAt: "2025-12-19T00:00:00.000Z",
+  publishedAt: "2026-09-29T00:00:00.000Z",
 });
 
 export const EU_VAT_EVIDENCE = policy({
@@ -77,8 +80,8 @@ export const EU_VAT_EVIDENCE = policy({
 });
 
 export const EU_LOW_VALUE_THRESHOLD_EUR = 150;
-export const EU_FIXED_DUTY_EUR = 3; // per item type in a parcel ≤ €150
-export const EU_HANDLING_FEE_EUR = 2; // per item; proposed, not adopted
+export const EU_FIXED_DUTY_EUR = 3; // per item type in a parcel ≤ €150, since 1 July 2026
+export const EU_HANDLING_FEE_EUR = 2; // per distinct item, any value, from 1 November 2026
 
 /** Standard VAT rates of the first EU markets (TEDB). Any other country must be given its rate explicitly. */
 export const EU_STANDARD_VAT: Record<string, number> = {

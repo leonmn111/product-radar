@@ -82,7 +82,7 @@ const EUParams = z.object({
   country: z.string().regex(/^[A-Z]{2}$/, "country must be an ISO code like DE"),
   feeStack,
   vatRate: rate.optional(),
-  includeProposedHandlingFee: z.boolean().default(true),
+  includeHandlingFee: z.boolean().default(true),
 });
 
 function parse<T>(schema: z.ZodType<T>, input: unknown): T {
@@ -197,9 +197,9 @@ export function calculateUKMargin(params: UKMarginParams): LandedMargin {
 /**
  * EU: for parcels of €150 or less (price before VAT × units), VAT is charged at the sale through
  * IOSS at the destination country's rate, plus the fixed €3 customs duty per item type in the
- * parcel (identical units share it) and, unless switched off, the proposed €2 handling fee per item.
- * Above €150 the low-value rules don't apply: VAT is collected at import and the duty (set by the
- * commodity code) is named as excluded.
+ * parcel (identical units share it). Above €150 the low-value rules don't apply: VAT is collected at
+ * import and the duty (set by the commodity code) is named as excluded. At any value, unless switched
+ * off, the €2 Union handling fee per distinct item, from 1 November 2026 (identical units share it).
  */
 export function calculateEUMargin(params: EUMarginParams): LandedMargin {
   const p = parse(EUParams, params);
@@ -209,32 +209,35 @@ export function calculateEUMargin(params: EUMarginParams): LandedMargin {
   }
   const vat = p.vatRate ?? { rate: defaultRate!, basis: "sourced" as const, evidenceIds: [EU_VAT_EVIDENCE.id] };
   return assemble(p, { market: "EU", country: p.country, currency: "EUR", vat, stack: p.feeStack }, (out, priceEx) => {
-    if (priceEx * p.unitsPerParcel > EU_LOW_VALUE_THRESHOLD_EUR) {
+    const shared = p.unitsPerParcel > 1 ? `, shared by ${p.unitsPerParcel} units` : "";
+    const lowValue = priceEx * p.unitsPerParcel <= EU_LOW_VALUE_THRESHOLD_EUR;
+    if (lowValue) {
+      out.lines.push({
+        kind: "duty",
+        label: `EU fixed customs duty (€${EU_FIXED_DUTY_EUR} per item type in the parcel${shared})`,
+        amount: { amount: money2(EU_FIXED_DUTY_EUR / p.unitsPerParcel), currency: "EUR" },
+        basis: "sourced",
+        evidenceIds: [EU_DUTY_EVIDENCE.id],
+      });
+    } else {
       out.excluded.push({
         kind: "duty",
         label: "EU customs duty",
         reason: `the parcel is over €${EU_LOW_VALUE_THRESHOLD_EUR}, so customs duty applies at the product's commodity-code rate, which wasn't given`,
       });
-      return "import";
     }
-    out.lines.push({
-      kind: "duty",
-      label: `EU fixed customs duty (€${EU_FIXED_DUTY_EUR} per item type in the parcel${p.unitsPerParcel > 1 ? `, shared by ${p.unitsPerParcel} units` : ""})`,
-      amount: { amount: money2(EU_FIXED_DUTY_EUR / p.unitsPerParcel), currency: "EUR" },
-      basis: "sourced",
-      evidenceIds: [EU_DUTY_EVIDENCE.id],
-    });
-    if (p.includeProposedHandlingFee) {
+    // The Union handling fee applies whatever the parcel's value.
+    if (p.includeHandlingFee) {
       out.lines.push({
         kind: "handling",
-        label: `EU customs handling fee (€${EU_HANDLING_FEE_EUR} per item; proposed, not yet adopted)`,
-        amount: { amount: EU_HANDLING_FEE_EUR, currency: "EUR" },
-        basis: "estimate",
+        label: `EU Union handling fee (€${EU_HANDLING_FEE_EUR} per distinct item, from 1 November 2026${shared})`,
+        amount: { amount: money2(EU_HANDLING_FEE_EUR / p.unitsPerParcel), currency: "EUR" },
+        basis: "sourced",
         evidenceIds: [EU_HANDLING_FEE_EVIDENCE.id],
       });
     } else {
-      out.excluded.push({ kind: "handling", label: "EU customs handling fee", reason: "proposed but not adopted; left out at the caller's request" });
+      out.excluded.push({ kind: "handling", label: "EU Union handling fee", reason: "left out at the caller's request" });
     }
-    return "point_of_sale";
+    return lowValue ? "point_of_sale" : "import";
   });
 }

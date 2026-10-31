@@ -9,6 +9,7 @@ describe("search engine files", () => {
     expect(sitemap().map((e) => e.url)).toEqual([
       "https://theproductradar.io",
       "https://theproductradar.io/agencies",
+      "https://theproductradar.io/tools/eu-duty-calculator",
       "https://theproductradar.io/docs",
       "https://theproductradar.io/terms",
       "https://theproductradar.io/privacy",
