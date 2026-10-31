@@ -449,6 +449,32 @@ model LeadUnlock {
   @@unique([leadId, productKey])
 }
 
+// A paid £29 Pre-order Check (Stripe Checkout, no account): one product's full breakdown, unlocked for good
+// for the buyer's email once Stripe confirms the payment. `claims` is what the homepage check was built on
+// (the signed unlock token's contents: product, link kind, pasted name and brand, supplier price); the
+// breakdown is saved when paid, so the page at /preorder-check/<Stripe session id> stays readable after the
+// Dossier cache expires.
+model PreorderCheck {
+  id              String              @id @default(uuid(7)) @db.Uuid
+  email           String // lower-case
+  asin            String // the Amazon UK product the UK price comes from
+  claims          Json
+  amountPence     Int
+  currency        String              @default("gbp")
+  status          PreorderCheckStatus @default(PENDING)
+  stripeSessionId String?             @unique
+  paidAt          DateTime?           @db.Timestamptz(3)
+  breakdown       Json?
+  createdAt       DateTime            @default(now()) @db.Timestamptz(3)
+
+  @@index([email, asin])
+}
+
+enum PreorderCheckStatus {
+  PENDING
+  PAID
+}
+
 // Welcome grants per UTC day: the site-wide cap (WELCOME_DOSSIERS_PER_DAY) that bounds what fake sign-ups
 // could spend, whatever addresses they come from.
 model WelcomeGrantDay {

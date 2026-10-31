@@ -8,9 +8,11 @@ import { env } from "@/lib/env";
 import { createDbCreditStore } from "@/server/billing/credits";
 import { CREDIT_PACKS, PLANS, type CreditGrant, type PlanGrant } from "@/server/billing/plans";
 import { handleStripeEvent, InvalidSignatureError, verifyStripeEvent } from "@/server/billing/webhook";
+import { afterPreorderPaid } from "@/services/preorderReport";
 
 // POST /api/billing/webhook — Stripe → us. Signature-verified; idempotent. Subscriptions (Pro) and
-// credit packs. Also served at /api/stripe/webhook: either address works with the same signing secret.
+// credit packs, and the £29 Pre-order Check (its report and receipt, services/preorderReport.ts). Also served
+// at /api/stripe/webhook: either address works with the same signing secret.
 // A pack's first credit sends the buyer a receipt (CreditPurchaseReceipt); a plan's monthly credits
 // (Agency, on invoice.payment_succeeded) send SubscriptionRenewal.
 async function sendReceipt(grant: CreditGrant, baseUrl: string) {
@@ -70,6 +72,7 @@ export async function POST(request: NextRequest) {
     const handled = await handleStripeEvent(db, event, createDbCreditStore(db), {
       onCredited: (grant) => sendReceipt(grant, base),
       onPlanCredited: (grant, user) => sendRenewal(grant, user, base),
+      onPreorderPaid: (check) => afterPreorderPaid(db, check, base),
     });
     return Response.json({ received: true, ...handled });
   } catch (e) {

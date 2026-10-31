@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     return json(
       {
         error: "free_breakdowns_used",
-        message: `You've had your ${FREE_BREAKDOWNS_PER_LEAD} free breakdowns. Create a free account: your first full Dossier is free.`,
+        message: `You've had your ${FREE_BREAKDOWNS_PER_LEAD} free breakdowns. Get this product's full Pre-order Check for £29.`,
         signUp: `/signin?tab=register&callbackUrl=${encodeURIComponent(`/terminal?asin=${claims.asin}`)}`,
       },
       402,

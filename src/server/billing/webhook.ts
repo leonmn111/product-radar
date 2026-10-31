@@ -4,7 +4,8 @@
 import Stripe from "stripe";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { UnknownUserError, type CreditStore } from "./credits";
-import { creditGrantFor, planGrantFor, type CreditGrant, type PlanGrant } from "./plans";
+import { creditGrantFor, planGrantFor, preorderPaymentFor, type CreditGrant, type PlanGrant } from "./plans";
+import { markPreorderPaid, type PaidPreorder } from "./preorderPayments";
 import { applySubscription, snapshotFromStripe, type ApplyResult } from "./subscription";
 
 export class InvalidSignatureError extends Error {}
@@ -18,13 +19,19 @@ export function verifyStripeEvent(rawBody: string, signature: string | null, sec
   }
 }
 
-export type HandledEvent = { type: string; result: ApplyResult | "linked" | "credited" | "already_credited" | "ignored"; reason?: string };
+export type HandledEvent = {
+  type: string;
+  result: ApplyResult | "linked" | "credited" | "already_credited" | "unlocked" | "already_unlocked" | "ignored";
+  reason?: string;
+};
 
 export type WebhookHooks = {
   /** After a pack is credited for the first time (never on a repeat delivery), e.g. to send the receipt. */
   onCredited?: (grant: CreditGrant) => Promise<void>;
   /** After a plan's monthly credits are granted for an invoice (once per invoice), e.g. the renewal email. */
   onPlanCredited?: (grant: PlanGrant, user: { id: string; email: string; balance: number }) => Promise<void>;
+  /** After a £29 Pre-order Check is paid for the first time (never on a repeat delivery): its report and receipt. */
+  onPreorderPaid?: (check: PaidPreorder) => Promise<void>;
 };
 
 /**
@@ -44,6 +51,18 @@ export async function handleStripeEvent(db: PrismaClient, event: Stripe.Event, c
 
     case "checkout.session.completed": {
       const s = event.data.object;
+      // A £29 Pre-order Check: unlock the buyer's product once per session, for exactly £29.
+      if (s.mode === "payment" && s.metadata?.kind === "preorder_check") {
+        const paid = await markPreorderPaid(db, s, new Date());
+        if (!paid) {
+          const found = preorderPaymentFor(s);
+          return { type: event.type, result: "ignored", reason: "reason" in found ? found.reason : "unknown_check" };
+        }
+        if (paid.first && hooks.onPreorderPaid) {
+          await hooks.onPreorderPaid(paid.check).catch((e) => console.error("[billing] after-payment step failed (the check is unlocked)", s.id, e));
+        }
+        return { type: event.type, result: paid.first ? "unlocked" : "already_unlocked" };
+      }
       // A credit pack: credit the buyer once per session, for exactly what the catalogue says.
       if (s.mode === "payment") {
         const found = creditGrantFor(s);

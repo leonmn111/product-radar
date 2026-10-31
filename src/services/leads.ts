@@ -1,6 +1,7 @@
 // Leads from the homepage check's email gate (Lead, LeadUnlock): an email unlocks the full breakdown of a
 // check, free for its first FREE_BREAKDOWNS_PER_LEAD products. Unlocking a product again is free and
-// doesn't count twice. Marketing consent is only ever recorded as given (an unticked box changes nothing).
+// doesn't count twice, and nor does a product the email bought a £29 Pre-order Check for (PreorderCheck,
+// PAID): that one stays unlocked for good. Marketing consent is only ever recorded as given.
 
 import type { PrismaClient } from "@/generated/prisma/client";
 
@@ -26,7 +27,11 @@ export function dbLeadStore(db: PrismaClient): LeadStore {
         const unlocked = await tx.leadUnlock.findMany({ where: { leadId: lead.id }, select: { productKey: true } });
         const keys = new Set(unlocked.map((u) => u.productKey));
         if (!keys.has(productKey)) {
-          if (keys.size >= FREE_BREAKDOWNS_PER_LEAD) return { ok: false, reason: "limit_reached" } as const;
+          if (keys.size >= FREE_BREAKDOWNS_PER_LEAD) {
+            const asin = productKey.slice(productKey.indexOf(":") + 1);
+            const bought = await tx.preorderCheck.findFirst({ where: { email, asin, status: "PAID" }, select: { id: true } });
+            return bought ? ({ ok: true, freeLeft: 0 } as const) : ({ ok: false, reason: "limit_reached" } as const);
+          }
           await tx.leadUnlock.create({ data: { leadId: lead.id, productKey } });
           keys.add(productKey);
         }

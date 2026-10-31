@@ -206,3 +206,65 @@ export function planGrantFor(invoice: Stripe.Invoice): { grant: PlanGrant } | { 
     },
   };
 }
+
+// ── The £29 Pre-order Check (one product, no account) ────────────────────────
+
+const PREORDER_KIND = "preorder_check";
+
+/** One product's full Pre-order Check: a one-off payment, the total shown and charged as is. */
+export const PREORDER_CHECK = { name: "Pre-order Check", pricePence: 2900 } as const;
+
+export type PreorderCheckout = {
+  checkId: string; // the PreorderCheck row
+  email: string;
+  asin: string;
+  productTitle: string;
+  productUrl: string; // the Amazon UK listing the UK price comes from
+  supplierPrice: number; // £ per unit, the quote the check was run with
+  supplierSource: string;
+  baseUrl: string;
+};
+
+/** The Checkout Session for a Pre-order Check: £29, guest checkout with the buyer's email, and what to unlock. */
+export function preorderCheckSessionParams(c: PreorderCheckout): Stripe.Checkout.SessionCreateParams {
+  const metadata = {
+    kind: PREORDER_KIND,
+    checkId: c.checkId,
+    asin: c.asin,
+    productUrl: c.productUrl,
+    supplierPrice: c.supplierPrice.toFixed(2),
+    supplierSource: c.supplierSource,
+    email: c.email,
+  };
+  return {
+    mode: "payment",
+    customer_email: c.email,
+    client_reference_id: c.checkId,
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: CURRENCY,
+          unit_amount: PREORDER_CHECK.pricePence,
+          product_data: { name: `ProductRadar ${PREORDER_CHECK.name}`, description: c.productTitle.slice(0, 250) },
+        },
+      },
+    ],
+    metadata,
+    payment_intent_data: { metadata: { kind: PREORDER_KIND, checkId: c.checkId } },
+    success_url: `${c.baseUrl}/preorder-check/{CHECKOUT_SESSION_ID}`,
+    cancel_url: `${c.baseUrl}/#check`,
+  };
+}
+
+/**
+ * The Pre-order Check a finished Checkout Session pays for, or null with why it pays for none: it must be
+ * ours, paid, and exactly £29 in GBP.
+ */
+export function preorderPaymentFor(session: Stripe.Checkout.Session): { checkId: string; sessionId: string } | { checkId: null; reason: string } {
+  const meta = session.metadata ?? {};
+  if (session.mode !== "payment" || meta.kind !== PREORDER_KIND || !meta.checkId) return { checkId: null, reason: "not_a_preorder_check" };
+  if (session.payment_status !== "paid") return { checkId: null, reason: "not_paid" };
+  if (session.amount_total !== PREORDER_CHECK.pricePence || session.currency !== CURRENCY) return { checkId: null, reason: "amount_mismatch" };
+  return { checkId: meta.checkId, sessionId: session.id };
+}

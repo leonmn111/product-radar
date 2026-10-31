@@ -5,7 +5,9 @@
 // link is read in the browser first (parseProductLink is pure), so a wrong paste never costs a request.
 // The check runs live (POST /api/free-verdict) and can take up to a minute for a TikTok Shop or AliExpress
 // link (the product is found on Amazon UK first). Below the verdict, a blurred preview and an email gate:
-// the email unlocks the full breakdown (POST /api/free-verdict/unlock), free for the first 3 products.
+// the email unlocks the full breakdown (POST /api/free-verdict/unlock), free for the first 3 products. After
+// that the gate becomes a payment wall: the £29 Pre-order Check, through Stripe Checkout
+// (POST /api/preorder-check/checkout). No pre-ticked boxes, no timers, no scarcity claims: the price is £29.
 
 import Link from "next/link";
 import { useId, useRef, useState, type FormEvent } from "react";
@@ -102,7 +104,12 @@ function BlurredPreview() {
   );
 }
 
-type GateState = { kind: "idle" } | { kind: "sending" } | { kind: "error"; message: string; signUp?: string } | { kind: "done"; breakdown: QuickBreakdown };
+type GateState =
+  | { kind: "idle" }
+  | { kind: "sending" }
+  | { kind: "error"; message: string; signUp?: string }
+  | { kind: "paywall"; buying: boolean; error?: string }
+  | { kind: "done"; breakdown: QuickBreakdown };
 
 function EmailGate({ token, fullDossier }: { token: string; fullDossier: string }) {
   const ids = useId();
@@ -122,13 +129,60 @@ function EmailGate({ token, fullDossier }: { token: string; fullDossier: string 
       });
       const body = await res.json().catch(() => null);
       if (res.ok && body) setState({ kind: "done", breakdown: body as QuickBreakdown });
+      else if (res.status === 402 && body?.error === "free_breakdowns_used") setState({ kind: "paywall", buying: false });
       else setState({ kind: "error", message: body?.message ?? "That didn't work. Please try again.", signUp: body?.signUp });
     } catch {
       setState({ kind: "error", message: "The connection dropped. Please try again." });
     }
   }
 
+  async function buy() {
+    setState({ kind: "paywall", buying: true });
+    try {
+      const res = await fetch("/api/preorder-check/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token, email }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      const body = await res.json().catch(() => null);
+      if (res.ok && typeof body?.url === "string") {
+        window.location.assign(body.url); // Stripe Checkout, or this product's check if the email already bought it
+        return;
+      }
+      setState({ kind: "paywall", buying: false, error: body?.message ?? "We couldn't open checkout just now. You haven't been charged; please try again." });
+    } catch {
+      setState({ kind: "paywall", buying: false, error: "The connection dropped. You haven't been charged; please try again." });
+    }
+  }
+
   if (state.kind === "done") return <Breakdown b={state.breakdown} fullDossier={fullDossier} />;
+  if (state.kind === "paywall") {
+    return (
+      <div className="relative mt-5 overflow-hidden rounded-xl border border-white/[0.08] bg-background-dark/60">
+        <BlurredPreview />
+        <div className="absolute inset-0 flex flex-col justify-center gap-3 overflow-y-auto bg-background-dark/80 p-4 sm:p-5">
+          <p className="text-sm font-semibold text-balance text-white">You&apos;re about to commit to buying stock. Get the full Pre-order Check for £29.</p>
+          <button
+            type="button"
+            onClick={buy}
+            disabled={state.buying}
+            className={`inline-flex items-center justify-center self-start rounded-lg bg-accent-mint px-4 py-2.5 text-sm font-semibold text-on-accent transition hover:bg-accent-mint-strong disabled:cursor-wait disabled:opacity-80 ${focusRing}`}
+          >
+            {state.buying ? "Opening secure checkout…" : "Buy Pre-order Check (£29)"}
+          </button>
+          <p className="text-[11px] text-slate-400">
+            £29 in total, one-off: not a subscription. Secure checkout by Stripe; your check opens straight after, and we email you its link at {email}.
+          </p>
+          {state.error && (
+            <p role="alert" className="text-xs text-rose-200">
+              {state.error}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
   const sending = state.kind === "sending";
   return (
     <div className="relative mt-5 overflow-hidden rounded-xl border border-white/[0.08] bg-background-dark/60">
@@ -190,7 +244,8 @@ function EmailGate({ token, fullDossier }: { token: string; fullDossier: string 
 
 // ── The unlocked breakdown ───────────────────────────────────────────────────
 
-function Breakdown({ b, fullDossier }: { b: QuickBreakdown; fullDossier: string }) {
+/** The full breakdown: after the email gate on the homepage, and on a paid Pre-order Check's own page (`paid`). */
+export function Breakdown({ b, fullDossier, paid = false }: { b: QuickBreakdown; fullDossier: string; paid?: boolean }) {
   const row = "flex items-baseline justify-between gap-4 py-1.5";
   const sourceLink = `underline underline-offset-2 hover:text-white ${focusRing}`;
   return (
@@ -290,7 +345,8 @@ function Breakdown({ b, fullDossier }: { b: QuickBreakdown; fullDossier: string 
           <span aria-hidden="true">→</span>
         </Link>
         <p className="text-xs text-slate-400">
-          {b.freeLeft} free breakdown{b.freeLeft === 1 ? "" : "s"} left · a calculated estimate, not a guarantee
+          {paid ? "Your Pre-order Check stays on this page" : `${b.freeLeft} free breakdown${b.freeLeft === 1 ? "" : "s"} left`} · a calculated estimate, not a
+          guarantee
         </p>
       </div>
     </div>
