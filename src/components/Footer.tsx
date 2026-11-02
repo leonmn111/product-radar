@@ -9,6 +9,7 @@ const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-
 const LINKS = [
   ["/agencies", "For agencies"],
   ["/tools/eu-duty-calculator", "EU duty calculator"],
+  ["/tools/tiktok-shop-uk-calculator", "TikTok Shop calculator"],
   ["/terms", "Terms"],
   ["/privacy", "Privacy"],
   ["/docs", "API docs"],

@@ -10,6 +10,7 @@ describe("search engine files", () => {
       "https://theproductradar.io",
       "https://theproductradar.io/agencies",
       "https://theproductradar.io/tools/eu-duty-calculator",
+      "https://theproductradar.io/tools/tiktok-shop-uk-calculator",
       "https://theproductradar.io/docs",
       "https://theproductradar.io/terms",
       "https://theproductradar.io/privacy",
