@@ -169,7 +169,10 @@ describe("POST /api/free-verdict: the quick verdict", () => {
     vi.mocked(getProductDossier).mockRejectedValueOnce(new SourceError("aliexpress", "The specified access token is invalid or expired"));
     const failed = await call(AMAZON);
     expect(failed.status).toBe(503);
-    expect((await failed.json()).message).not.toMatch(/token/i);
+    const { message } = await failed.json();
+    expect(message).toBe("Our live Amazon pricing connection is temporarily down for maintenance. Please check back shortly.");
+    expect(message).not.toMatch(/token/i);
+    expect(errors).toHaveBeenCalled(); // the full failure still reaches the server log
     expect(dbFreeVerdictQuota.release).toHaveBeenCalledTimes(1);
     errors.mockRestore();
   });

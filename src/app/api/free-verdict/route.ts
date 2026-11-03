@@ -33,6 +33,8 @@ import type { QuickCheck } from "@/types/quickCheck";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const visitors = createRateLimiter({ windowMs: DAY_MS, max: env.FREE_VERDICTS_PER_VISITOR });
 const noStore = { "Cache-Control": "no-store" };
+/** What a visitor sees while a data source is failing (owner's wording, 3 November 2026: the Rainforest outage). */
+const SOURCE_DOWN_MESSAGE = "Our live Amazon pricing connection is temporarily down for maintenance. Please check back shortly.";
 const signUpFor = (asin: string) => `/signin?tab=register&callbackUrl=${encodeURIComponent(`/terminal?asin=${asin}`)}`;
 
 export async function POST(request: NextRequest) {
@@ -128,6 +130,7 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     await giveBack();
     if (!isSourceFailure(e)) throw e;
-    return json({ error: "source_unavailable", message: `${reportSourceFailure("free-verdict", e)} Your free check wasn't used; try again in a few minutes.` }, 503);
+    reportSourceFailure("free-verdict", e); // the full failure, for the owner's server log
+    return json({ error: "source_unavailable", message: SOURCE_DOWN_MESSAGE }, 503);
   }
 }
