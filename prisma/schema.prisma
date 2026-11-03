@@ -375,6 +375,43 @@ model SiwxNonce {
   @@index([usedAt])
 }
 
+// ─── Agent wallets (x402 Tier 2) ─────────────────────────────────────────────
+// An AI agent's Solana wallet, signed in with Sign-In With Solana (src/server/payments/x402/agentWallets.ts):
+// the server issues a nonce, the wallet signs the message carrying it, and the agent gets a session token
+// it can trade for API keys. Payment code only (CLAUDE.md Rule 2). Nothing credits usdcBalance yet: paying
+// in Solana USDC is the next phase.
+
+model Wallet {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  address       String    @unique // base58 Solana public key (CHECK: 32 to 44 base58 characters)
+  nonce         String? // the sign-in nonce waiting to be signed; cleared when it's used (one use only)
+  nonceIssuedAt DateTime? @db.Timestamptz(3)
+  usdcBalance   Decimal   @default(0) @db.Decimal(18, 6) // exact, never a float: USDC has 6 decimals (CHECK: >= 0)
+  verifiedAt    DateTime? @db.Timestamptz(3) // its first successful sign-in
+  lastSignInAt  DateTime? @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
+
+  apiKeys AgentApiKey[]
+
+  @@index([verifiedAt])
+}
+
+// An API key for a signed-in wallet. Only its SHA-256 is kept: the key is shown once, when it's made.
+model AgentApiKey {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  walletId   String    @db.Uuid
+  keyHash    String    @unique // hex SHA-256 of the whole key
+  prefix     String // the key's first characters, so its owner can tell keys apart
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  lastUsedAt DateTime? @db.Timestamptz(3)
+  revokedAt  DateTime? @db.Timestamptz(3)
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+}
+
 // ─── v2 Dossiers ─────────────────────────────────────────────────────────────
 // Each Dossier as it was delivered, so a buyer can reopen it without new provider calls. Written by
 // src/services/dossierStore.ts; no payment data here (the payment row points at the Dossier id).
