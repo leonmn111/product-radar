@@ -39,6 +39,9 @@ export function titleSimilarity(a: string, b: string): number {
   return shared / small.size;
 }
 
+/** A pasted product (an AliExpress or TikTok Shop listing) and an Amazon UK listing are the same product from here. */
+export const LISTING_MATCH_MIN = 0.5;
+
 /** The words worth searching a supplier for: the title's tokens, minus the most generic. */
 export function searchTermFor(title: string, maxWords = 8): string {
   return [...tokens(title)].slice(0, maxWords).join(" ");

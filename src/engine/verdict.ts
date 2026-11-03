@@ -2,7 +2,8 @@
 // gives: the catalog dossier (components/dashboard/dossier.ts), the paid Dossier (services/dossierService.ts),
 // the free check and the APIs. Pure, with no runtime imports, so the browser can use it too.
 //
-//   Launch               strong evidence and a proven profit, every cost accounted for
+//   Launch               strong evidence and a proven profit, every cost accounted for (the quick check,
+//                        which can't see shipping, returns or ads: at least half the price left before them)
 //   Test small           worth a small trial order: nothing argues against it, but the profit isn't proven
 //   Avoid                a hard gate failed, or the evidence argues against it
 //   Not enough evidence  below the 0.5 verdict gate: withheld, with what's missing
@@ -47,6 +48,13 @@ export const BRAND_RESTRICTED_REASON =
 export const LAUNCH_MIN_MARGIN_PCT = 25;
 export const LAUNCH_MIN_ROI_PCT = 50;
 
+/**
+ * The quick check's Launch bar (the homepage check and the catalog seed). It can't see shipping, returns or
+ * ad spend, so it can't prove the bar above. Instead, at least half the selling price must be left before
+ * them: the full bar's 25% plus another 25% of the price for what it can't see. Owner decision, 2026-11-02.
+ */
+export const QUICK_LAUNCH_MIN_KEEP_PCT = 50;
+
 type ChannelMargin = Pick<LandedMargin, "channel" | "currency" | "retailPrice" | "breakEvenAdCost" | "netProfit" | "netMarginPct" | "roiPercentage" | "complete">;
 
 const SYMBOL: Record<Money["currency"], string> = { GBP: "£", EUR: "€", USD: "$" };
@@ -73,6 +81,10 @@ export function profitGate<M extends ChannelMargin>(channels: M[]): { margin: M;
 
 /** Launch-ready: every cost accounted for, and the margin and return clear the Launch thresholds. */
 export const launchReady = (m: ChannelMargin) => m.complete && m.netProfit.amount > 0 && m.netMarginPct >= LAUNCH_MIN_MARGIN_PCT && m.roiPercentage >= LAUNCH_MIN_ROI_PCT;
+
+/** Quick-check Launch: the contribution before shipping, returns and ads is at least QUICK_LAUNCH_MIN_KEEP_PCT of the price. */
+export const quickLaunchReady = (m: ChannelMargin) =>
+  m.breakEvenAdCost.amount > 0 && (m.breakEvenAdCost.amount / m.retailPrice.amount) * 100 >= QUICK_LAUNCH_MIN_KEEP_PCT;
 
 /** "£4.20 before ads per sale (21.0% of the price)": the contribution, for reasons. */
 export const contributionText = (m: ChannelMargin) =>

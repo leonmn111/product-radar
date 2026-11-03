@@ -6,8 +6,10 @@
 //   the UK price needs 0.7 confidence (CLAUDE.md Rule 5), about four current listings of the product;
 //   below that the verdict is "Not enough evidence" and no money figure is shown
 //   G1  £0 or less per sale before ads → "Avoid", "Loses £X per sale before ads"
-//   otherwise "Test small": shipping, returns and the seller's ad cost are never known here, so the
-//   profit is never fully proven and a quick check never says Launch.
+//   "Launch" when at least half the price is left before ads (QUICK_LAUNCH_MIN_KEEP_PCT): shipping,
+//   returns and the seller's ad cost are never known here, so the bar leaves a quarter of the price for
+//   them on top of the full Launch bar's 25% margin, and the reason says to count them
+//   otherwise "Test small".
 //
 // The breakdown behind the email gate adds every cost line, the worst case and an ad-test plan, all
 // arithmetic on the same figures. The test is TEST_UNITS units, a stated plan, not a forecast.
@@ -17,7 +19,7 @@ import { calculateConfidence, FINANCIAL_THRESHOLD } from "@/engine/confidence";
 import { calculateUKMargin } from "@/engine/margin";
 import { POLICY_EVIDENCE } from "@/engine/policy";
 import { money2 } from "@/engine/sellingCosts";
-import { brandRestricted, BRAND_RESTRICTED_REASON, profitGate, verdictLabel } from "@/engine/verdict";
+import { brandRestricted, BRAND_RESTRICTED_REASON, contributionText, profitGate, quickLaunchReady, verdictLabel } from "@/engine/verdict";
 import { median } from "@/server/live/margin";
 import type { Dossier, Evidence, ResellabilityFlags, VerdictGate } from "@/types/dossier";
 import type { CostInput, LandedMargin } from "@/types/financials";
@@ -118,6 +120,9 @@ export function quickVerdict(d: Dossier, flags: ResellabilityFlags, supplier: Qu
   // G1: TikTok Shop UK is the one channel modelled here, so it is the cheapest.
   const loss = profitGate([margin]);
   if (loss) return result("AVOID", `${loss.reason}.`, "G1_PROFIT", extra);
+  if (quickLaunchReady(margin)) {
+    return result("LAUNCH", `Keeps ${contributionText(margin)}, so at least half the price is left for shipping, returns and ads. Count those before you order.`, null, extra);
+  }
   return result("TEST", null, null, extra);
 }
 

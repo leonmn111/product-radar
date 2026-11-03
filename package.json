@@ -23,6 +23,7 @@
     "data:refresh": "tsx scripts/refresh-data.ts && tsx scripts/enrich-trends.ts scripts/data/trend-keywords-2026-10.json",
     "fx:update": "tsx scripts/update-fx-rates.ts",
     "agent:test": "tsx scripts/test-agent-client.ts",
+    "db:seed": "tsx --conditions=react-server src/scripts/seed-catalog.ts",
     "mcp:build": "npm --prefix mcp install --no-audit --no-fund && npm --prefix mcp run build"
   },
   "dependencies": {

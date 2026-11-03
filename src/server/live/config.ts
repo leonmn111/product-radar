@@ -24,7 +24,8 @@ export type LiveSourcesStatus = { ready: true; sample: boolean; sources: LiveSou
 /** True when development sample mode is switched on (never in production). */
 export const sampleModeOn = () => env.LIVE_SAMPLE_DATA === "on" && env.NODE_ENV !== "production";
 
-export function liveSources({ allowSample = false }: { allowSample?: boolean } = {}): LiveSourcesStatus {
+/** `retailCallMs`: how long one Rainforest call may take, for a background job that can wait longer than a visitor. */
+export function liveSources({ allowSample = false, retailCallMs }: { allowSample?: boolean; retailCallMs?: number } = {}): LiveSourcesStatus {
   if (allowSample && sampleModeOn()) {
     return {
       ready: true,
@@ -33,7 +34,7 @@ export function liveSources({ allowSample = false }: { allowSample?: boolean } =
     };
   }
   const missing: string[] = [];
-  const retail = env.RAINFOREST_API_KEY ? createRainforestSource({ apiKey: env.RAINFOREST_API_KEY }) : null;
+  const retail = env.RAINFOREST_API_KEY ? createRainforestSource({ apiKey: env.RAINFOREST_API_KEY, maxCallMs: retailCallMs }) : null;
   if (!retail) missing.push("retail source: RAINFOREST_API_KEY is not set");
   const supplier = aliexpressSource();
   if (!supplier) missing.push("supplier source: the AliExpress Drop Shipping API isn't connected yet (ALIEXPRESS_APP_KEY, ALIEXPRESS_APP_SECRET, ALIEXPRESS_ACCESS_TOKEN)");

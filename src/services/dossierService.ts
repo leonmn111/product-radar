@@ -63,6 +63,12 @@ export type DossierInput = {
   assumptions?: { feeStack?: FeeStack; returns?: ReturnsInput | null; adCostPerSale?: CostInput | null };
   sample?: boolean;
   notes?: string[];
+  /**
+   * The search for the product's other listings failed (a timeout, a provider error), so the Dossier rests
+   * on its own page alone. It's still served, but never cached: the next request searches again rather than
+   * repeating a "Not enough evidence" that a passing failure caused.
+   */
+  listingSearchFailed?: boolean;
 };
 
 // ── Fetching (the only I/O) ──────────────────────────────────────────────────
@@ -163,15 +169,17 @@ export async function fetchProductDossierData(
   const term = searchTermFor(listing.title);
   const sizeOf = (ls: RetailListing[]) => groupSameProduct(ls).find((g) => g.some((l) => l.id === listing.id))?.length ?? 0;
   let ukListings: RetailListing[] = [listing];
+  let listingSearchFailed = false;
   try {
     // The page goes first so it seeds its own group; search results for the same ASIN are the same listing.
     ukListings = await searchWithSynonyms(expandQuery(term), sources.retail, budget, maxExtraSearches, sizeOf, [listing], notes);
   } catch (e) {
     notes.push(`The search for other listings of this product failed (${failure(e)}), so only its own page was used.`);
+    listingSearchFailed = true;
   }
   // G3: a brand-restricted product's suppliers are never searched.
   const suppliers = brandRestricted(listingFlags(listing.title, details, [])) ? [] : await supplierOffers(listing.title, sources.supplier, budget);
-  return { query: asin, productId: listing.id, details, ukListings, suppliers, notes };
+  return { query: asin, productId: listing.id, details, ukListings, suppliers, notes, listingSearchFailed };
 }
 
 // ── Pure assembly ────────────────────────────────────────────────────────────
@@ -443,7 +451,10 @@ export type ProductDossierDeps = {
  * built and cached. Null when Amazon UK has no priced product with that ASIN. Failing to write
  * the cache doesn't fail the request.
  */
-export async function getProductDossier(asin: string, deps: ProductDossierDeps): Promise<{ dossier: Dossier; cache: "hit" | "miss" } | null> {
+export async function getProductDossier(
+  asin: string,
+  deps: ProductDossierDeps,
+): Promise<{ dossier: Dossier; cache: "hit" | "miss"; listingSearchFailed?: boolean } | null> {
   const clock = deps.now ?? (() => new Date());
   const cached = await deps.cache.get(asin, clock());
   if (cached && cached.sample === deps.sample) {
@@ -480,14 +491,14 @@ export async function getProductDossier(asin: string, deps: ProductDossierDeps):
     }
     dossier = buildDossier({ ...input, notes, history, adDuration }, { id: deps.id, now: clock(), imageMatcher: deps.imageMatcher });
   }
-  if (!historyFailed) {
+  if (!historyFailed && !data.listingSearchFailed) {
     try {
       await deps.cache.put(dossier, clock());
     } catch (e) {
       console.error("[dossier] couldn't cache", asin, e);
     }
   }
-  return { dossier, cache: "miss" };
+  return { dossier, cache: "miss", listingSearchFailed: data.listingSearchFailed };
 }
 
 // ── Product search (people, /api/search) ─────────────────────────────────────

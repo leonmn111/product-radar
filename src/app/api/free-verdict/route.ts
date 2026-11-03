@@ -4,7 +4,7 @@ import { env } from "@/lib/env";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { clientAddress } from "@/server/auth/password";
 import { liveSources } from "@/server/live/config";
-import { searchTermFor, titleSimilarity } from "@/server/live/match";
+import { LISTING_MATCH_MIN, searchTermFor, titleSimilarity } from "@/server/live/match";
 import { parseProductLink } from "@/server/live/productLink";
 import { signUnlock } from "@/server/live/quickToken";
 import { isSourceFailure, reportSourceFailure } from "@/server/live/unavailable";
@@ -34,8 +34,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const visitors = createRateLimiter({ windowMs: DAY_MS, max: env.FREE_VERDICTS_PER_VISITOR });
 const noStore = { "Cache-Control": "no-store" };
 const signUpFor = (asin: string) => `/signin?tab=register&callbackUrl=${encodeURIComponent(`/terminal?asin=${asin}`)}`;
-/** A pasted product and its Amazon UK match must share at least half the shorter title's words. */
-const MATCH_MIN = 0.5;
 
 export async function POST(request: NextRequest) {
   await connection();
@@ -93,7 +91,7 @@ export async function POST(request: NextRequest) {
         pasted = { name: link.name, brand: null };
       }
       const { results } = await searchProducts(searchTermFor(pasted.name), live.sources.retail, { maxResults: 10 });
-      const match = results.find((r) => titleSimilarity(pasted!.name, r.title) >= MATCH_MIN);
+      const match = results.find((r) => titleSimilarity(pasted!.name, r.title) >= LISTING_MATCH_MIN);
       if (!match) return notFound("We couldn't find this product on Amazon UK, so there's no UK price to check it against. Try its Amazon UK link instead.");
       asin = match.asin;
     }

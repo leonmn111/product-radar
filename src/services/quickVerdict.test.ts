@@ -37,6 +37,14 @@ describe("quickVerdict", () => {
     expect(q.margin?.lines.find((l) => l.kind === "supplier")?.basis).toBe("caller_supplied");
   });
 
+  it("Launch when at least half the price is left before ads, with a reason that says what isn't counted", () => {
+    // £22.24 − VAT £3.71 − 9% £1.67 − £0.50 − 15% £2.78 − £2.00 = £11.58, 52.1% of the price.
+    const q = quickVerdict(dossier(FOUR), unbranded, yours(2), NOW);
+    expect([q.tier, q.label, q.gate]).toEqual(["LAUNCH", "Launch", null]);
+    expect(q.reason).toBe("Keeps £11.58 per sale before ads (52.1% of the price), so at least half the price is left for shipping, returns and ads. Count those before you order.");
+    // Just under half (£10.08, 45.3% at £3.50) stays Test small: the first test above.
+  });
+
   it("G1: a loss before ads is Avoid, Loses £X per sale before ads", () => {
     const q = quickVerdict(dossier([10, 10, 10, 10]), unbranded, yours(9), NOW);
     expect([q.tier, q.label, q.gate, q.reason]).toEqual(["AVOID", "Avoid", "G1_PROFIT", "Loses £3.17 per sale before ads."]);

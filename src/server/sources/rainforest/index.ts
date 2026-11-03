@@ -7,16 +7,19 @@ import { SourceError, type RetailSource } from "../types";
 import { parseRainforestProduct, parseRainforestSearch, type RainforestProductResponse, type RainforestSearchResponse } from "./parse";
 
 const ENDPOINT = "https://api.rainforestapi.com/request";
-const MAX_CALL_MS = 25_000; // Rainforest's own example took ~11 s
+const MAX_CALL_MS = 25_000; // Rainforest's own example took ~11 s; a UK search took 32 s on 3 November 2026
 
 export function createRainforestSource({
   apiKey,
   fetchImpl = fetch,
   now = () => new Date(),
+  maxCallMs = MAX_CALL_MS,
 }: {
   apiKey: string;
   fetchImpl?: typeof fetch;
   now?: () => Date;
+  /** The longest one call may take: a background job, with nobody waiting, can allow more. */
+  maxCallMs?: number;
 }): RetailSource {
   /** One Rainforest request; throws SourceError when it fails or Rainforest says it failed. */
   async function request<T extends { request_info?: { success?: boolean; message?: string } }>(params: Record<string, string>, budget: QueryBudget): Promise<T> {
@@ -24,7 +27,7 @@ export function createRainforestSource({
     const query = new URLSearchParams({ api_key: apiKey, ...params });
     let res: Response;
     try {
-      res = await fetchImpl(`${ENDPOINT}?${query}`, { signal: AbortSignal.timeout(Math.min(MAX_CALL_MS, budget.remainingMs())) });
+      res = await fetchImpl(`${ENDPOINT}?${query}`, { signal: AbortSignal.timeout(Math.min(maxCallMs, budget.remainingMs())) });
     } catch (e) {
       throw new SourceError("rainforest", e instanceof Error && e.name === "TimeoutError" ? "timed out" : "network error");
     }

@@ -34,7 +34,9 @@ A Dossier answers "should I sell this, and what would I really keep?" in eight p
     cost and every other sourced cost) is £0 or less on the cheapest modelled channel: "Avoid", with the
     reason "Loses £X per sale before ads".
   - Launch also needs a proven profit (`launchReady`): every cost counted, 25%+ net margin, 50%+ return on
-    landed cost. Without it the best verdict is Test small.
+    landed cost. Without it the best verdict is Test small. The free quick check (homepage, catalog seed)
+    can't see shipping, returns or ads, so its Launch (`quickLaunchReady`) needs half the price left before
+    them instead, and its reason says to count them.
 - **Two tiers.** The Verdict is shown from **0.5** confidence. Every number (margins, momentum,
   saturation, scores) needs **0.7**. Below its gate a part is *withheld*: the Dossier says so and lists
   the evidence it still needs. It never shows a greyed-out or estimated value.

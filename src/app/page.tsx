@@ -144,7 +144,7 @@ const FAQ: { q: string; a: ReactNode }[] = [
   },
   {
     q: "What do Launch, Test small and Avoid mean?",
-    a: "Launch: the evidence is strong and the profit is proven with every cost counted. Test small: nothing argues against it, but the profit isn't proven yet, so try a small order first. Avoid: it loses money before ads, it's a branded product (Avoid (brand-restricted): reselling a brand needs its invoice, and dropshipping it risks a store ban), or the evidence argues against it. Not enough evidence: we say what's missing instead of guessing.",
+    a: "Launch: the evidence is strong and the profit is proven with every cost counted. On the free quick check, which can't see your shipping, returns or ads, Launch means at least half the selling price is left before them. Test small: nothing argues against it, but the profit isn't proven yet, so try a small order first. Avoid: it loses money before ads, it's a branded product (Avoid (brand-restricted): reselling a brand needs its invoice, and dropshipping it risks a store ban), or the evidence argues against it. Not enough evidence: we say what's missing instead of guessing.",
   },
   {
     q: "Where do the numbers come from?",

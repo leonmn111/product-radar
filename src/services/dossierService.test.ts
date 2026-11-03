@@ -328,6 +328,22 @@ describe("getProductDossier (the 48-hour cache)", () => {
     expect(hit?.dossier.notes.at(-1)).toContain("From the 48-hour cache");
   });
 
+  it("doesn't cache a Dossier whose search for other listings failed, so the next request searches again", async () => {
+    const cache = memoryCache();
+    const timedOut = sources();
+    timedOut.retail.search.mockRejectedValue(new Error("rainforest: timed out"));
+    const first = await getProductDossier("B0CH33F5P2", { sources: timedOut, cache, sample: false, id: "a", now: () => NOW });
+    expect([first?.cache, first?.listingSearchFailed]).toEqual(["miss", true]);
+    expect(first?.dossier.notes.join(" ")).toContain("The search for other listings of this product failed");
+    expect(cache.put).not.toHaveBeenCalled();
+
+    const retry = sources();
+    const second = await getProductDossier("B0CH33F5P2", { sources: retry, cache, sample: false, id: "b", now: () => NOW });
+    expect([second?.cache, second?.listingSearchFailed]).toEqual(["miss", false]);
+    expect(retry.retail.search).toHaveBeenCalled();
+    expect(cache.put).toHaveBeenCalledOnce();
+  });
+
   it("never serves sample data to a real request, or the other way round", async () => {
     const cache = memoryCache();
     await getProductDossier("B0CH33F5P2", { sources: sources(), cache, sample: true, id: "dev", now: () => NOW });
