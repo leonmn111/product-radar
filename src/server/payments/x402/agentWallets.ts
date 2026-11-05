@@ -7,7 +7,8 @@
 //   POST /api/x402/auth/verify     { address, signature }  → { token } (a session JWT, 1 hour)
 //   POST /api/x402/auth/api-keys   Bearer <session token>  → { apiKey } (shown once)
 //   DELETE /api/x402/auth/api-keys Bearer <session token>, { id } → the key stops working
-//   GET  /api/x402/auth/me         Bearer <session token or API key> → the wallet, its balance and keys
+//   GET  /api/x402/auth/me         Bearer <session token or API key> → the wallet and its keys
+// What the wallet owes and its USDC allowance: GET /api/x402/billing (usageBilling.ts, solanaBilling.ts).
 
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
@@ -30,8 +31,6 @@ export const MAX_API_KEYS = 10;
 
 export type WalletView = {
   address: string;
-  /** USDC, exact to 6 decimals, as a string so no float ever touches it. */
-  usdcBalance: string;
   verifiedAt: string | null;
   apiKeys: { id: string; prefix: string; createdAt: string; lastUsedAt: string | null }[];
 };
@@ -46,8 +45,8 @@ export interface WalletStore {
   wallet(address: string): Promise<WalletView | null>;
   addKey(address: string, hash: string, prefix: string, max: number): Promise<{ id: string; createdAt: Date } | "too_many" | null>;
   revokeKey(address: string, id: string, now: Date): Promise<boolean>;
-  /** The signed-in wallet an active key belongs to (marking it used), or null. */
-  walletForKey(hash: string, now: Date): Promise<string | null>;
+  /** The signed-in wallet an active key belongs to, and the key's id (marking it used), or null. */
+  walletForKey(hash: string, now: Date): Promise<{ address: string; keyId: string } | null>;
 }
 
 /** Where the sign-in message says it's for: this site. */
@@ -104,15 +103,15 @@ export async function authenticateAgent(
   authorization: string | null,
   auth: { secret: string; issuer: string },
   now: Date = new Date(),
-): Promise<{ address: string; via: "session" | "api_key" } | null> {
+): Promise<{ address: string; via: "session" | "api_key"; keyId: string | null } | null> {
   const token = /^Bearer\s+(\S+)$/i.exec(authorization?.trim() ?? "")?.[1];
   if (!token) return null;
   if (token.startsWith(API_KEY_PREFIX)) {
-    const address = await store.walletForKey(hashApiKey(token), now);
-    return address ? { address, via: "api_key" } : null;
+    const key = await store.walletForKey(hashApiKey(token), now);
+    return key ? { address: key.address, via: "api_key", keyId: key.keyId } : null;
   }
   const address = await verifySessionToken(token, auth.secret, auth.issuer, now);
-  return address && (await store.wallet(address)) ? { address, via: "session" } : null;
+  return address && (await store.wallet(address)) ? { address, via: "session", keyId: null } : null;
 }
 
 export async function issueApiKey(store: WalletStore, address: string) {
@@ -141,12 +140,11 @@ export function prismaWalletStore(db: PrismaClient): WalletStore {
     async wallet(address) {
       const w = await db.wallet.findUnique({
         where: { address },
-        select: { address: true, usdcBalance: true, verifiedAt: true, apiKeys: { where: { revokedAt: null }, orderBy: { createdAt: "asc" } } },
+        select: { address: true, verifiedAt: true, apiKeys: { where: { revokedAt: null }, orderBy: { createdAt: "asc" } } },
       });
       if (!w?.verifiedAt) return null;
       return {
         address: w.address,
-        usdcBalance: w.usdcBalance.toFixed(6),
         verifiedAt: w.verifiedAt.toISOString(),
         apiKeys: w.apiKeys.map((k) => ({ id: k.id, prefix: k.prefix, createdAt: k.createdAt.toISOString(), lastUsedAt: k.lastUsedAt?.toISOString() ?? null })),
       };
@@ -169,7 +167,7 @@ export function prismaWalletStore(db: PrismaClient): WalletStore {
       const k = await db.agentApiKey.findUnique({ where: { keyHash }, select: { id: true, revokedAt: true, wallet: { select: { address: true, verifiedAt: true } } } });
       if (!k || k.revokedAt || !k.wallet.verifiedAt) return null;
       await db.agentApiKey.update({ where: { id: k.id }, data: { lastUsedAt: now } });
-      return k.wallet.address;
+      return { address: k.wallet.address, keyId: k.id };
     },
   };
 }

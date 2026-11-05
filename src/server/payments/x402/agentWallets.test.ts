@@ -33,7 +33,6 @@ function memoryStore(): WalletStore {
       const active = [...keys.values()].filter((k) => k.address === address && !k.revokedAt);
       return {
         address,
-        usdcBalance: "0.000000",
         verifiedAt: w.verifiedAt.toISOString(),
         apiKeys: active.map((k) => ({ id: k.id, prefix: k.prefix, createdAt: k.createdAt.toISOString(), lastUsedAt: k.lastUsedAt?.toISOString() ?? null })),
       };
@@ -54,7 +53,7 @@ function memoryStore(): WalletStore {
       const k = keys.get(hash);
       if (!k || k.revokedAt) return null;
       k.lastUsedAt = now;
-      return k.address;
+      return { address: k.address, keyId: k.id };
     },
   };
 }
@@ -74,11 +73,11 @@ describe("agent wallet sign-in", () => {
     expect(result).toMatchObject({ ok: true, tokenType: "Bearer", expiresIn: 3600, address: w.address });
     if (!result.ok) return;
 
-    expect(await authenticateAgent(store, `Bearer ${result.token}`, AUTH, later(60_000))).toEqual({ address: w.address, via: "session" });
+    expect(await authenticateAgent(store, `Bearer ${result.token}`, AUTH, later(60_000))).toEqual({ address: w.address, via: "session", keyId: null });
     const key = await issueApiKey(store, w.address);
     expect(key).toMatchObject({ ok: true, apiKey: expect.stringMatching(/^pr_agent_/) });
     if (!key.ok) return;
-    expect(await authenticateAgent(store, `Bearer ${key.apiKey}`, AUTH, later(60_000))).toEqual({ address: w.address, via: "api_key" });
+    expect(await authenticateAgent(store, `Bearer ${key.apiKey}`, AUTH, later(60_000))).toEqual({ address: w.address, via: "api_key", keyId: key.id });
     expect((await store.wallet(w.address))?.apiKeys).toEqual([{ id: key.id, prefix: key.prefix, createdAt: key.createdAt, lastUsedAt: later(60_000).toISOString() }]);
 
     expect(await store.revokeKey(w.address, key.id, later(120_000))).toBe(true);

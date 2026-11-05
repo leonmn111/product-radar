@@ -88,6 +88,16 @@ const EnvSchema = z
     // Ed25519 key (base64) or an EC key (PEM); a PEM pasted on one line with literal "\n"s is unfolded.
     CDP_API_KEY_ID: optional,
     CDP_API_KEY_SECRET: optional.transform((v) => v?.replace(/\\n/g, "\n")),
+    // x402 Tier 2, Solana pay-per-request (src/server/payments/x402/solanaBilling.ts). Billing is off until the
+    // sponsor key is set: the server's own hot wallet, which pays agents' SOL fees and pulls what they owe (as
+    // the delegate they approved) into the treasury. Base58 64-byte secret key. It holds only SOL for fees.
+    SOLANA_SPONSOR_SECRET_KEY: optional,
+    SOLANA_RPC_URL: optional.refine((v) => !v || /^https:\/\//.test(v) || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/.test(v), {
+      message: "must start with https:// (or be a local test validator on http://127.0.0.1)",
+    }),
+    // Defaults: the owner's treasury wallet, and Circle's USDC mint. Overridden only to test on devnet.
+    SOLANA_TREASURY: optional,
+    SOLANA_USDC_MINT: optional,
   });
 
 const parsed = EnvSchema.safeParse(process.env);

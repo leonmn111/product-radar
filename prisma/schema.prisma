@@ -378,21 +378,24 @@ model SiwxNonce {
 // ─── Agent wallets (x402 Tier 2) ─────────────────────────────────────────────
 // An AI agent's Solana wallet, signed in with Sign-In With Solana (src/server/payments/x402/agentWallets.ts):
 // the server issues a nonce, the wallet signs the message carrying it, and the agent gets a session token
-// it can trade for API keys. Payment code only (CLAUDE.md Rule 2). Nothing credits usdcBalance yet: paying
-// in Solana USDC is the next phase.
+// it can trade for API keys. Payment code only (CLAUDE.md Rule 2). Pay for actual usage, no prepaid
+// balances (owner decision, 5 November 2026): each paid request is a UsageEvent, and a Settlement later
+// pulls what's owed in USDC from the agent's wallet, under the allowance the agent approved
+// (src/server/payments/x402/solanaBilling.ts).
 
 model Wallet {
   id            String    @id @default(uuid(7)) @db.Uuid
   address       String    @unique // base58 Solana public key (CHECK: 32 to 44 base58 characters)
   nonce         String? // the sign-in nonce waiting to be signed; cleared when it's used (one use only)
   nonceIssuedAt DateTime? @db.Timestamptz(3)
-  usdcBalance   Decimal   @default(0) @db.Decimal(18, 6) // exact, never a float: USDC has 6 decimals (CHECK: >= 0)
   verifiedAt    DateTime? @db.Timestamptz(3) // its first successful sign-in
   lastSignInAt  DateTime? @db.Timestamptz(3)
   createdAt     DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
 
-  apiKeys AgentApiKey[]
+  apiKeys     AgentApiKey[]
+  usage       UsageEvent[]
+  settlements Settlement[]
 
   @@index([verifiedAt])
 }
@@ -407,9 +410,57 @@ model AgentApiKey {
   lastUsedAt DateTime? @db.Timestamptz(3)
   revokedAt  DateTime? @db.Timestamptz(3)
 
-  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  wallet Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  usage  UsageEvent[]
 
   @@index([walletId])
+}
+
+// One paid request by an agent: what it cost in USDC micro-units (1 = $0.000001; integers, never floats).
+// Unsettled (settlementId empty) until a Settlement claims it.
+model UsageEvent {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  walletId     String   @db.Uuid
+  apiKeyId     String?  @db.Uuid // the key that made the request; empty for a session token
+  endpoint     String // e.g. "GET /api/x402/catalog/search"
+  amountMicros BigInt // CHECK: > 0
+  settlementId String?  @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  wallet     Wallet       @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  apiKey     AgentApiKey? @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  settlement Settlement?  @relation(fields: [settlementId], references: [id], onDelete: SetNull)
+
+  @@index([walletId, settlementId])
+  @@index([settlementId])
+}
+
+enum SettlementStatus {
+  PENDING // usage claimed, transfer not sent yet
+  SUBMITTED // transfer sent; its signature is recorded, confirmation pending
+  CONFIRMED // the USDC reached the treasury
+  FAILED // refused or expired: its usage was released to be settled again
+}
+
+// One USDC transfer from an agent's wallet to the treasury, paying for the usage it claims.
+model Settlement {
+  id                   String           @id @default(uuid(7)) @db.Uuid
+  walletId             String           @db.Uuid
+  amountMicros         BigInt // CHECK: >= 0
+  reason               String // "daily" or "threshold"
+  status               SettlementStatus @default(PENDING)
+  txSignature          String?          @unique
+  lastValidBlockHeight BigInt? // after this block height an unconfirmed transfer can never land
+  error                String?
+  createdAt            DateTime         @default(now()) @db.Timestamptz(3)
+  submittedAt          DateTime?        @db.Timestamptz(3)
+  confirmedAt          DateTime?        @db.Timestamptz(3)
+
+  wallet Wallet       @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  usage  UsageEvent[]
+
+  @@index([status])
+  @@index([walletId, createdAt(sort: Desc)])
 }
 
 // ─── v2 Dossiers ─────────────────────────────────────────────────────────────
